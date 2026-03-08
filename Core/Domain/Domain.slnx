@@ -3,7 +3,9 @@
     <Project Path="../Application/Application.csproj" />
     <Project Path="Domain.csproj" />
   </Folder>
-  <Folder Name="/Infrastructure/" />
+  <Folder Name="/Infrastructure/">
+    <Project Path="../../Infrastructure/Infrastructure/Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Presentation/">
     <Project Path="../../Presentation/pos-webapi/pos-webapi.csproj" />
   </Folder>
