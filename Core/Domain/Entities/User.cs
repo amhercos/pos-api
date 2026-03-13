@@ -9,8 +9,9 @@ namespace Domain.Entities
 {
     public class User : IdentityUser<Guid>
     {
-        public string Role { get; set; }
-        public Guid StoreId { get; set; }
+        public required string FullName { get; set; }
+        public string? Role { get; set; }
+        public Guid? StoreId { get; set; }
         public Store Store { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
