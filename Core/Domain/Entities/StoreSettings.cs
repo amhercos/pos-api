@@ -7,8 +7,7 @@ namespace Domain.Entities
 {
     public class StoreSettings : BaseEntity
     {
-        public string StoreName { get; set; }
-        public string StoreAddress { get; set; }
+        public Guid StoreId { get; set; }
         public string ContactInfo { get; set; }
         public string? Email { get; set; }
 

@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Infrastructure.Persistence
+namespace Application
 {
-    public interface IPosDbContext
+    public static class DependencyInjection
     {
-      
     }
 }

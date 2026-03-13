@@ -6,6 +6,9 @@
   <Folder Name="/Infrastructure/">
     <Project Path="Infrastructure/Infrastructure/Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Infrastructure/DbMigrations/">
+    <Project Path="Infrastructure/DbMigrations/DbMigration.PostgreSQL/DbMigration.PostgreSQL.csproj" Id="1bf16afe-6dd6-45ec-8983-5d9453ebe270" />
+  </Folder>
   <Folder Name="/Presentation/">
     <Project Path="Presentation/pos-webapi/pos-webapi.csproj" />
   </Folder>
