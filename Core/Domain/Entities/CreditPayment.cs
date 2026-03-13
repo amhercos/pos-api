@@ -10,7 +10,7 @@ namespace Domain.Entities
         public Guid CustomerCreditId { get; set; }
         public CustomerCredit CustomerCredit { get; set; }
         public decimal AmountPaid { get; set; }
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
         public decimal RemainingCredit => CustomerCredit.CreditAmount - AmountPaid;
     }
 }
