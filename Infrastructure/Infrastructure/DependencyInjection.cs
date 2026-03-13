@@ -1,6 +1,8 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
 using Infrastructure.Persistence;
+//using Infrastructure.Persistence.Interceptors; Ensure this namespace matches your interceptor location
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,28 +12,42 @@ namespace Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructureServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            // 1. Configure DbContext with PostgreSQL
-            services.AddDbContext<PosDbContext>(options =>
-                options.UseNpgsql(connectionString,
-                    b => b.MigrationsAssembly(typeof(PosDbContext).Assembly.FullName)));
+            // 2. Configure DbContext with PostgreSQL and Interceptors
+            // Note: We register PosDbContext but point the implementation to PostgresPosDbContext
+            services.AddDbContext<PosDbContext>((sp, options) =>
+            {
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(PosDbContext).Assembly.FullName));
+                       
+            });
 
-            // 2. Register the Interface for use in Application Layer
-            services.AddScoped<IPosDbContext>(provider => provider.GetRequiredService<PosDbContext>());
-
-            // 3. Configure ASP.NET Identity
-            services.AddIdentityCore<User>(options => {
+            // 3. Configure Identity (Matching your preferred SCS settings)
+            services.AddIdentity<User, IdentityRole<Guid>>(options =>
+            {
                 options.Password.RequireDigit = true;
-                options.Password.RequiredLength = 8;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
                 options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength = 8;
                 options.User.RequireUniqueEmail = false;
             })
-            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<PosDbContext>()
             .AddDefaultTokenProviders();
+
+            // 4. Register Services & Interfaces
+            services.AddTransient<IJwtService, JwtService>();
+
+            // Register against the interface for Clean Architecture Handlers
+            services.AddScoped<IPosDbContext>(provider =>
+                provider.GetRequiredService<PosDbContext>());
+
+            // Add your Repositories here as you build them, just like in SCS
+            // services.AddScoped<IProductRepository, ProductRepository>();
 
             return services;
         }

@@ -9,11 +9,8 @@ namespace Infrastructure.Persistence
 {
     public class PosDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IPosDbContext
     {
-        public PosDbContext(DbContextOptions<PosDbContext> options) : base(options) { }
+        public PosDbContext(DbContextOptions options) : base(options) { }
 
-        public PosDbContext(DbContextOptions options) : base(options)
-        {
-        }
 
         public DbSet<Category> Categories => Set<Category>();
 

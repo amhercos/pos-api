@@ -3,6 +3,7 @@ using System;
 using DbMigration.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations
 {
     [DbContext(typeof(PostgresPosDbContext))]
-    partial class PostgresPosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313171113_SeedFixError")]
+    partial class SeedFixError
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -314,7 +317,7 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("StoreId")
+                    b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("TwoFactorEnabled")
@@ -543,7 +546,8 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasOne("Domain.Entities.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Store");
                 });

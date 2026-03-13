@@ -12,7 +12,7 @@ namespace DbMigration.PostgreSQL
     public class PostgresPosDbContext : PosDbContext
     {
 
-        public PostgresPosDbContext(DbContextOptions<PostgresPosDbContext> options) : base(options)
+        public PostgresPosDbContext(DbContextOptions options) : base(options)
         {
         }
 
