@@ -9,7 +9,14 @@ namespace Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<CreditPayment> builder)
         {
             builder.HasKey(cp => cp.Id);
-            builder.Property(cp => cp.PaymentDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            builder.HasOne(cp => cp.CustomerCredit)
+                   .WithMany() // Or WithMany(c => c.Payments) if you added the collection
+                   .HasForeignKey(cp => cp.CustomerCreditId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(cp => cp.PaymentDate)
+                   .HasDefaultValueSql("CURRENT_TIMESTAMP");
         }
     }
 }

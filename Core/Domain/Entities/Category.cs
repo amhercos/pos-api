@@ -8,7 +8,7 @@ namespace Domain.Entities
 {
     public class Category : BaseEntity
     {
-        [Required]
-        public string CategoryName { get; set; }
+        public required string CategoryName { get; set; }
+        public ICollection<Product> Products { get; set; } = new List<Product>();  
     }
 }

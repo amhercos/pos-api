@@ -27,9 +27,9 @@ namespace Infrastructure.Persistence.Configurations
                    .HasDefaultValue(5);
 
             // Many Category => One Product
-            builder.HasOne<Category>()
-                   .WithMany()
-                   .HasForeignKey(p => p.CategoryId)
+            builder.HasOne(p => p.Category)
+            .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(p => p.Name);

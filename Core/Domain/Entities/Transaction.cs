@@ -16,5 +16,6 @@ namespace Domain.Entities
 
         public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
         public Guid CustomerCreditId { get; set; }
+        public CustomerCredit CustomerCredit { get; set; } = null!;
     }
 }

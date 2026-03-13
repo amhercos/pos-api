@@ -11,19 +11,23 @@ namespace Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Transaction> builder)
         {
-            builder.HasKey(t => t.UserId);
+            builder.HasKey(t => t.Id);
 
             builder.Property(t => t.PaymentType)
                    .HasMaxLength(20)
                    .IsRequired();
 
-            // Transaction  => User (Cashier)
-            builder.HasOne<User>()
+            
+            builder.HasOne(t => t.User)
                    .WithMany()
                    .HasForeignKey(t => t.UserId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-          
+            builder.HasOne(t => t.CustomerCredit)
+                   .WithMany()
+                   .HasForeignKey(t => t.CustomerCreditId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasIndex(t => t.TransactionDate);
         }
     }

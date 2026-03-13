@@ -8,7 +8,7 @@ namespace Domain.Entities
     public class CustomerCredit : BaseEntity
 
     {
-        public string CustomerName { get; set; }
+        public required string CustomerName { get; set; }
         public string? ContactInfo { get; set; }
         public decimal CreditAmount { get; set; }
         public ICollection<CreditPayment> Payments { get; set; } = new List<CreditPayment>();

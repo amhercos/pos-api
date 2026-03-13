@@ -10,15 +10,14 @@ namespace Infrastructure.Persistence.Configurations
     public class CustomerCreditConfiguration : IEntityTypeConfiguration<CustomerCredit>
     {
             public void Configure(EntityTypeBuilder<CustomerCredit> builder)
-        { 
-        
+        {
+
             builder.HasKey(cc => cc.Id);
             builder.Property(cc => cc.CustomerName).IsRequired().HasMaxLength(200);
 
-            // One Customer => many Payment records
             builder.HasMany(cc => cc.Payments)
-                   .WithOne()
-                   .HasForeignKey(p => p.CustomerCreditId)
+                   .WithOne(cp => cp.CustomerCredit)
+                   .HasForeignKey(cp => cp.CustomerCreditId)
                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(cc => cc.CustomerName);
