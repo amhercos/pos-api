@@ -1,8 +1,9 @@
 ﻿using Application.Dto;
-using Microsoft.AspNetCore.Authorization;
-using MediatR;  
-using Microsoft.AspNetCore.Mvc;
+using Application.Features.Staff.Commands;
 using Application.Features.Staff.Queries;
+using MediatR;  
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace pos_webapi.Controllers
 {
@@ -22,6 +23,17 @@ namespace pos_webapi.Controllers
         public async Task<ActionResult<IEnumerable<StaffDto>>> GetMyStaff()
         {
             return Ok(await _mediator.Send(new GetStaffQuery()));
+        }
+
+        [Authorize(Roles = "StoreOwner")]
+        [HttpDelete("delete-staff/{id}")]
+        public async Task<IActionResult> DeleteStaff(Guid Id)
+        {
+            var result = await _mediator.Send(new DeleteStaffCommand(Id));
+
+            if (result) return Ok(new { message = "Staff deleted successfully." });
+
+            return BadRequest("Could not delete staff or unauthorized access.");
         }
     }
 }
