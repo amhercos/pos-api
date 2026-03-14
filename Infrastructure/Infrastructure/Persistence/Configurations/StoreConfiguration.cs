@@ -10,7 +10,10 @@ namespace Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<Store> builder)
         {
             builder.HasKey(s => s.Id);
-            builder.Property(s => s.StoreName).IsRequired().HasMaxLength(150);
+            builder.Property(s => s.StoreName)
+                .IsRequired()
+                .HasMaxLength(150);
+            
 
             // One-to-One Relationship , Store => StoreSettings
             builder.HasOne(s => s.Settings)

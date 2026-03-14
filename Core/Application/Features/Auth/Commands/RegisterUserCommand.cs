@@ -5,9 +5,10 @@ using System.Text;
 
 namespace Application.Features.Auth.Commands
 {
-    public record RegisterUserCommand(
+    public record RegisterStoreOwnerCommand(
     string Email,
-    string Username,
     string Password,
-    string FullName) : IRequest<bool>;
+    string FullName,
+    string BusinessName,
+    string Location) : IRequest<bool>;
 }
