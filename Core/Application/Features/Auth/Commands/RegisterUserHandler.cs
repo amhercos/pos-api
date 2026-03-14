@@ -5,25 +5,17 @@ using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
-public class RegisterStoreOwnerHandler : IRequestHandler<RegisterStoreOwnerCommand, bool>
-{
-    private readonly UserManager<User> _userManager;
-    private readonly IStoreRepository _storeRepository;
-    private readonly IPosDbContext _context;
-
-    public RegisterStoreOwnerHandler(
+public class RegisterStoreOwnerHandler 
+    (
         UserManager<User> userManager,
         IStoreRepository storeRepository,
-        IPosDbContext context)
-    {
-        _userManager = userManager;
-        _storeRepository = storeRepository;
-        _context = context;
-    }
+        IPosDbContext context
+    ) : IRequestHandler<RegisterStoreOwnerCommand, bool>
+{
 
     public async Task<bool> Handle(RegisterStoreOwnerCommand request, CancellationToken ct)
     {
-        await _context.BeginTransactionAsync(ct);
+        await context.BeginTransactionAsync(ct);
 
         try
         {
@@ -35,8 +27,8 @@ public class RegisterStoreOwnerHandler : IRequestHandler<RegisterStoreOwnerComma
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _storeRepository.AddAsync(store, ct);
-            await _context.SaveChangesAsync(ct);
+            await storeRepository.AddAsync(store, ct);
+            await context.SaveChangesAsync(ct);
 
 
             var user = new User
@@ -49,20 +41,20 @@ public class RegisterStoreOwnerHandler : IRequestHandler<RegisterStoreOwnerComma
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await _userManager.CreateAsync(user, request.Password);
+            var result = await userManager.CreateAsync(user, request.Password);
 
             if (!result.Succeeded)
             {
-                await _context.RollbackTransactionAsync(ct);
+                await context.RollbackTransactionAsync(ct);
                 return false;
             }
 
-            await _context.CommitTransactionAsync(ct);
+            await context.CommitTransactionAsync(ct);
             return true;
         }
         catch (Exception)
         {
-            await _context.RollbackTransactionAsync(ct);
+            await context.RollbackTransactionAsync(ct);
             throw;
         }
     }

@@ -38,12 +38,16 @@ namespace Infrastructure
 
             //  Register Services
             services.AddTransient<IJwtService, JwtService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddHttpContextAccessor();
+
 
             services.AddScoped<IPosDbContext>(provider =>
                 provider.GetRequiredService<PosDbContext>());
 
             // Register Repositories
              services.AddScoped<IStoreRepository, StoreRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
 
             return services;
         }
