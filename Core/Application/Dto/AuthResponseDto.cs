@@ -3,5 +3,6 @@
     public record AuthResponseDTO(
         string Token, 
         string FullName, 
-        string Username);
+        string Username,
+        string Role);
 }

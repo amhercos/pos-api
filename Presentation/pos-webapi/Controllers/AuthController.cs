@@ -1,5 +1,6 @@
 ﻿using Application.Features.Auth.Commands;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace pos_webapi.Controllers
@@ -18,8 +19,8 @@ namespace pos_webapi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
         {
-            await _mediator.Send(command);
-            return Ok();
+            var result = await _mediator.Send(command);
+            return Ok(result);
         }
 
 
@@ -34,6 +35,17 @@ namespace pos_webapi.Controllers
             }
 
             return BadRequest(new { message = "Registration failed." });
+        }
+
+
+        [Authorize(Roles = "StoreOwner")]
+        [HttpPost("add-staff")]
+        public async Task<IActionResult> AddStaff([FromBody] AddStaffCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (result) return Ok(new { message = "Staff added successfully." });
+
+            return BadRequest("Could not add staff.");
         }
     }
 

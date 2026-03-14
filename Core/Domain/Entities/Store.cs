@@ -8,7 +8,7 @@ namespace Domain.Entities
     public class Store : BaseEntity
     {
         public required string StoreName { get; set; }
-        public string Location { get; set; }
+        public string Location { get; set; } = null!;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual StoreSettings Settings { get; set; } = null!;
     }
