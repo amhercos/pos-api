@@ -18,16 +18,22 @@ namespace pos_webapi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            await _mediator.Send(command);
+            return Ok();
         }
 
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
+        [HttpPost("register-storeowner")]
+        public async Task<IActionResult> RegisterMerchant([FromBody] RegisterStoreOwnerCommand command)
         {
             var result = await _mediator.Send(command);
-            return result ? Ok("User registered successfully") : BadRequest("Registration failed");
+
+            if (result)
+            {
+                return Ok(new { message = "Store and Owner registered successfully." });
+            }
+
+            return BadRequest(new { message = "Registration failed." });
         }
     }
 

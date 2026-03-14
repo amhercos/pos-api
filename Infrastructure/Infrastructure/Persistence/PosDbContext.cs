@@ -1,14 +1,16 @@
-﻿using Domain.Entities;
-using Application.Interfaces;
+﻿using Application.Interfaces;
+using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 
 namespace Infrastructure.Persistence
 {
     public class PosDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IPosDbContext
     {
+        private IDbContextTransaction _currentTransaction;
         public PosDbContext(DbContextOptions options) : base(options) { }
 
 
@@ -28,6 +30,34 @@ namespace Infrastructure.Persistence
 
         public DbSet<StoreSettings> StoresSettings => Set<StoreSettings>();
 
+        public async Task BeginTransactionAsync(CancellationToken cancellationToken)
+        {
+            _currentTransaction = await Database.BeginTransactionAsync(cancellationToken);
+        }
+
+        public async Task CommitTransactionAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await SaveChangesAsync(cancellationToken);
+                if (_currentTransaction != null) await _currentTransaction.CommitAsync(cancellationToken);
+            }
+            finally
+            {
+                _currentTransaction?.Dispose();
+                _currentTransaction = null;
+            }
+        }
+
+        public async Task RollbackTransactionAsync(CancellationToken cancellationToken)
+        {
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.RollbackAsync(cancellationToken);
+                _currentTransaction.Dispose();
+                _currentTransaction = null;
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
