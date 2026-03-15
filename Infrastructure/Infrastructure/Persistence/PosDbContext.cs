@@ -5,29 +5,22 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-
 namespace Infrastructure.Persistence
 {
-    public class PosDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IPosDbContext
+    public class PosDbContext(
+        DbContextOptions<PosDbContext> options,
+        ICurrentUserService currentUserService)
+        : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IPosDbContext
     {
-        private IDbContextTransaction _currentTransaction;
-        public PosDbContext(DbContextOptions options) : base(options) { }
-
+        private IDbContextTransaction? _currentTransaction;
 
         public DbSet<Category> Categories => Set<Category>();
-
         public DbSet<Product> Products => Set<Product>();
-
         public DbSet<Transaction> Transactions => Set<Transaction>();
-
         public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
-
         public DbSet<CustomerCredit> CustomerCredits => Set<CustomerCredit>();
-
         public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
-
         public DbSet<Store> Stores => Set<Store>();
-
         public DbSet<StoreSettings> StoresSettings => Set<StoreSettings>();
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken)
@@ -62,8 +55,16 @@ namespace Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
             builder.HasPostgresExtension("uuid-ossp");
             builder.ApplyConfigurationsFromAssembly(typeof(PosDbContext).Assembly);
+
+            builder.Entity<Category>().HasQueryFilter(c => c.StoreId == currentUserService.StoreId);
+            builder.Entity<Product>().HasQueryFilter(p => p.StoreId == currentUserService.StoreId);
+            builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == currentUserService.StoreId);
+            builder.Entity<CustomerCredit>().HasQueryFilter(cc => cc.StoreId == currentUserService.StoreId);
+            builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == currentUserService.StoreId);
+            builder.Entity<CreditPayment>().HasQueryFilter(cp => cp.StoreId == currentUserService.StoreId);
 
             foreach (var entityType in builder.Model.GetEntityTypes())
             {

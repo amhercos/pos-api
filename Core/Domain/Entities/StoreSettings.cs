@@ -8,7 +8,7 @@ namespace Domain.Entities
     public class StoreSettings : BaseEntity
     {
         public Guid StoreId { get; set; }
-        public string ContactInfo { get; set; }
+        public string? ContactInfo { get; set; }
         public string? Email { get; set; }
 
         // Alert Configs

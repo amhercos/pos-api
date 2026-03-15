@@ -13,6 +13,8 @@ namespace Domain.Entities
         public PaymentType PaymentType { get; set; }
         public Guid UserId  { get; set; }
         public User User { get; set; } = null!;
+        public Guid  StoreId { get; set; }
+        public Store Store { get; set; } = null!;
 
         public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
         public Guid CustomerCreditId { get; set; }

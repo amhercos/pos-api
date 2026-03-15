@@ -20,6 +20,11 @@ namespace Infrastructure.Persistence.Configurations
                    .WithOne()
                    .HasForeignKey<StoreSettings>(ss => ss.StoreId)
                    .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasMany(s => s.Categories)
+                .WithOne(c => c.Store)
+                .HasForeignKey(c => c.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

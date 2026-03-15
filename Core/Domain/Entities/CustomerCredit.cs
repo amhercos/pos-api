@@ -11,6 +11,8 @@ namespace Domain.Entities
         public required string CustomerName { get; set; }
         public string? ContactInfo { get; set; }
         public decimal CreditAmount { get; set; }
+        public Guid StoreId { get; set; }
+        public Store Store { get; set; } = null!;
         public ICollection<CreditPayment> Payments { get; set; } = new List<CreditPayment>();
     }
 }

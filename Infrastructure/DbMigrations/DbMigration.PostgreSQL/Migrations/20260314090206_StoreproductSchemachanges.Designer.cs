@@ -3,6 +3,7 @@ using System;
 using DbMigration.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations
 {
     [DbContext(typeof(PostgresPosDbContext))]
-    partial class PostgresPosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314090206_StoreproductSchemachanges")]
+    partial class StoreproductSchemachanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,14 +71,9 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerCreditId");
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("CreditPayments");
                 });
@@ -98,14 +96,9 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerName");
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("CustomerCredits");
                 });
@@ -189,6 +182,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ContactInfo")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
@@ -228,9 +222,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -244,8 +235,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerCreditId");
-
-                    b.HasIndex("StoreId");
 
                     b.HasIndex("TransactionDate");
 
@@ -266,9 +255,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uuid");
 
@@ -279,8 +265,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("StoreId");
 
                     b.HasIndex("TransactionId");
 
@@ -519,26 +503,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("CustomerCredit");
-
-                    b.Navigation("Store");
-                });
-
-            modelBuilder.Entity("Domain.Entities.CustomerCredit", b =>
-                {
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Store");
                 });
 
             modelBuilder.Entity("Domain.Entities.Product", b =>
@@ -577,12 +542,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -590,8 +549,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("CustomerCredit");
-
-                    b.Navigation("Store");
 
                     b.Navigation("User");
                 });
@@ -604,12 +561,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domain.Entities.Transaction", "Transaction")
                         .WithMany("Items")
                         .HasForeignKey("TransactionId")
@@ -617,8 +568,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
-
-                    b.Navigation("Store");
 
                     b.Navigation("Transaction");
                 });

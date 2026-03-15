@@ -7,19 +7,13 @@ namespace pos_webapi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController (IMediator mediator) : ControllerBase
     {
-        private readonly IMediator _mediator;
-
-        public AuthController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
-
+        
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
         {
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
             return Ok(result);
         }
 
@@ -27,7 +21,7 @@ namespace pos_webapi.Controllers
         [HttpPost("register-storeowner")]
         public async Task<IActionResult> RegisterMerchant([FromBody] RegisterStoreOwnerCommand command)
         {
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
 
             if (result)
             {
@@ -42,7 +36,7 @@ namespace pos_webapi.Controllers
         [HttpPost("add-staff")]
         public async Task<IActionResult> AddStaff([FromBody] AddStaffCommand command)
         {
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
             if (result) return Ok(new { message = "Staff added successfully." });
 
             return BadRequest("Could not add staff.");

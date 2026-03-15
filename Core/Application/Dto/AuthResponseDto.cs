@@ -1,6 +1,6 @@
 ﻿namespace Application.Dto
 {
-    public record AuthResponseDTO(
+    public record AuthResponseDto(
         string Token, 
         string FullName, 
         string Username,
