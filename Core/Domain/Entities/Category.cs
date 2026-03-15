@@ -9,6 +9,9 @@ namespace Domain.Entities
     public class Category : BaseEntity
     {
         public required string CategoryName { get; set; }
-        public ICollection<Product> Products { get; set; } = new List<Product>();  
+        public ICollection<Product> Products { get; set; } = new List<Product>();
+        public Guid StoreId { get; set; }
+        public Store Store { get; set; } = null!;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

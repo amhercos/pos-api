@@ -9,10 +9,10 @@ namespace Application.Features.Auth.Commands
 {
     public class LoginUserHandler (
         UserManager<User> userManager,
-        IJwtService tokenService) : IRequestHandler<LoginUserCommand, AuthResponseDTO>
+        IJwtService tokenService) : IRequestHandler<LoginUserCommand, AuthResponseDto>
     {
 
-        public async Task<AuthResponseDTO> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+        public async Task<AuthResponseDto> Handle(LoginUserCommand request, CancellationToken cancellationToken)
         {
             var user = await userManager.FindByNameAsync(request.Username);
 
@@ -23,7 +23,7 @@ namespace Application.Features.Auth.Commands
 
             var token = tokenService.GenerateToken(user);
 
-            return new AuthResponseDTO(
+            return new AuthResponseDto(
                 Token: token,
                 FullName: user.FullName,
                 Username: user.UserName!,

@@ -18,7 +18,8 @@ namespace Infrastructure.Persistence.Configurations
                    .HasMaxLength(500);
 
             builder.Property(p => p.Price)
-                   .IsRequired();
+                   .IsRequired()
+                    .HasPrecision(18, 2);
 
             builder.Property(p => p.Stock)
                    .HasDefaultValue(0);

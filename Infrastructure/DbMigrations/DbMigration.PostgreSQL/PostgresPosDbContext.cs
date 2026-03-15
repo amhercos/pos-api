@@ -1,21 +1,17 @@
-﻿using Infrastructure.Persistence;
+﻿using Application.Interfaces;
+using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace DbMigration.PostgreSQL
 {
-    public class PostgresPosDbContext : PosDbContext
+    public class PostgresPosDbContext(
+        DbContextOptions<PosDbContext> options,
+        ICurrentUserService currentUserService)
+        : PosDbContext(options, currentUserService)
     {
-
-        public PostgresPosDbContext(DbContextOptions options) : base(options)
-        {
-        }
-
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -32,16 +28,13 @@ namespace DbMigration.PostgreSQL
                     _ => "A record with this information already exists."
                 };
 
-
-                throw new InvalidOperationException($"A unique constraint violation occurred: {message} (Constraint: {pg.ConstraintName})", dbEx);
+                throw new InvalidOperationException($"A unique constraint violation occurred: {message}", dbEx);
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
             base.OnModelCreating(modelBuilder);
-
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
@@ -50,12 +43,12 @@ namespace DbMigration.PostgreSQL
 
                 foreach (var property in clrType.GetProperties())
                 {
-                    var jsonPropertyNameAttribute = property.GetCustomAttribute<JsonPropertyNameAttribute>();
-                    if (jsonPropertyNameAttribute != null)
+                    var jsonAttribute = property.GetCustomAttribute<JsonPropertyNameAttribute>();
+                    if (jsonAttribute != null)
                     {
                         modelBuilder.Entity(clrType)
                             .Property(property.Name)
-                            .HasColumnName(jsonPropertyNameAttribute.Name);
+                            .HasColumnName(jsonAttribute.Name);
                     }
                 }
             }
