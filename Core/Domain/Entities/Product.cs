@@ -1,6 +1,7 @@
 ﻿using Domain.Entities.Common;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Domain.Entities
@@ -17,5 +18,6 @@ namespace Domain.Entities
         public int Stock { get; set; }
         public int LowStockThreshold { get; set; }
         public DateOnly ExpiryDate { get; set; } 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
