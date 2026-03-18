@@ -23,7 +23,6 @@ namespace Infrastructure.Repositories
         {
             return await context.Products
                 .Include(p => p.Category)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }
 

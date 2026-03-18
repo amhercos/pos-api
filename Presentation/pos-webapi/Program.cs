@@ -4,6 +4,7 @@ using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Microsoft.OpenApi;
 using System.Text;
 
 Log.Logger = new LoggerConfiguration()
@@ -68,6 +69,30 @@ try
 
     builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
+    // Swagger Configuration
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Point of Sale API",
+            Version = "v1"
+        });
+
+        c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+        {
+            Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
+            In = ParameterLocation.Header,
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer"
+        });
+
+        c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
+        });
+    });
+   
 
     var app = builder.Build();
 
@@ -92,6 +117,8 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
 
     app.UseHttpsRedirection();

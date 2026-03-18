@@ -10,7 +10,7 @@ namespace Application.Features.Categories.Commands
 {
     public class DeleteCategoriesHandler(
         ICategoryRepository categoryRepository,
-        IPosDbContext dbContext) : IRequestHandler<DeleteCategoryCommand, bool>
+        IPosDbContext context) : IRequestHandler<DeleteCategoryCommand, bool>
     {
         public async Task<bool> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
         {
@@ -20,8 +20,7 @@ namespace Application.Features.Categories.Commands
                 return false;
             }
             categoryRepository.Remove(category);
-            await dbContext.SaveChangesAsync(cancellationToken);
-
+            await context.SaveChangesAsync(cancellationToken);
             return true;
 
         }
