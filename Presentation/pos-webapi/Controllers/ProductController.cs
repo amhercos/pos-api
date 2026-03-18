@@ -29,31 +29,27 @@ namespace pos_webapi.Controllers
             return Ok(products);
         }
 
-        ///// <summary>
-        ///// Gets a specific product by ID.
-        ///// </summary>
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetById(Guid id)
-        //{
-        //    var product = await mediator.Send(new GetProductByIdQuery(id));
+       
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var product = await mediator.Send(new GetProductByIdQuery(id));
 
-        //    if (product == null) return NotFound();
+            if (product == null) return NotFound();
 
-        //    return Ok(product);
-        //}
+            return Ok(product);
+        }
 
-        ///// <summary>
-        ///// Deletes a product from the inventory.
-        ///// </summary>
-        //[HttpDelete("{id}")]
-        //[Authorize(Roles = "StoreOwner")]
-        //public async Task<IActionResult> Delete(Guid id)
-        //{
-        //    var result = await mediator.Send(new DeleteProductCommand(id));
+       
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "StoreOwner")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var result = await mediator.Send(new DeleteProductCommand(id));
 
-        //    if (!result) return NotFound();
+            if (!result) return NotFound();
 
-        //    return NoContent();
-        //}
+            return NoContent();
+        }
     }
 }
