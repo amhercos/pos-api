@@ -4,6 +4,5 @@ namespace Application.Features.CustomerCredits.Commands;
 
 public record RecordCreditPaymentCommand(
     Guid CustomerCreditId,
-    decimal AmountPaid,
-    string? Remarks = null
+    decimal AmountPaid
 ) : IRequest<Unit>;

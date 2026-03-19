@@ -10,5 +10,6 @@ namespace Application.Features.Products.Commands
     string? Description,
     decimal Price,
     int StockQuantity,
+    DateOnly? ExpiryDate,
     Guid CategoryId) : IRequest<Guid>;
 }

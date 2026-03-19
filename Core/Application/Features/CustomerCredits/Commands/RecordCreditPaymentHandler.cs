@@ -2,6 +2,7 @@
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Domain.Entities;
+using Domain.Entities.Enums;
 using MediatR;
 
 namespace Application.Features.CustomerCredits.Handlers;
@@ -18,7 +19,24 @@ public class RecordCreditPaymentHandler(
         var account = await creditRepository.GetByIdAsync(request.CustomerCreditId, ct);
         if (account == null) throw new Exception("Customer credit record not found.");
 
-        account.CreditAmount -= request.AmountPaid;
+        var actualBalance = await creditRepository.GetCalculatedBalanceAsync(request.CustomerCreditId, ct);
+
+        if (request.AmountPaid > account.CreditAmount)
+        {
+            throw new Exception($"Payment exceeds the Credit Amount {account.CreditAmount}.");
+        }
+
+        account.CreditAmount = actualBalance - request.AmountPaid;
+
+        if (account.CreditAmount <= 0)
+        {
+            account.CreditAmount = 0;
+            account.Status = CreditStatus.Settled;
+        }
+        else
+        {
+            account.Status = CreditStatus.Active;
+        }
 
         // payment record creation 
         var payment = new CreditPayment

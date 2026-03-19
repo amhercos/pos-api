@@ -35,5 +35,7 @@ namespace Infrastructure.Repositories
                 .CountAsync(ct);
         }
 
+        public void Update(Product product) => context.Products.Update(product);
+
     }
 }

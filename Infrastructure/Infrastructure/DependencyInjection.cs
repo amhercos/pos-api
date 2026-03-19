@@ -17,6 +17,7 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
             services.AddDbContext<PosDbContext>((sp, options) =>
             {
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),

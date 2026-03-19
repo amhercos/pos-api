@@ -7,6 +7,8 @@ namespace Application.Dto
     string? Description,
     decimal Price,
     int StockQuantity,
+    int LowStockThreshold,
     string CategoryName,
+    DateOnly? ExpiryDate,
     Guid CategoryId);
 }

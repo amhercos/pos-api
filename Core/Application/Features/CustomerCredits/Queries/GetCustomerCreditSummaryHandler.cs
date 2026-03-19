@@ -10,25 +10,24 @@ using System.Threading.Tasks;
 namespace Application.Features.CustomerCredits.Handlers;
 
 public class GetCustomerCreditSummaryHandler(
-    ICustomerCreditRepository creditRepository,
-    ITransactionRepository transactionRepository) : IRequestHandler<GetCustomerCreditSummaryQuery, CustomerCreditSummaryDto>
+ICustomerCreditRepository creditRepository,
+ITransactionRepository transactionRepository) : IRequestHandler<GetCustomerCreditSummaryQuery, CustomerCreditSummaryDto>
 {
     public async Task<CustomerCreditSummaryDto> Handle(GetCustomerCreditSummaryQuery request, CancellationToken ct)
     {
         var account = await creditRepository.GetByIdAsync(request.CustomerId, ct);
         if (account == null) throw new Exception("Customer record not found.");
 
-        //transactions
         var transactions = await transactionRepository.GetByCustomerIdAsync(request.CustomerId, ct);
-        //payments
         var payments = await creditRepository.GetPaymentHistoryAsync(request.CustomerId, ct);
+        var balance = await creditRepository.GetCalculatedBalanceAsync(request.CustomerId, ct);
 
-      
+
         return new CustomerCreditSummaryDto(
-            account.Id,
-            account.CustomerName,
-            account.ContactInfo,
-            account.CreditAmount,
+        account.Id,
+        account.CustomerName,
+        account.ContactInfo,
+        balance,
 
             transactions.Select(t => new RecentTransactionDto(
                 t.Id,

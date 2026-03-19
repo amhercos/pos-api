@@ -23,6 +23,7 @@ namespace Infrastructure.Persistence
         public DbSet<Store> Stores => Set<Store>();
         public DbSet<StoreSettings> StoresSettings => Set<StoreSettings>();
 
+
         public async Task BeginTransactionAsync(CancellationToken cancellationToken)
         {
             _currentTransaction = await Database.BeginTransactionAsync(cancellationToken);

@@ -19,6 +19,8 @@ public class CreateProductHandler(
             Description = request.Description,
             Price = request.Price,
             Stock = request.StockQuantity,
+            ExpiryDate = request.ExpiryDate,
+            LowStockThreshold = 5,
             CategoryId = request.CategoryId,
             StoreId = currentUserService.StoreId,
             CreatedAt = DateTime.UtcNow

@@ -14,7 +14,7 @@ namespace Domain.Entities
         public decimal Price { get; set; }
         public int Stock { get; set; }
         public int LowStockThreshold { get; set; }
-        public DateOnly ExpiryDate { get; set; } 
+        public DateOnly? ExpiryDate { get; set; } 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

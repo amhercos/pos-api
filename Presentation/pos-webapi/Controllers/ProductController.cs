@@ -1,4 +1,5 @@
-﻿using Application.Features.Products.Commands;
+﻿using Application.Dto;
+using Application.Features.Products.Commands;
 using Application.Features.Products.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -50,6 +51,15 @@ namespace pos_webapi.Controllers
             if (!result) return NotFound();
 
             return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<ProductDto>> Update(Guid id, [FromBody] UpdateProductCommand command)
+        {
+            command.Id = id;
+
+            var result = await mediator.Send(command);
+            return Ok(result);
         }
     }
 }

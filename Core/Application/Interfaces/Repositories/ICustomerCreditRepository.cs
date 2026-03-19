@@ -11,8 +11,9 @@ namespace Application.Interfaces.Repositories
         void Update(CustomerCredit credit);
         void Add(CustomerCredit credit);
         void AddPayment(CreditPayment payment);
-        Task <List<CustomerCredit>> GetStoreCreditsAsync(Guid storeId, CancellationToken ct);
+        Task <List<CustomerCredit>> GetActiveCreditsAsync(Guid storeId, CancellationToken ct);
         Task<List<CustomerCredit>> SearchByNameAsync(Guid storeId, string name, CancellationToken ct);
         Task<List<CreditPayment>> GetPaymentHistoryAsync(Guid customerCreditId, CancellationToken ct);
+        Task<decimal> GetCalculatedBalanceAsync(Guid customerId, CancellationToken ct);
     }
 }

@@ -18,7 +18,9 @@ public class GetProductsHandler(IProductRepository productRepository)
             p.Description,
             p.Price,
             p.Stock,
+            p.LowStockThreshold,
             p.Category?.CategoryName ?? "No Category",
+            p.ExpiryDate,
             p.CategoryId
         ));
     }

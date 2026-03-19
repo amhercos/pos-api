@@ -1,6 +1,7 @@
 ﻿using Application.Dto;
 using Application.Interfaces.Repositories;
 using Domain.Entities;
+using Domain.Entities.Enums;
 using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +13,12 @@ namespace Infrastructure.Repositories
 {
     public class CustomerCreditRepository(PosDbContext context) : ICustomerCreditRepository
     {
-        public async Task<List<CustomerCredit>> GetStoreCreditsAsync(Guid storeId, CancellationToken ct)
+        public async Task<List<CustomerCredit>> GetActiveCreditsAsync(Guid storeId, CancellationToken ct)
         {
             return await context.CustomerCredits
-                .AsNoTracking() 
-                .Where(c => c.StoreId == storeId)
-                .OrderByDescending(c => c.CreditAmount)
-                .ToListAsync(ct);
+            .AsNoTracking()
+            .Where(c => c.StoreId == storeId && c.Status == CreditStatus.Active)
+            .ToListAsync(ct);
         }
         public async Task<CustomerCredit?> GetByIdAsync(Guid id, CancellationToken ct)
         {
@@ -50,6 +50,19 @@ namespace Infrastructure.Repositories
             .Where(p => p.CustomerCreditId == customerCreditId)
             .OrderByDescending(p => p.PaymentDate)
             .ToListAsync(ct);
+        }
+
+        public async Task<decimal> GetCalculatedBalanceAsync(Guid customerId, CancellationToken ct)
+        {
+            var totalPurchased = await context.Transactions
+                .Where(t => t.CustomerCreditId == customerId)
+                .SumAsync(t => (decimal?)t.TotalAmount, ct) ?? 0;
+
+            var totalPaid = await context.CreditPayments
+                .Where(p => p.CustomerCreditId == customerId)
+                .SumAsync(p => (decimal?)p.AmountPaid, ct) ?? 0;
+
+            return totalPurchased - totalPaid;
         }
     }
 }
