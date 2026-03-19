@@ -12,4 +12,6 @@ public interface ITransactionRepository
     Task<int> GetTotalTransactionsTodayAsync(Guid storeId, CancellationToken ct);
     Task<List<Transaction>> GetRecentTransactionsAsync(Guid storeId, int count, CancellationToken ct);
 
+    Task<List<Transaction>> GetByCustomerIdAsync(Guid customerCreditId, CancellationToken ct);
+
 }

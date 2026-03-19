@@ -12,6 +12,7 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         return await context.Transactions
+            .AsNoTracking()
             .Include(x => x.User)
             .Include(t => t.Items)
             .ThenInclude(ti => ti.Product)
@@ -30,7 +31,8 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
     {
         var today = DateTime.UtcNow.Date;
         return await context.Transactions
-            .Where(t => t.StoreId == storeId && t.TransactionDate.Date == today)
+            .AsNoTracking()
+            .Where(t => t.StoreId == storeId && t.TransactionDate.Date >= today)
             .SumAsync(t => (decimal?)t.TotalAmount, ct) ?? 0;
     }
 
@@ -44,10 +46,21 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
     public async Task<List<Transaction>> GetRecentTransactionsAsync(Guid storeId, int count, CancellationToken ct)
     {
         return await context.Transactions
+            .AsNoTracking()
             .Include(t => t.Items)
             .Where(t => t.StoreId == storeId)
             .OrderByDescending(t => t.TransactionDate)
             .Take(count)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<Transaction>> GetByCustomerIdAsync(Guid customerCreditId, CancellationToken ct)
+    {
+        return await context.Transactions
+            .AsNoTracking()
+            .Include(t => t.Items)
+            .Where(t => t.CustomerCreditId == customerCreditId)
+            .OrderByDescending(t => t.TransactionDate)
             .ToListAsync(ct);
     }
 }
