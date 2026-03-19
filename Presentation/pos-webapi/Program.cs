@@ -3,8 +3,9 @@ using Infrastructure;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using Microsoft.OpenApi;
+using pos_webapi.Middleware;
+using Serilog;
 using System.Text;
 
 Log.Logger = new LoggerConfiguration()
@@ -111,7 +112,7 @@ try
     }
 
     // --- Middleware Pipeline ---
-
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment())
