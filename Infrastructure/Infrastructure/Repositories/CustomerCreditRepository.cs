@@ -1,0 +1,68 @@
+﻿using Application.Dto;
+using Application.Interfaces.Repositories;
+using Domain.Entities;
+using Domain.Entities.Enums;
+using Infrastructure.Persistence;
+using Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Infrastructure.Repositories
+{
+    public class CustomerCreditRepository(PosDbContext context) : ICustomerCreditRepository
+    {
+        public async Task<List<CustomerCredit>> GetActiveCreditsAsync(Guid storeId, CancellationToken ct)
+        {
+            return await context.CustomerCredits
+            .AsNoTracking()
+            .Where(c => c.StoreId == storeId && c.Status == CreditStatus.Active)
+            .ToListAsync(ct);
+        }
+        public async Task<CustomerCredit?> GetByIdAsync(Guid id, CancellationToken ct)
+        {
+            return await context.CustomerCredits
+            .Include(c => c.Payments)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+        }
+
+        public async Task<List<CustomerCredit>> SearchByNameAsync(Guid storeId, string name, CancellationToken ct)
+        {
+            return await context.CustomerCredits
+            .AsNoTracking()
+            .Where(c => c.StoreId == storeId && 
+                   c.CustomerName.ToLower().Contains(name.ToLower()))
+            .OrderBy(c => c.CustomerName)
+            .Take(5)
+            .ToListAsync(ct);
+
+        }
+        public void Update(CustomerCredit credit) => context.CustomerCredits.Update(credit);
+        public void Add(CustomerCredit credit) => context.CustomerCredits.Add(credit);
+
+        public void AddPayment(CreditPayment payment) => context.CreditPayments.Add(payment);
+
+        public async Task<List<CreditPayment>> GetPaymentHistoryAsync(Guid customerCreditId, CancellationToken ct)
+        {
+            return await context.CreditPayments
+            .AsNoTracking() 
+            .Where(p => p.CustomerCreditId == customerCreditId)
+            .OrderByDescending(p => p.PaymentDate)
+            .ToListAsync(ct);
+        }
+
+        public async Task<decimal> GetCalculatedBalanceAsync(Guid customerId, CancellationToken ct)
+        {
+            var totalPurchased = await context.Transactions
+                .Where(t => t.CustomerCreditId == customerId)
+                .SumAsync(t => (decimal?)t.TotalAmount, ct) ?? 0;
+
+            var totalPaid = await context.CreditPayments
+                .Where(p => p.CustomerCreditId == customerId)
+                .SumAsync(p => (decimal?)p.AmountPaid, ct) ?? 0;
+
+            return totalPurchased - totalPaid;
+        }
+    }
+}

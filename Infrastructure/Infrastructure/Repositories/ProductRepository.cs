@@ -28,5 +28,14 @@ namespace Infrastructure.Repositories
 
         public void Remove(Product product) => context.Products.Remove(product);
 
+        public async Task<int> CountLowStockAsync(Guid storeId, CancellationToken ct)
+        {
+            return await context.Products
+                .Where(p => p.StoreId == storeId && p.Stock <= p.LowStockThreshold)
+                .CountAsync(ct);
+        }
+
+        public void Update(Product product) => context.Products.Update(product);
+
     }
 }

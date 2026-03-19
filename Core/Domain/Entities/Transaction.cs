@@ -16,8 +16,11 @@ namespace Domain.Entities
         public Guid  StoreId { get; set; }
         public Store Store { get; set; } = null!;
 
+        public decimal CashReceived { get; set; }
+        public decimal ChangeAmount { get; set; }
+
         public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
-        public Guid CustomerCreditId { get; set; }
+        public Guid? CustomerCreditId { get; set; }
         public CustomerCredit CustomerCredit { get; set; } = null!;
     }
 }

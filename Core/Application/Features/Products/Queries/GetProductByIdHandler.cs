@@ -21,7 +21,9 @@ namespace Application.Features.Products.Queries
                 product.Description,
                 product.Price,
                 product.Stock,
+                product.LowStockThreshold,
                 product.Category?.CategoryName ?? "No Category",
+                product.ExpiryDate,
                 product.CategoryId);
 
         }

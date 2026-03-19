@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
 namespace Application.Dto
 {
     public record ProductDto(
@@ -10,6 +7,8 @@ namespace Application.Dto
     string? Description,
     decimal Price,
     int StockQuantity,
+    int LowStockThreshold,
     string CategoryName,
+    DateOnly? ExpiryDate,
     Guid CategoryId);
 }

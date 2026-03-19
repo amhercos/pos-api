@@ -1,8 +1,7 @@
 ﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+
 
 namespace Application.Interfaces
 {
@@ -17,6 +16,7 @@ namespace Application.Interfaces
         DbSet<CreditPayment> CreditPayments { get; }
         DbSet<Store> Stores { get; }
         DbSet<StoreSettings> StoresSettings { get; }
+        DatabaseFacade Database { get; }
 
         Task <int> SaveChangesAsync (CancellationToken cancellationToken);
         Task BeginTransactionAsync(CancellationToken cancellationToken);

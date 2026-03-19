@@ -12,7 +12,7 @@ namespace Domain.Entities
         public required string FullName { get; set; }
         public string? Role { get; set; }
         public Guid? StoreId { get; set; }
-        public Store Store { get; set; }
+        public Store Store { get; set; } = null!;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

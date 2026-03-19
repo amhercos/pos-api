@@ -11,5 +11,7 @@ namespace Application.Interfaces.Repositories
         Task<Product?> GetByIdAsync(Guid id, CancellationToken ct);
         void Add(Product product);
         void Remove(Product product);
+        void Update(Product product);
+        Task<int> CountLowStockAsync(Guid storeId, CancellationToken ct);
     }
 }

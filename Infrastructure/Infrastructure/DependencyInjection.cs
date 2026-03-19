@@ -17,6 +17,7 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
             services.AddDbContext<PosDbContext>((sp, options) =>
             {
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
@@ -50,6 +51,8 @@ namespace Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<ICustomerCreditRepository, CustomerCreditRepository>();
 
             return services;
         }

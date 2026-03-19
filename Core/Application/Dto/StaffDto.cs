@@ -1,4 +1,5 @@
-﻿namespace Application.Dto;
+﻿
+namespace Application.Dto;
 
 public record StaffDto(
     string Id,

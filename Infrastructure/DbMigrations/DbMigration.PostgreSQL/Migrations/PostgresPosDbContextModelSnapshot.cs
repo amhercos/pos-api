@@ -98,6 +98,9 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
 
@@ -126,7 +129,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateOnly>("ExpiryDate")
+                    b.Property<DateOnly?>("ExpiryDate")
                         .HasColumnType("date");
 
                     b.Property<int>("LowStockThreshold")
@@ -224,7 +227,15 @@ namespace DbMigration.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CustomerCreditId")
+                    b.Property<decimal>("CashReceived")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ChangeAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("CustomerCreditId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("PaymentType")
@@ -577,8 +588,7 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasOne("Domain.Entities.CustomerCredit", "CustomerCredit")
                         .WithMany()
                         .HasForeignKey("CustomerCreditId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Store", "Store")
                         .WithMany()
