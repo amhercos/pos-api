@@ -11,5 +11,9 @@
   </Folder>
   <Folder Name="/Presentation/">
     <Project Path="Presentation/pos-webapi/pos-webapi.csproj" />
+    <Project Path="Presentation/pos-webui/pos-webui.esproj">
+      <Build />
+      <Deploy />
+    </Project>
   </Folder>
 </Solution>

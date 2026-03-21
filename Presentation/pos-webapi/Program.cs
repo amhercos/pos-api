@@ -28,14 +28,15 @@ try
     // Services Configuration
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
-
+    var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("CorsPolicy", policy =>
+        options.AddPolicy(name: myAllowSpecificOrigins, policy =>
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins("http://localhost:47897", "http://localhost:3000")
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         });
     });
 
@@ -124,7 +125,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseRouting();
-    app.UseCors("CorsPolicy");
+    app.UseCors(myAllowSpecificOrigins);
     app.UseAuthentication();
     app.UseAuthorization();
 

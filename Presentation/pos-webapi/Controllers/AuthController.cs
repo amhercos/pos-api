@@ -1,4 +1,5 @@
 ﻿using Application.Features.Auth.Commands;
+using Application.Features.Auth.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,24 @@ namespace pos_webapi.Controllers
     [Route("api/[controller]")]
     public class AuthController (IMediator mediator) : ControllerBase
     {
-        
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            // ClaimTypes.NameIdentifier automatically maps to "nameid" in your JWT
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var storeId = User.FindFirst("StoreId")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await mediator.Send(new GetCurrentUserQuery(userId));
+            return Ok(result);
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
         {
