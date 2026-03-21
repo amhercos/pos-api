@@ -23,5 +23,13 @@ namespace Infrastructure.Repositories
                 .AsQueryable()
                 .AnyAsync(u => u.Email == email);
         }
+
+       
+        public async Task<User?> GetByIdAsync(Guid Id, CancellationToken ct = default)
+        {
+            return await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == Id, ct);
+        }
     }
 }
