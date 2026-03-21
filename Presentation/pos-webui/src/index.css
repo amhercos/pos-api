@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-background: hsl(var(--background));
+}
+
+:root {
+  --background: 0 0% 100%;
+  --sidebar-background: 240 4.8% 95.9%; /* This solid light gray is key */
+  --sidebar-border: 240 5.9% 90%;
+}

@@ -9,5 +9,6 @@ namespace Application.Interfaces.Repositories
     {
         Task<bool> IsEmailUniqueAsync(string email);
         Task<IEnumerable<User>> GetStaffByStoreIdAsync(Guid storeId, CancellationToken ct);
+        Task<User?> GetByIdAsync(Guid Id, CancellationToken ct = default);
     }
 }
