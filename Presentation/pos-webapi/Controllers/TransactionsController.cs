@@ -58,6 +58,7 @@ public class TransactionsController(IMediator mediator, ICurrentUserService curr
     [FromQuery] int page = 1,
     [FromQuery] int count = 3)
     { 
+
         var query = new GetRecentTransactionsQuery(currentUserService.StoreId, page, count);
         var result = await mediator.Send(query);
         return Ok(result);
