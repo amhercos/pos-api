@@ -1,10 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Repositories;
-using Domain.Entities;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Application.Features.Categories.Commands
 {
@@ -15,13 +11,18 @@ namespace Application.Features.Categories.Commands
         public async Task<bool> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
         {
             var category = await categoryRepository.GetByIdAsync(request.Id, cancellationToken);
-            if (category == null)
+            if (category == null) return false;
+            try
             {
-                return false;
-            }
-            categoryRepository.Remove(category);
+               categoryRepository.Remove(category);
             await context.SaveChangesAsync(cancellationToken);
-            return true;
+            return true; 
+            }
+            catch
+            {
+                throw new InvalidOperationException("Failed to delete category, referenced by products.");
+            }
+            
 
         }
     }

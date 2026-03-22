@@ -3,11 +3,17 @@ import {
   LayoutDashboard, 
   BarChart3, 
   ReceiptIndianRupee,
-  Store
+  Store,
+  ShoppingCart,
+  Package,
+  Settings
 } from "lucide-react";
+
+// Components
 import { NavMain } from "../nav-main";
-import { NavProjects } from "./nav-projects";
 import { NavUser } from "../nav-user";
+
+// UI Components
 import {
   Sidebar,
   SidebarContent,
@@ -18,61 +24,53 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/features/auth/context/auth-context-types";
 
+import { useAuth } from "@/features/auth/context/auth-context-types";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
 
-  const navData = {
-    user: {
-      name: user?.fullName ?? "User",
-      email: user?.userName ?? "username",
-      avatar: "/avatars/default.jpg",
-    },
-    navMain: [
-      {
-        title: "Platform",
-        url: "#",
-        icon: LayoutDashboard,
-        isActive: true,
-        items: [
-          { title: "Dashboard", url: "/dashboard" },
-          { title: "New Sale", url: "/sales/new" },
-          { title: "Inventory", url: "/inventory" },
-        ],
-      },
-    ],
-    projects: [
-      { name: "Reports", url: "/reports", icon: BarChart3 },
-      { name: "Credit/Debt", url: "/credits", icon: ReceiptIndianRupee },
-    ],
+  const navigationItems = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "New Sale", url: "/sales/new", icon: ShoppingCart },
+    { title: "Inventory", url: "/inventory", icon: Package },
+    { title: "Reports", url: "/reports", icon: BarChart3 },
+    { title: "Credit/Debt", url: "/credits", icon: ReceiptIndianRupee },
+    { title: "Settings", url: "/settings", icon: Settings },
+  ];
+
+  const userData = {
+    name: user?.fullName ?? "User",
+    email: user?.userName ?? "username",
+    avatar: "/avatars/default.jpg",
   };
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="py-4"> {/* Added padding for a more premium look */}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Store className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">BizFlow</span>
-                  <span className="truncate text-xs">{user?.role ?? "Management"}</span>
-                </div>
-              </a>
+            <SidebarMenuButton size="lg" className="pointer-events-none h-12">
+              {/* Increased size from size-8 to size-10 */}
+              <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Store className="size-6" /> {/* Increased icon size from size-4 to size-6 */}
+              </div>
+              <div className="grid flex-1 text-left leading-tight ml-2">
+                {/* Changed font-bold to text-xl for a much bigger header */}
+                <span className="truncate font-bold text-xl tracking-tight">
+                  BizFlow
+                </span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <NavMain items={navData.navMain} />
-        <NavProjects projects={navData.projects} />
+        <NavMain items={navigationItems} />
       </SidebarContent>
+
       <SidebarFooter>
-        <NavUser user={navData.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
