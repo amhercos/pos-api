@@ -5,6 +5,7 @@ import { ProtectedRoute } from "@/features/auth/components/protected-route";
 import { MainLayout } from "./components/layout/main-layout";
 import { RecordsPage } from "@/features/records/RecordsPage";
 import { InventoryPage } from "./features/inventory/InventoryPage";
+import CreditsPage from "./features/credit/credits-page";
 import { Toaster } from "sonner";
 
 function App() {
@@ -41,10 +42,10 @@ function App() {
     <Route element={<ProtectedRoute />}>
       <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/sales/new" element={<div>New Sale Page (Coming Soon)</div>} />
+          <Route path="/sales/new" element={<div>New Sale Page (Coming soon)</div>} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/reports" element={<RecordsPage />} />
-          <Route path="/credits" element={<div>Credits Page (Coming Soon)</div>} />
+          <Route path="/credits" element={<CreditsPage/>} />
           <Route path="/settings" element={<div>Settings Page (Coming Soon)</div>} />
       </Route>
     </Route>
