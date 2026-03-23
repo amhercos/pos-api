@@ -6,5 +6,8 @@ using System.Text;
 
 namespace Application.Features.Transactions.Queries
 {
-    public record GetRecentTransactionsQuery(int Count = 10) : IRequest<List<RecentTransactionDto>>;
+    public record GetRecentTransactionsQuery(
+    Guid StoreId,
+    int Page,
+    int PageSize) : IRequest<List<RecentTransactionDto>>;
 }

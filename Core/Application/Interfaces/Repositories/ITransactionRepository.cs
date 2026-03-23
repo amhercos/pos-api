@@ -10,7 +10,11 @@ public interface ITransactionRepository
 
     Task<decimal> GetTotalRevenueTodayAsync(Guid storeId, CancellationToken ct);
     Task<int> GetTotalTransactionsTodayAsync(Guid storeId, CancellationToken ct);
-    Task<List<Transaction>> GetRecentTransactionsAsync(Guid storeId, int count, CancellationToken ct);
+    Task<(List<Transaction> Items, int TotalCount)> GetRecentTransactionsAsync(
+    Guid storeId,
+    int page,
+    int pageSize,
+    CancellationToken ct);
 
     Task<List<Transaction>> GetByCustomerIdAsync(Guid customerCreditId, CancellationToken ct);
 

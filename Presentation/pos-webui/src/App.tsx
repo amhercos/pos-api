@@ -3,10 +3,29 @@ import { LoginForm } from "@/features/auth/components/login-form";
 import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { ProtectedRoute } from "@/features/auth/components/protected-route";
 import { MainLayout } from "./components/layout/main-layout";
+import { RecordsPage } from "@/features/records/RecordsPage";
+import { InventoryPage } from "./features/inventory/InventoryPage";
+import { Toaster } from "sonner";
 
 function App() {
   return (
     <BrowserRouter>
+    <Toaster 
+  position="top-right"
+  richColors 
+  closeButton
+  toastOptions={{
+    style: { 
+      zIndex: 99999,
+      borderRadius: '20px', 
+      padding: '16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      border: 'none',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    },
+  }}
+/>
       <Routes>
         <Route 
           path="/login" 
@@ -23,8 +42,8 @@ function App() {
       <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/sales/new" element={<div>New Sale Page (Coming Soon)</div>} />
-          <Route path="/inventory" element={<div>Inventory Page (Coming Soon)</div>} />
-          <Route path="/reports" element={<div>Reports Page (Coming Soon)</div>} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/reports" element={<RecordsPage />} />
           <Route path="/credits" element={<div>Credits Page (Coming Soon)</div>} />
           <Route path="/settings" element={<div>Settings Page (Coming Soon)</div>} />
       </Route>

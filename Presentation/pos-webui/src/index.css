@@ -9,6 +9,33 @@
 
 :root {
   --background: 0 0% 100%;
-  --sidebar-background: 240 4.8% 95.9%; /* This solid light gray is key */
+  --sidebar-background: 240 4.8% 95.9%;
   --sidebar-border: 240 5.9% 90%;
+}
+
+@layer base {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    
+   
+    overscroll-behavior-x: none;
+    
+
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+  }
 }

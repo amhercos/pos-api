@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -43,15 +44,26 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
             .CountAsync(t => t.StoreId == storeId && t.TransactionDate.Date == today, ct);
     }
 
-    public async Task<List<Transaction>> GetRecentTransactionsAsync(Guid storeId, int count, CancellationToken ct)
+    public async Task<(List<Transaction> Items, int TotalCount)> GetRecentTransactionsAsync(
+     Guid storeId,
+     int page,
+     int pageSize,
+     CancellationToken ct)
     {
-        return await context.Transactions
+        var query = context.Transactions
             .AsNoTracking()
+            .Where(t => t.StoreId == storeId);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
             .Include(t => t.Items)
-            .Where(t => t.StoreId == storeId)
             .OrderByDescending(t => t.TransactionDate)
-            .Take(count)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(ct);
+
+        return (items, totalCount);
     }
 
     public async Task<List<Transaction>> GetByCustomerIdAsync(Guid customerCreditId, CancellationToken ct)

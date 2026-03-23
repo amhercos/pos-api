@@ -1,6 +1,8 @@
 ﻿using Application.Dto;
 using Application.Features.Transactions.Commands;
 using Application.Features.Transactions.Queries;
+using Application.Interfaces;
+using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,7 @@ namespace pos_webapi.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class TransactionsController(IMediator mediator) : ControllerBase
+public class TransactionsController(IMediator mediator, ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpPost("checkout")]
     public async Task<IActionResult> Checkout([FromBody] CreateTransactionCommand command)
@@ -52,9 +54,12 @@ public class TransactionsController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("recent")]
-    public async Task<ActionResult<List<RecentTransactionDto>>> GetRecent([FromQuery] int count = 10)
-    {
-        var result = await mediator.Send(new GetRecentTransactionsQuery(count));
+    public async Task<ActionResult<List<RecentTransactionDto>>> GetRecent(
+    [FromQuery] int page = 1,
+    [FromQuery] int count = 3)
+    { 
+        var query = new GetRecentTransactionsQuery(currentUserService.StoreId, page, count);
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 }

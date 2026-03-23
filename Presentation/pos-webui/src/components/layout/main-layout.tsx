@@ -12,16 +12,17 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip"; // Added this
+import { TooltipProvider } from "@/components/ui/tooltip"; 
 
 export function MainLayout() {
   return (
-    <TooltipProvider delayDuration={0}> {/* Wrapped SidebarProvider */}
-      <SidebarProvider>
+    <TooltipProvider delayDuration={0}>
+      {/* Ensure the provider doesn't allow horizontal overflow */}
+      <SidebarProvider className="max-w-full overflow-x-hidden">
         <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
+        <SidebarInset className="flex flex-col min-w-0 max-w-full overflow-x-hidden">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-100/50 px-4 bg-white/80 backdrop-blur-md sticky top-0 z-10 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
               <Separator
                 orientation="vertical"
@@ -30,16 +31,17 @@ export function MainLayout() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
-                    <BreadcrumbPage>BizFlow POS</BreadcrumbPage>
+                    <BreadcrumbPage className="font-semibold text-slate-900">BizFlow</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
           </header>
-          {/* Main Content Area */}
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+
+          {/* This wrapper ensures the main content area doesn't wobble */}
+          <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 pt-0 overflow-x-hidden">
             <Outlet />
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
