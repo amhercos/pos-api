@@ -16,7 +16,7 @@ namespace Application.Features.CustomerCredits.Queries
         public async Task<List<CustomerCreditDto>> Handle(GetCustomerCreditsQuery request, CancellationToken ct)
         {
             var storeId = currentUserService.StoreId;
-            var credits = await creditRepository.GetActiveCreditsAsync(storeId, ct);
+            var credits = await creditRepository.GetActiveCreditsAsync(storeId, request.IncludeSettled, ct);
 
             return credits.Select(c => new CustomerCreditDto(
                 c.Id,

@@ -6,5 +6,5 @@ using System.Text;
 
 namespace Application.Features.CustomerCredits.Queries
 {
-    public record GetCustomerCreditsQuery() : IRequest<List<CustomerCreditDto>>;
+    public record GetCustomerCreditsQuery(bool IncludeSettled = false) : IRequest<List<CustomerCreditDto>>;
 }

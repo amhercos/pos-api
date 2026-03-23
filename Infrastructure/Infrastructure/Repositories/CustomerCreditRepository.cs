@@ -13,12 +13,22 @@ namespace Infrastructure.Repositories
 {
     public class CustomerCreditRepository(PosDbContext context) : ICustomerCreditRepository
     {
-        public async Task<List<CustomerCredit>> GetActiveCreditsAsync(Guid storeId, CancellationToken ct)
+        public async Task<List<CustomerCredit>> GetActiveCreditsAsync(Guid storeId, bool includeSettled, CancellationToken ct)
         {
-            return await context.CustomerCredits
-            .AsNoTracking()
-            .Where(c => c.StoreId == storeId && c.Status == CreditStatus.Active)
-            .ToListAsync(ct);
+            var query = context.CustomerCredits
+                .AsNoTracking()
+                .Where(c => c.StoreId == storeId);
+
+            if (includeSettled)
+            {
+                query = query.Where(c => c.Status == CreditStatus.Active || c.Status == CreditStatus.Settled);
+            }
+            else
+            {
+                query = query.Where(c => c.Status == CreditStatus.Active);
+            }
+
+            return await query.ToListAsync(ct);
         }
         public async Task<CustomerCredit?> GetByIdAsync(Guid id, CancellationToken ct)
         {
