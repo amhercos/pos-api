@@ -11,9 +11,9 @@ namespace WebApi.Controllers;
 public class CustomerCreditsController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<CustomerCreditDto>>> GetAll()
+    public async Task<ActionResult<List<CustomerCreditDto>>> GetAll([FromQuery] bool includeSettled = false)
     {
-        return Ok(await mediator.Send(new GetCustomerCreditsQuery()));
+        return Ok(await mediator.Send(new GetCustomerCreditsQuery(includeSettled)));
     }
 
     [HttpGet("search")]
