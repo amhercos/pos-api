@@ -14,19 +14,18 @@ function App() {
   return (
     <BrowserRouter>
     <Toaster 
-  position="top-right"
-  richColors 
-  closeButton
-  toastOptions={{
-    style: { 
-      zIndex: 99999,
-      borderRadius: '20px', 
-      padding: '16px',
-      fontSize: '14px',
-      fontWeight: '600',
-      border: 'none',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-    },
+position="top-right"
+richColors 
+closeButton
+toastOptions={{
+style: { 
+borderRadius: '20px', 
+padding: '16px',
+fontSize: '14px',
+fontWeight: '600',
+border: 'none',
+boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+},
   }}
 />
       <Routes>

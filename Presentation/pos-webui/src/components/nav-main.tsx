@@ -26,7 +26,6 @@ export function NavMain({
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton 
               asChild 
-              tooltip={item.title}
               isActive={location.pathname === item.url}
               className="py-6" // Increase padding for bigger touch targets/spacing
             >

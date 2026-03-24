@@ -15,7 +15,6 @@ namespace pos_webapi.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {
-            // ClaimTypes.NameIdentifier automatically maps to "nameid" in your JWT
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var storeId = User.FindFirst("StoreId")?.Value;
 
@@ -27,6 +26,7 @@ namespace pos_webapi.Controllers
             var result = await mediator.Send(new GetCurrentUserQuery(userId));
             return Ok(result);
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command)

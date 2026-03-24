@@ -44,8 +44,7 @@ export function MainLayout() {
             </div>
           </header>
 
-          {/* MAIN CONTENT AREA */}
-          {/* Removed top padding (pt-0) because the header provides the gap */}
+      
           <main className="flex flex-1 flex-col overflow-x-hidden">
             <Outlet />
           </main>
