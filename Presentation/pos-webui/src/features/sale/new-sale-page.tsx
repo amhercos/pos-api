@@ -6,9 +6,9 @@ import { PaymentType } from "./types/transaction";
 import { TransactionView } from "./components/transaction-view";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; 
-import { Search, ShoppingCart, Loader2, Tag, Plus, Minus, Filter, Trash2 } from "lucide-react";
+import { Search, ShoppingCart, Loader2, Filter, Trash2, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product as InventoryProduct } from "../inventory/types";
 import type { CustomerCredit } from "../credit/types/credit";
@@ -32,6 +32,13 @@ export default function NewSalePage() {
 
   const total = useMemo(() => basket.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0), [basket]);
   const change = Math.max(0, cashReceived - total);
+  
+  const recentItems = useMemo(() => [...basket].reverse().slice(0, 3), [basket]);
+
+  // Logic to clear all items from basket
+  const clearBasket = useCallback(() => {
+    basket.forEach(item => removeFromBasket(item.productId));
+  }, [basket, removeFromBasket]);
 
   const categories = useMemo(() => {
     const pList = (products as InventoryProduct[]) || [];
@@ -73,114 +80,141 @@ export default function NewSalePage() {
   const transactionProps = {
     basket, activePayment, setActivePayment, cashReceived, setCashReceived,
     total, change, isSubmitting, handleCheckout, updateQuantity, removeFromBasket,
+    clearBasket, // Passed the new function here
     credits: (credits as CustomerCredit[]) || [], 
     selectedCreditId, setSelectedCreditId, isNewCustomer, setIsNewCustomer,
     newCustomerName, setNewCustomerName, newCustomerContact, setNewCustomerContact
   };
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden font-sans">
-      <section className="flex-1 flex flex-col bg-white border-r min-w-0 relative">
-        <header className="px-3 pt-1 pb-2 border-b space-y-1.5 bg-white z-10">
-          <div className="flex items-center gap-2">
+    <div className="flex h-screen bg-white overflow-hidden font-sans antialiased">
+      <section className="flex-1 flex flex-col bg-white border-r border-slate-50 min-w-0 relative">
+        <header className="px-4 py-3 border-b border-slate-50 space-y-3 bg-white z-10">
+          <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="Search items..." className="pl-9 h-9 bg-slate-100 border-none rounded-lg text-xs" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+              <Input placeholder="Search items..." className="pl-9 h-10 bg-slate-50 border-none rounded-xl text-xs" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="relative w-28 shrink-0">
-              <Filter className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-              <input 
-                placeholder="Find category..." 
-                className="w-full pl-6 pr-2 h-8 text-[10px] font-bold bg-slate-50 border rounded-md focus:outline-none" 
-                value={categorySearch} 
-                onChange={(e) => setCategorySearch(e.target.value)} 
-              />
+            <div className="relative w-32 shrink-0">
+               <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+               <input placeholder="Category..." className="w-full pl-8 h-8 text-[10px] font-semibold bg-slate-50 border-none rounded-lg focus:outline-none" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex items-center gap-1.5 pb-1">
-                <Tag className="h-3 w-3 text-slate-300 shrink-0" />
-                {categories.map(cat => (
-                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase", selectedCategory === cat ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500")}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="hidden" />
-            </ScrollArea>
-          </div>
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex items-center gap-1.5 pb-1">
+              {categories.map(cat => (
+                <button key={cat} onClick={() => setSelectedCategory(cat)} className={cn("px-4 py-1.5 rounded-full text-[9px] font-bold uppercase transition-all", selectedCategory === cat ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-400")}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
         </header>
 
-        <ScrollArea className="flex-1 p-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 pb-60 lg:pb-5">
+        <ScrollArea className="flex-1 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3 pb-72 lg:pb-6">
             {isLoadingProducts ? (
-              <div className="col-span-full py-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" /></div>
+              <div className="col-span-full py-20 text-center"><Loader2 className="animate-spin mx-auto text-slate-200" /></div>
             ) : filteredProducts.map(p => (
               <button 
                 key={p.id} 
                 disabled={p.stockQuantity <= 0} 
                 onClick={() => addToBasket({ id: p.id, name: p.name, price: p.price, stock: p.stockQuantity, categoryName: p.categoryName || "Uncategorized" })} 
-                className={cn("p-3 bg-white border rounded-xl text-left h-24 flex flex-col transition-all active:scale-95 shadow-sm", p.stockQuantity <= 0 && "opacity-30 grayscale")}
+                className={cn(
+                  "p-4 bg-white border border-slate-100 rounded-2xl text-left hover:border-slate-300 transition-all active:scale-95 shadow-sm", 
+                  p.stockQuantity <= 0 && "opacity-30 grayscale"
+                )}
               >
-                <div className="flex items-center gap-1 mb-1">
-                  <div className={cn("w-1.5 h-1.5 rounded-full", p.stockQuantity < 5 ? "bg-red-500" : "bg-emerald-500")} />
-                  <span className="text-[9px] font-black text-slate-400 uppercase">{p.stockQuantity} Stock</span>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className={cn("w-1 h-1 rounded-full", p.stockQuantity < 5 ? "bg-rose-500" : "bg-emerald-500")} />
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{p.stockQuantity} Left</span>
                 </div>
-                <p className="font-bold text-slate-800 text-[11px] line-clamp-2 leading-tight uppercase">{p.name}</p>
-                <p className="mt-auto font-black text-blue-600 text-sm">₱{p.price.toLocaleString()}</p>
+                <p className="font-bold text-slate-800 text-[10px] line-clamp-2 leading-tight uppercase mb-4 h-8">{p.name}</p>
+                <p className="font-black text-slate-900 text-sm">₱{p.price.toLocaleString()}</p>
               </button>
             ))}
           </div>
         </ScrollArea>
 
-        {/* IPAD/MOBILE LIFO FOOTER STACK */}
-        <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t p-3 pb-6 flex flex-col gap-2 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-30">
-          {basket.length > 0 && (
-            <div className="flex flex-col -space-y-3 mb-2">
-              {[...basket].reverse().slice(0, 3).map((item, idx) => (
+        {basket.length > 0 && (
+          <div className="lg:hidden absolute bottom-6 left-4 right-4 z-30 flex flex-col gap-3">
+            <div className="relative h-32 w-full">
+              {recentItems.map((item, idx) => (
                 <div 
                   key={item.productId} 
-                  style={{ zIndex: 30 - idx, transform: `scale(${1 - idx * 0.04})`, marginTop: idx > 0 ? '-10px' : '0' }}
-                  className={cn("flex items-center justify-between bg-white p-2.5 rounded-xl border shadow-sm", idx === 0 ? "border-blue-200" : "border-slate-200 opacity-80")}
+                  style={{ 
+                    zIndex: 30 - idx,
+                    transform: `translateY(${idx * -14}px) scale(${1 - idx * 0.04})`,
+                    opacity: 1 - idx * 0.15
+                  }}
+                  className={cn(
+                    "absolute bottom-0 w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-lg transition-all duration-300",
+                    idx === 0 ? "border-slate-300 ring-1 ring-black/5" : "border-slate-100"
+                  )}
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <button onClick={(e) => { e.stopPropagation(); removeFromBasket(item.productId); }} className="p-1.5 bg-red-50 text-red-500 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
-                    <div className="flex flex-col truncate">
-                      <span className="text-[10px] font-black uppercase truncate">{item.name}</span>
-                      <span className="text-[9px] font-bold text-blue-600">₱{(item.unitPrice * item.quantity).toLocaleString()}</span>
-                    </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[10px] font-black uppercase text-slate-900 truncate pr-2">
+                      {item.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-blue-600">
+                      ₱{(item.unitPrice * item.quantity).toLocaleString()}
+                    </span>
                   </div>
-                  <div className="flex items-center bg-slate-100 rounded-lg border ml-2">
-                    <button onClick={() => updateQuantity(item.productId, -1)} className="p-1 px-2"><Minus className="h-3 w-3" /></button>
-                    <span className="px-1 text-[10px] font-black">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.productId, 1)} className="p-1 px-2"><Plus className="h-3 w-3" /></button>
+                  
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-1 mr-3 border border-slate-100">
+                    <button 
+                      onClick={() => updateQuantity(item.productId, -1)}
+                      className="p-1.5 hover:bg-white rounded-lg active:scale-90 transition-transform"
+                    >
+                      <Minus className="h-3 w-3 text-slate-600" />
+                    </button>
+                    <span className="text-[11px] font-black text-slate-900 w-4 text-center">{item.quantity}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.productId, 1)}
+                      className="p-1.5 hover:bg-white rounded-lg active:scale-90 transition-transform"
+                    >
+                      <Plus className="h-3 w-3 text-slate-600" />
+                    </button>
                   </div>
+
+                  <button 
+                    onClick={() => removeFromBasket(item.productId)}
+                    className="p-2 text-slate-300 hover:text-rose-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button className="h-12 w-full rounded-2xl bg-blue-600 shadow-lg flex items-center justify-between px-6 active:scale-95 transition-transform">
-                <div className="flex items-center gap-2 text-white font-black text-[11px] uppercase tracking-widest"><ShoppingCart className="h-4 w-4" /> Review Order</div>
-                <div className="bg-white/20 px-3 py-1 rounded-lg font-black text-xs text-white border border-white/10">₱{total.toLocaleString()}</div>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[94vh] p-0 rounded-t-[2.5rem] border-none overflow-hidden">
-              <TransactionView {...transactionProps} />
-            </SheetContent>
-          </Sheet>
-        </div>
+
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button className="h-14 w-full rounded-2xl bg-slate-900 shadow-2xl flex items-center justify-between px-6 active:scale-95 transition-transform">
+                  <div className="flex items-center gap-2 text-white font-bold text-xs">
+                    <ShoppingCart className="h-4 w-4" /> 
+                    <span>VIEW {basket.length} ITEMS</span>
+                  </div>
+                  <div className="bg-white/10 px-3 py-1 rounded-lg font-black text-xs text-white">
+                    ₱{total.toLocaleString()}
+                  </div>
+                </Button>
+              </SheetTrigger>
+              <SheetContent 
+                side="bottom" 
+                className="h-[92vh] p-0 rounded-t-[2.5rem] border-none overflow-hidden [&>button]:hidden"
+              >
+                <TransactionView {...transactionProps} onClose={() => setIsSheetOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </section>
 
-      {/* DESKTOP/IPAD SIDEBAR */}
-      <aside className="hidden lg:flex w-96 flex-col bg-white h-full border-l shadow-2xl z-20 shrink-0">
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
-          <div className="flex items-center gap-2 font-black text-[10px] uppercase text-slate-500"><ShoppingCart className="h-4 w-4 text-blue-600" /> {basket.length} ITEMS (NEWEST TOP)</div>
-          <Button variant="ghost" size="sm" onClick={() => { if(window.confirm("Void?")) basket.forEach(i => removeFromBasket(i.productId)) }} className="h-7 text-[10px] font-black text-slate-400 hover:text-red-500">VOID ALL</Button>
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden lg:flex w-80 flex-col bg-white h-full border-l border-slate-50 z-20 shrink-0">
+        <div className="flex-1 overflow-hidden">
+          <TransactionView {...transactionProps} />
         </div>
-        <TransactionView {...transactionProps} />
       </aside>
     </div>
   );
