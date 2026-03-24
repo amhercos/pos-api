@@ -5,8 +5,10 @@ import { ProtectedRoute } from "@/features/auth/components/protected-route";
 import { MainLayout } from "./components/layout/main-layout";
 import { RecordsPage } from "@/features/records/RecordsPage";
 import { InventoryPage } from "./features/inventory/InventoryPage";
+import NewSalePage from "./features/sale/new-sale-page";
 import CreditsPage from "./features/credit/credits-page";
 import { Toaster } from "sonner";
+
 
 function App() {
   return (
@@ -42,7 +44,7 @@ function App() {
     <Route element={<ProtectedRoute />}>
       <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/sales/new" element={<div>New Sale Page (Coming soon)</div>} />
+          <Route path="/sales/new" element={<NewSalePage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/reports" element={<RecordsPage />} />
           <Route path="/credits" element={<CreditsPage/>} />
