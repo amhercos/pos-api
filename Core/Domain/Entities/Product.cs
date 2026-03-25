@@ -7,7 +7,7 @@ namespace Domain.Entities
     {
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public Guid CategoryId { get; set; }
+        public Guid? CategoryId { get; set; }
         public Category Category { get; set; } = null!;
         public Guid StoreId { get; set; }
         public Store Store { get; set; } = null!;
@@ -16,5 +16,6 @@ namespace Domain.Entities
         public int LowStockThreshold { get; set; }
         public DateOnly? ExpiryDate { get; set; } 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; } = false;
     }
 }

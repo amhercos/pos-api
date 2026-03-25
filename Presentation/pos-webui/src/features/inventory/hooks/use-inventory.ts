@@ -34,15 +34,19 @@ export function useInventory() {
     }
   };
 
+
   const deleteProduct = async (id: string) => {
-    try {
-      await apiClient.delete(`/Product/${id}`);
-      await fetchData();
-      toast.success("Product deleted");
-    } catch {
-      toast.error("Failed to delete product");
-    }
-  };
+  const previousProducts = products;
+  setProducts(prev => prev.filter(p => p.id !== id));
+
+  try {
+    await apiClient.delete(`/Product/${id}`);
+    toast.success("Product removed");
+  } catch {
+    setProducts(previousProducts);
+    toast.error("Failed to delete product");
+  }
+};
 
   const updateProduct = async (id: string, updatedData: UpdateProductRequest) => {
     await apiClient.put(`/Product/${id}`, updatedData);

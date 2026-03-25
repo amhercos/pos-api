@@ -13,7 +13,7 @@ interface InventoryTableProps {
   products: Product[];
   loading: boolean;
   onDelete: (id: string) => Promise<void>;
-  onEdit: (product: Product) => void; // Added Edit prop
+  onEdit: (product: Product) => void; 
 }
 
 export function InventoryTable({ products, loading, onDelete, onEdit }: InventoryTableProps) {
@@ -62,7 +62,7 @@ export function InventoryTable({ products, loading, onDelete, onEdit }: Inventor
                   
                   <TableCell>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500 uppercase tracking-tight">
-                      {p.categoryName}
+                      {p.categoryName || "Uncategorized"}
                     </span>
                   </TableCell>
                   

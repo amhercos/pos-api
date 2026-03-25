@@ -15,12 +15,12 @@ namespace Application.Features.Categories.Commands
             try
             {
                categoryRepository.Remove(category);
-            await context.SaveChangesAsync(cancellationToken);
-            return true; 
+                await context.SaveChangesAsync(cancellationToken);
+                return true; 
             }
             catch
             {
-                throw new InvalidOperationException("Failed to delete category, referenced by products.");
+                throw new InvalidOperationException("Failed to delete category");
             }
             
 

@@ -26,7 +26,11 @@ namespace Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }
 
-        public void Remove(Product product) => context.Products.Remove(product);
+        public void Remove(Product product)
+        {
+            product.IsDeleted = true;
+            context.Products.Update(product);
+        }
 
         public async Task<int> CountLowStockAsync(Guid storeId, CancellationToken ct)
         {

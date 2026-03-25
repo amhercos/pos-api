@@ -7,7 +7,7 @@ export function ProtectedRoute() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>Loading BizFlow...</p> 
+        <p>BizFlow...</p> 
       </div>
     );
   }
