@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { toast } from "sonner"; // 1. Added toast
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, Trash2, FolderTree, Loader2 } from "lucide-react";
-import { DeleteConfirmModal } from "@/components/shared/delete-confirm-modal"; // 2. Added your custom modal
+import { DeleteConfirmModal } from "@/components/shared/delete-confirm-modal";
 import { getErrorMessage } from "@/lib/error-utils";
 import type { Category } from "../types";
 
@@ -20,8 +20,6 @@ export function CategoryManagerModal({
 }: CategoryManagerProps) {
   const [newCategory, setNewCategory] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  
-  // 3. New state to track which category we want to delete
   const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
 
   const handleAdd = async () => {
@@ -30,39 +28,28 @@ export function CategoryManagerModal({
     try {
       await onAdd(newCategory.trim());
       setNewCategory("");
-      toast.success("Category added");
+      // Local toast removed here to fix double toast issue
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
       setLoadingAction(null);
     }
   };
-
-  // 4. Updated Delete Logic (No window.confirm!)
-  const handleConfirmedDelete = async () => {
+const handleConfirmedDelete = async () => {
     if (!confirmTarget) return;
-    
-    const target = confirmTarget;
-    setConfirmTarget(null); // Close the confirmation modal
-    setLoadingAction(`del-${target.id}`);
-    
-    const toastId = toast.loading(`Deleting ${target.name}...`);
-    
+    const targetId = confirmTarget.id;
+    setConfirmTarget(null);
+
     try {
-      await onDelete(target.id);
-      toast.success("Category deleted", { id: toastId });
+      await onDelete(targetId);
     } catch (error) {
-      toast.error(getErrorMessage(error), { id: toastId });
-    } finally {
-      setLoadingAction(null);
+      toast.error(getErrorMessage(error));
     }
   };
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-105 p-0 rounded-[32px] border-none shadow-2xl bg-white outline-none overflow-hidden">
-          {/* HEADER */}
           <div className="px-8 pt-8 pb-4 relative">
             <button onClick={onClose} className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-50 transition-colors text-slate-400">
               <X className="h-4 w-4" />
@@ -78,7 +65,6 @@ export function CategoryManagerModal({
             </div>
           </div>
 
-          {/* QUICK ADD SECTION */}
           <div className="px-8 py-4">
             <div className="flex gap-2 p-1.5 bg-slate-50/50 rounded-2xl border border-slate-100 focus-within:border-slate-300 transition-all">
               <input 
@@ -98,27 +84,17 @@ export function CategoryManagerModal({
             </div>
           </div>
 
-          {/* LIST SECTION */}
           <div className="px-6 pb-8">
             <div className="max-h-75 overflow-y-auto px-2 space-y-1">
               {categories.map((c) => (
-                <div 
-                  key={c.id} 
-                  className="group flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all"
-                >
+                <div key={c.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all">
                   <span className="text-sm font-semibold text-slate-700 ml-1">{c.name}</span>
-                  
                   <button 
                     type="button"
-                    onClick={() => setConfirmTarget(c)} // 5. Trigger the custom modal
-                    disabled={loadingAction === `del-${c.id}`}
-                    className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-200 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                    onClick={() => setConfirmTarget(c)}
+                    className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-200 opacity-0 group-hover:opacity-100"
                   >
-                    {loadingAction === `del-${c.id}` ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
@@ -127,14 +103,12 @@ export function CategoryManagerModal({
         </DialogContent>
       </Dialog>
 
-      {/* 6. RENDER THE CUSTOM MODAL OUTSIDE THE MAIN DIALOG */}
       <DeleteConfirmModal 
         isOpen={!!confirmTarget}
         onClose={() => setConfirmTarget(null)}
         onConfirm={handleConfirmedDelete}
         title="Delete Category"
         itemName={confirmTarget?.name || ""}
-        isLoading={loadingAction?.startsWith('del-')}
       />
     </>
   );

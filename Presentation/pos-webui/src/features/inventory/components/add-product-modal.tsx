@@ -38,22 +38,26 @@ export function AddProductModal({
   });
 
   const filteredCategories = useMemo(() => {
-    if (!searchQuery) return [];
-    // Hide suggestions if the exact match is already selected
-    if (categories.some(c => c.name.toLowerCase() === searchQuery.toLowerCase() && c.id === formData.categoryId)) {
-        return [];
-    }
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return categories.slice(0, 5); 
+    
     return categories.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      c.name.toLowerCase().includes(query)
     );
-  }, [categories, searchQuery, formData.categoryId]);
+  }, [categories, searchQuery]);
 
   const isValid = useMemo(() => (
     formData.name.trim().length >= 2 && 
     formData.price !== "" && 
     formData.stockQuantity !== "" && 
-    categories.some(c => c.id === formData.categoryId)
-  ), [formData, categories]);
+    formData.categoryId !== ""
+  ), [formData]);
+
+  const handleSelectCategory = (category: Category) => {
+    setFormData(prev => ({ ...prev, categoryId: category.id }));
+    setSearchQuery(category.name);
+    setIsFocused(false);
+  };
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -66,7 +70,6 @@ export function AddProductModal({
         expiryDate: new Date().toISOString().split('T')[0] 
       } as CreateProductRequest);
       
-      // Reset Form
       setFormData({ name: "", price: "", stockQuantity: "", categoryId: "" });
       setSearchQuery("");
       onClose();
@@ -83,39 +86,23 @@ export function AddProductModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        onPointerDownOutside={(e) => e.preventDefault()}
-        className="sm:max-w-110 p-0 rounded-4xl border-none shadow-2xl bg-white outline-none overflow-visible"
+        className="sm:max-w-110 p-0 rounded-[2.5rem] border-none shadow-2xl bg-white outline-none overflow-visible"
       >
-        
-        {/* MANUAL X BUTTON - Uses DialogClose since it's missing from your dialog.tsx */}
         <DialogClose asChild>
-          <button 
-            type="button"
-            className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-900 z-50 outline-none active:scale-90"
-          >
+          <button className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-900 z-50 active:scale-90">
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
           </button>
         </DialogClose>
 
-        {/* HEADER */}
-        <div className="px-8 pt-10 pb-4 relative">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200">
-              <PackagePlus className="h-7 w-7" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-bold text-slate-900 tracking-tight">
-                New Product
-              </DialogTitle>
-              <p className="text-[13px] font-medium text-slate-400">Add to your active inventory</p>
-            </div>
+        <div className="px-8 pt-10 pb-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200 mx-auto mb-4">
+            <PackagePlus className="h-7 w-7" />
           </div>
+          <DialogTitle className="text-2xl font-bold text-slate-900 tracking-tight">New Product</DialogTitle>
+          <p className="text-[13px] font-medium text-slate-400">Add to your active inventory</p>
         </div>
 
-        {/* FORM BODY */}
         <div className="px-8 py-4 space-y-5">
-          {/* Name Field */}
           <div className="space-y-1.5">
             <Label className={labelClass}>Product Name</Label>
             <Input 
@@ -126,7 +113,6 @@ export function AddProductModal({
             />
           </div>
 
-          {/* Price & Stock Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className={labelClass}>Price (₱)</Label>
@@ -150,7 +136,6 @@ export function AddProductModal({
             </div>
           </div>
 
-          {/* Category Search Field */}
           <div className="space-y-1.5 relative">
             <div className="flex justify-between items-center mb-1">
               <Label className={labelClass}>Category</Label>
@@ -178,22 +163,21 @@ export function AddProductModal({
               />
             </div>
 
-            {/* CATEGORY SUGGESTIONS DROPUP/DROPDOWN */}
-            {isFocused && searchQuery && filteredCategories.length > 0 && (
-              <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="max-h-40 overflow-y-auto p-1.5">
+            {isFocused && filteredCategories.length > 0 && (
+              <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-100 shadow-2xl rounded-2xl z-[100] overflow-hidden">
+                <div className="max-h-48 overflow-y-auto p-1.5">
                     {filteredCategories.map((c) => (
                       <button
                         key={c.id}
                         type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, categoryId: c.id });
-                          setSearchQuery(c.name);
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectCategory(c);
                         }}
-                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-left"
                       >
                         {c.name}
-                        {formData.categoryId === c.id && <Check className="h-4 w-4 text-slate-900" />}
+                        {formData.categoryId === c.id && <Check className="h-4 w-4 text-blue-600" />}
                       </button>
                     ))}
                 </div>
@@ -202,12 +186,11 @@ export function AddProductModal({
           </div>
         </div>
 
-        {/* FOOTER */}
         <div className="px-8 pb-10 pt-4 flex justify-center">
           <Button 
             onClick={handleSubmit} 
             disabled={loading || !isValid} 
-            className="h-14 w-full rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-base shadow-xl shadow-slate-200 transition-all active:scale-[0.98] disabled:opacity-20"
+            className="h-14 w-full rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-base shadow-xl transition-all active:scale-[0.98] disabled:opacity-30"
           >
             {loading ? "Creating..." : "Create Product"}
           </Button>

@@ -12,7 +12,7 @@ import type { Category, Product, UpdateProductRequest } from "../types";
 
 interface EditProductModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: () => void;  
   product: Product | null;
   categories: Category[];
   onUpdate: (id: string, data: UpdateProductRequest) => Promise<void>;

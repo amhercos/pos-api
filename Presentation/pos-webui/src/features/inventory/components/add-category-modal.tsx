@@ -1,135 +1,123 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Trash2, X, Settings2, Plus } from "lucide-react";
-import { DeleteConfirmModal } from "@/components/shared/delete-confirm-modal";
-import { getErrorMessage } from "@/lib/error-utils";
-import type { Category } from "../types";
+// import { useState } from "react";
+// import { toast } from "sonner";
+// import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+// import { Button } from "@/components/ui/button";
+// import { X, Trash2, FolderTree, Loader2 } from "lucide-react";
+// import { DeleteConfirmModal } from "@/components/shared/delete-confirm-modal";
+// import { getErrorMessage } from "@/lib/error-utils";
+// import type { Category } from "../types";
 
-interface CategoryManagerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  categories: Category[];
-  onAdd: (name: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-}
+// interface CategoryManagerProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   categories: Category[];
+//   onAdd: (name: string) => Promise<void>;
+//   onDelete: (id: string) => Promise<void>;
+// }
 
-export function CategoryManagerModal({ 
-  isOpen, 
-  onClose, 
-  categories, 
-  onAdd, 
-  onDelete 
-}: CategoryManagerModalProps) {
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+// export function CategoryManagerModal({ 
+//   isOpen, onClose, categories, onAdd, onDelete 
+// }: CategoryManagerProps) {
+//   const [newCategory, setNewCategory] = useState("");
+//   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+//   const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedName = newCategoryName.trim();
-    if (!trimmedName || isAdding) return;
+//   const handleAdd = async () => {
+//     if (!newCategory.trim()) return;
+//     setLoadingAction("add");
+//     try {
+//       await onAdd(newCategory.trim());
+//       setNewCategory("");
+//       // Removed toast here to prevent double notification
+//     } catch (error) {
+//       toast.error(getErrorMessage(error));
+//     } finally {
+//       setLoadingAction(null);
+//     }
+//   };
 
-    setIsAdding(true);
-    try {
-      await onAdd(trimmedName);
-      setNewCategoryName("");
-      toast.success("Category added successfully");
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setIsAdding(false);
-    }
-  };
+//   const handleConfirmedDelete = async () => {
+//     if (!confirmTarget) return;
+//     const target = confirmTarget;
+//     setConfirmTarget(null);
 
-  const handleConfirmedDelete = async () => {
-    if (!confirmTarget) return;
-    
-    const target = confirmTarget; // Snapshot before clearing state
-    setConfirmTarget(null); // Close the confirm modal immediately
-    setIsDeleting(true);
-    
-    const toastId = toast.loading(`Deleting ${target.name}...`);
+//     toast.promise(onDelete(target.id), {
+//       loading: `Deleting ${target.name}...`,
+//       success: "Category deleted",
+//       error: (err) => getErrorMessage(err),
+//     });
+//   };
 
-    try {
-      await onDelete(target.id);
-      toast.success("Category deleted successfully", { id: toastId });
-    } catch (error: unknown) {
-      toast.dismiss(toastId); // Remove loading toast
-      toast.error(getErrorMessage(error), { duration: 5000 });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+//   return (
+//     <>
+//       <Dialog open={isOpen} onOpenChange={onClose}>
+//         <DialogContent className="sm:max-w-105 p-0 rounded-[32px] border-none shadow-2xl bg-white outline-none overflow-hidden">
+//           <div className="px-8 pt-8 pb-4 relative">
+//             <button onClick={onClose} className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-50 transition-colors text-slate-400">
+//               <X className="h-4 w-4" />
+//             </button>
+//             <div className="flex items-center gap-4">
+//               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50">
+//                 <FolderTree className="h-6 w-6" />
+//               </div>
+//               <div>
+//                 <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Manage Categories</DialogTitle>
+//                 <p className="text-[13px] font-medium text-slate-400">Organize your product groups</p>
+//               </div>
+//             </div>
+//           </div>
 
-  return (
-    <>
-      <Dialog 
-        open={isOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setNewCategoryName("");
-            onClose();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[420px] p-0 rounded-[32px] border-none shadow-2xl bg-white overflow-hidden z-40">
-          <DialogClose asChild>
-            <button className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-600">
-              <X className="h-4 w-4" />
-            </button>
-          </DialogClose>
+//           <div className="px-8 py-4">
+//             <div className="flex gap-2 p-1.5 bg-slate-50/50 rounded-2xl border border-slate-100 focus-within:border-slate-300 transition-all">
+//               <input 
+//                 placeholder="New category name..."
+//                 className="flex-1 bg-transparent border-none outline-none px-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400"
+//                 value={newCategory}
+//                 onChange={(e) => setNewCategory(e.target.value)}
+//                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+//               />
+//               <Button 
+//                 onClick={handleAdd}
+//                 disabled={loadingAction === "add" || !newCategory.trim()}
+//                 className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all"
+//               >
+//                 {loadingAction === "add" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
+//               </Button>
+//             </div>
+//           </div>
 
-          <div className="px-8 pt-10 pb-6 flex flex-col items-center text-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl">
-              <Settings2 className="h-7 w-7" />
-            </div>
-            <DialogTitle className="text-2xl font-bold text-slate-900">Categories</DialogTitle>
-          </div>
+//           <div className="px-6 pb-8">
+//             <div className="max-h-75 overflow-y-auto px-2 space-y-1">
+//               {categories.map((c) => (
+//                 <div key={c.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all">
+//                   <span className="text-sm font-semibold text-slate-700 ml-1">{c.name}</span>
+//                   <button 
+//                     type="button"
+//                     onClick={() => setConfirmTarget(c)}
+//                     disabled={loadingAction === `del-${c.id}`}
+//                     className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-200 opacity-0 group-hover:opacity-100"
+//                   >
+//                     {loadingAction === `del-${c.id}` ? (
+//                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
+//                     ) : (
+//                       <Trash2 className="h-3.5 w-3.5" />
+//                     )}
+//                   </button>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         </DialogContent>
+//       </Dialog>
 
-          <form onSubmit={handleAdd} className="px-8 mb-6 flex gap-2">
-            <Input 
-              placeholder="New category..." 
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              className="rounded-2xl bg-slate-50 border-slate-100"
-            />
-            <Button type="submit" disabled={isAdding || !newCategoryName.trim()} className="rounded-xl bg-slate-900">
-              {isAdding ? <div className="h-4 w-4 border-2 border-white/30 border-t-white animate-spin rounded-full" /> : <Plus className="h-4 w-4" />}
-            </Button>
-          </form>
-
-          <div className="px-6 pb-8 max-h-[300px] overflow-y-auto scrollbar-hide">
-            <div className="space-y-2 pt-2">
-              {categories.map((category) => (
-                <div key={category.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white transition-all">
-                  <span className="font-semibold text-slate-700 text-sm">{category.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmTarget(category)}
-                    className="p-2 text-slate-300 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* RENDERED OUTSIDE PRIMARY DIALOG */}
-      <DeleteConfirmModal 
-        isOpen={!!confirmTarget}
-        onClose={() => setConfirmTarget(null)}
-        onConfirm={handleConfirmedDelete}
-        title="Delete Category"
-        itemName={confirmTarget?.name || ""}
-        isLoading={isDeleting}
-      />
-    </>
-  );
-}
+//       <DeleteConfirmModal 
+//         isOpen={!!confirmTarget}
+//         onClose={() => setConfirmTarget(null)}
+//         onConfirm={handleConfirmedDelete}
+//         title="Delete Category"
+//         itemName={confirmTarget?.name || ""}
+//         isLoading={loadingAction?.startsWith('del-')}
+//       />
+//     </>
+//   );
+// }
