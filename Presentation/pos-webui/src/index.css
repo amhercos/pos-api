@@ -15,27 +15,31 @@
 
 @layer base {
   html, body {
-    max-width: 100%;
-    overflow-x: hidden;
-    position: relative;
-    
-   
-    overscroll-behavior-x: none;
-    
-
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Important: Prevents the whole page from scrolling */
+    position: fixed;
+    overscroll-behavior: none;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
   }
 
-  
   #root {
+    height: 100%;
     width: 100%;
-    overflow-x: hidden;
   }
 
-
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #e2e8f0 transparent;
+  /* Custom thin scrollbar for the product grid */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
   }
 }

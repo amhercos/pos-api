@@ -2,6 +2,7 @@
 using Application.Interfaces.Repositories;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Products.Commands;
 
@@ -12,6 +13,16 @@ public class CreateProductHandler(
 {
     public async Task<Guid> Handle(CreateProductCommand request, CancellationToken ct)
     {
+        var exists = await context.Products
+            .AnyAsync(p => p.Name.ToLower() == request.Name.ToLower()
+                        && p.StoreId == currentUserService.StoreId
+                        && !p.IsDeleted, ct);
+
+        if (exists)
+        {
+            throw new Exception($"A product with the name '{request.Name}' already exists.");
+        }
+
         var product = new Product
         {
             Id = Guid.NewGuid(),

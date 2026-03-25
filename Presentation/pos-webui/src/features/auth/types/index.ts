@@ -16,3 +16,11 @@ export interface ApiError {
   message: string;
   statusCode?: number;
 }
+
+export interface RegisterRequest {
+    email: string;
+    password: string;
+    fullName: string;
+    businessName: string;
+    location: string;
+}

@@ -18,8 +18,7 @@ namespace Infrastructure.Persistence.Configurations
                    .HasMaxLength(500);
 
             builder.Property(p => p.Price)
-                   .IsRequired()
-                    .HasPrecision(18, 2);
+                   .IsRequired();
 
             builder.Property(p => p.Stock)
                    .HasDefaultValue(0);
@@ -33,7 +32,9 @@ namespace Infrastructure.Persistence.Configurations
                 .HasForeignKey(p => p.CategoryId)
                    .OnDelete(DeleteBehavior.SetNull);
 
-            builder.HasIndex(p => p.Name);
+            builder.HasIndex(p => new { p.Name, p.StoreId })
+                    .IsUnique()
+                    .HasFilter("\"IsDeleted\" = false");
             builder.HasIndex(p => p.CategoryId);
         }
     }

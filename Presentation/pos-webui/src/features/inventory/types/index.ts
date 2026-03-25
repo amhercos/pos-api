@@ -6,30 +6,42 @@ export interface Category {
 export interface Product {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   stockQuantity: number;
   lowStockThreshold: number;
-  categoryName: string;
-  categoryId: string;
-  expiryDate: string;
+  categoryName: string | null;
+  categoryId: string | null;
+  expiryDate: string | null;
 }
 
 export interface CreateProductRequest {
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   stockQuantity: number;
-  expiryDate: string;
-  categoryId: string;
+  expiryDate: string | null;
+  categoryId: string | null;
 }
 
 export interface UpdateProductRequest {
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   stock: number;
   lowStockThreshold: number;
-  categoryId: string;
-  expiryDate?: string;
+  categoryId: string | null;
+  expiryDate: string | null;
+}
+
+
+export interface PagedResponse<T> {
+  items: T[];
+  totalCount: number;
+}
+
+export interface BaseErrorResponse {
+  message?: string;
+  title?: string;
+  errors?: Record<string, string[]>;
 }
