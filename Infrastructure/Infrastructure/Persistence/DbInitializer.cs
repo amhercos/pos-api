@@ -17,14 +17,14 @@ public static class DbInitializer
                 var admin = new User
             {
                 UserName = "admin",
-                Email = "admin@bizflow.com",
+                Email = "admin@admin",
                 FullName = "System Admin",
                 Role = "SuperAdmin", 
                 StoreId = null,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin123!");
+            var result = await userManager.CreateAsync(admin, "adminpassword");
 
             if (!result.Succeeded)
             {
