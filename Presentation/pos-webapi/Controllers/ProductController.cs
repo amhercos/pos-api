@@ -23,14 +23,14 @@ namespace pos_webapi.Controllers
         }
 
         [HttpGet]
-        [Authorize (Roles = "StoreOwner,Cashier")]
-        public async Task<IActionResult> GetAll()
+        [Authorize(Roles = "StoreOwner,Cashier")]
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var products = await mediator.Send(new GetProductQuery());
-            return Ok(products);
+            var result = await mediator.Send(new GetProductQuery(page, pageSize));
+            return Ok(result);
         }
 
-       
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

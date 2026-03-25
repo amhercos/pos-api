@@ -10,5 +10,5 @@ namespace Application.Dto
     int LowStockThreshold,
     string CategoryName,
     DateOnly? ExpiryDate,
-    Guid CategoryId);
+    Guid? CategoryId);
 }

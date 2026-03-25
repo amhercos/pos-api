@@ -127,7 +127,7 @@ export function RecordsPage() {
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-24">
                   <ReceiptText className="h-8 w-8 text-slate-100 mx-auto mb-2" />
-                  <p className="text-xs font-medium text-slate-400">No entries found for this filter</p>
+                  <p className="text-xs font-medium text-slate-400">NO ENTRIES FOUND FOR THIS DATE</p>
                 </TableCell>
               </TableRow>
             ) : (

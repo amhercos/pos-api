@@ -7,6 +7,7 @@ namespace Application.Interfaces.Repositories
 {
     public interface IProductRepository
     {
+        Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct);
         Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct);
         Task<Product?> GetByIdAsync(Guid id, CancellationToken ct);
         void Add(Product product);

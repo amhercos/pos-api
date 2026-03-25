@@ -10,6 +10,24 @@ namespace Infrastructure.Repositories
 {
     public class ProductRepository(PosDbContext context) : IProductRepository
     {
+
+        public async Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct)
+        {
+            var query = context.Products
+                .Include(p => p.Category)
+                .AsNoTracking()
+                .Where(p => !p.IsDeleted);
+
+            var totalCount = await query.CountAsync(ct);
+
+            var items = await query
+                .OrderBy(p => p.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return (items, totalCount);
+        }
         public void Add(Product product) => context.Products.Add(product);
         public async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct)
         {
@@ -26,7 +44,11 @@ namespace Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }
 
-        public void Remove(Product product) => context.Products.Remove(product);
+        public void Remove(Product product)
+        {
+            product.IsDeleted = true;
+            context.Products.Update(product);
+        }
 
         public async Task<int> CountLowStockAsync(Guid storeId, CancellationToken ct)
         {

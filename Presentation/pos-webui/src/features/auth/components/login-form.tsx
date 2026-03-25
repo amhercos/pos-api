@@ -13,61 +13,55 @@ import { Label } from "@/components/ui/label"
 import { useLogin } from "../hooks/use-login"
 import { type LoginRequest } from "../types"
 import { useAuth } from "../context/auth-context-types"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom" // Added Link here
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  // 1. State for form fields
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate();
 
-  // 2. The Hook (Our MediatR-style Handler)
   const { executeLogin, isLoading, error } = useLogin()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // 3. Prepare the Command (Typed LoginRequest)
     const command: LoginRequest = {
       username,
       password,
     }
 
-    // 4. Execute
     const result = await executeLogin(command)
 
-if (result) {
-  login(
-    {
-      userName: result.userName,
-      fullName: result.fullName,
-      role: result.role,
-      token: result.token
-    }, 
-    result.token 
-  )
-
-  navigate("/dashboard");
-}
+    if (result) {
+      login(
+        {
+          userName: result.userName,
+          fullName: result.fullName,
+          role: result.role,
+          token: result.token
+        }, 
+        result.token 
+      )
+      navigate("/dashboard");
+    }
   }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <Card className="shadow-lg border-slate-200">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">BizFlow Login</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">BizFlow Login</CardTitle>
           <CardDescription>
-            Enter your credentials
+            Enter your credentials to access your store
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
-              {}
               {error && (
                 <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in duration-300">
                   {error}
@@ -79,7 +73,7 @@ if (result) {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Enter Username"
+                  placeholder="Enter Email"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -102,9 +96,22 @@ if (result) {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Authenticating..." : "Login"}
-              </Button>
+              <div className="flex flex-col gap-4">
+                <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+                  {isLoading ? "Authenticating..." : "Login"}
+                </Button>
+
+                {/* NAVIGATION TO SIGNUP */}
+                <div className="text-center text-sm text-slate-500">
+                  Don&apos;t have a store yet?{" "}
+                  <Link 
+                    to="/register" 
+                    className="font-semibold text-slate-900 underline underline-offset-4 hover:text-primary transition-colors"
+                  >
+                    Register your business
+                  </Link>
+                </div>
+              </div>
             </div>
           </form>
         </CardContent>

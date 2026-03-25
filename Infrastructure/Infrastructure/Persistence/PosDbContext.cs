@@ -61,7 +61,7 @@ namespace Infrastructure.Persistence
             builder.ApplyConfigurationsFromAssembly(typeof(PosDbContext).Assembly);
 
             builder.Entity<Category>().HasQueryFilter(c => c.StoreId == currentUserService.StoreId);
-            builder.Entity<Product>().HasQueryFilter(p => p.StoreId == currentUserService.StoreId);
+            builder.Entity<Product>().HasQueryFilter(p => p.StoreId == currentUserService.StoreId && !p.IsDeleted);
             builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == currentUserService.StoreId);
             builder.Entity<CustomerCredit>().HasQueryFilter(cc => cc.StoreId == currentUserService.StoreId);
             builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == currentUserService.StoreId);

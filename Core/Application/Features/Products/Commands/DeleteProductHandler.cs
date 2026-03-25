@@ -7,7 +7,8 @@ using System.Text;
 
 namespace Application.Features.Products.Commands
 {
-    public class DeleteProductHandler(IProductRepository productRepository, IPosDbContext context) : IRequestHandler<DeleteProductCommand, bool>
+    public class DeleteProductHandler(IProductRepository productRepository,
+        IPosDbContext context) : IRequestHandler<DeleteProductCommand, bool>
     {
         public async Task<bool> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
         {
