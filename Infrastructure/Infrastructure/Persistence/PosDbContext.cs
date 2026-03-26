@@ -21,7 +21,7 @@ namespace Infrastructure.Persistence
         public DbSet<CustomerCredit> CustomerCredits => Set<CustomerCredit>();
         public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
         public DbSet<Store> Stores => Set<Store>();
-        public DbSet<StoreSettings> StoresSettings => Set<StoreSettings>();
+        public DbSet<StoreSettings> StoreSettings => Set<StoreSettings>();
 
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken)

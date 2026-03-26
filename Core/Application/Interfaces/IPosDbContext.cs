@@ -15,7 +15,7 @@ namespace Application.Interfaces
         DbSet<CustomerCredit> CustomerCredits { get; }
         DbSet<CreditPayment> CreditPayments { get; }
         DbSet<Store> Stores { get; }
-        DbSet<StoreSettings> StoresSettings { get; }
+        DbSet<StoreSettings> StoreSettings { get; }
         DatabaseFacade Database { get; }
 
         Task <int> SaveChangesAsync (CancellationToken cancellationToken);

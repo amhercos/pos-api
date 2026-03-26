@@ -61,5 +61,15 @@ namespace pos_webapi.Controllers
             var result = await mediator.Send(command);
             return Ok(result);
         }
+
+        [HttpGet("near-expiry")]
+        public async Task<IActionResult> GetNearExpiry()
+        {
+            var storeIdClaim = User.FindFirst("StoreId")?.Value;
+            if (!Guid.TryParse(storeIdClaim, out var storeId)) return Unauthorized();
+            var result = await mediator.Send(new GetNearExpiryProductsQuery(storeId));
+
+            return Ok(result);
+        }
     }
 }

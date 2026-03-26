@@ -14,16 +14,15 @@
 }
 
 @layer base {
-  html, body {
-    height: 100%;
+  html, body, #root {
+    height: 100vh;
+    height: 100dvh;
     width: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Important: Prevents the whole page from scrolling */
-    position: fixed;
-    overscroll-behavior: none;
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
   }
 
   #root {
@@ -31,15 +30,17 @@
     width: 100%;
   }
 
-  /* Custom thin scrollbar for the product grid */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
-  }
+.custom-scrollbar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
 }

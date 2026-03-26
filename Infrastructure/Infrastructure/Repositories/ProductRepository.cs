@@ -59,5 +59,23 @@ namespace Infrastructure.Repositories
 
         public void Update(Product product) => context.Products.Update(product);
 
+
+
+        public async Task<List<Product>> GetNearExpiryProductsAsync(Guid storeId)
+        {
+            var settings = await context.StoreSettings
+                .FirstOrDefaultAsync(s => s.StoreId == storeId);
+
+            int alertDays = settings?.NearExpiryAlertDays ?? 30;
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var thresholdDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(alertDays));
+
+            return await context.Products
+                .Where(p => p.StoreId == storeId
+                         && p.ExpiryDate <= thresholdDate
+                         && p.ExpiryDate >= today)
+                .ToListAsync();
+        }
     }
 }

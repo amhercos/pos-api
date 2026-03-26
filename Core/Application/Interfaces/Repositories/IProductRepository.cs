@@ -14,5 +14,6 @@ namespace Application.Interfaces.Repositories
         void Remove(Product product);
         void Update(Product product);
         Task<int> CountLowStockAsync(Guid storeId, CancellationToken ct);
+        Task<List<Product>> GetNearExpiryProductsAsync(Guid storeId);
     }
 }
