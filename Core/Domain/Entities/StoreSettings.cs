@@ -8,11 +8,10 @@ namespace Domain.Entities
     public class StoreSettings : BaseEntity
     {
         public Guid StoreId { get; set; }
-        public string? ContactInfo { get; set; }
-        public string? Email { get; set; }
 
         // Alert Configs
-        public int LowStockAlertThreshold { get; set; } = 5; 
+        public int LowStockAlertThreshold { get; set; } = 5;
         public int NearExpiryAlertDays { get; set; } = 30;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

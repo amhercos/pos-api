@@ -10,6 +10,8 @@ import NewSalePage from "./features/sale/new-sale-page";
 import CreditsPage from "./features/credit/credits-page";
 import { Toaster } from "sonner";
 import { UnauthorizedPage } from "./features/auth/components/unauthorized-page";
+import SettingsPage from "./features/settings/settings-page";
+
 
 function App() {
   return (
@@ -60,7 +62,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/sales/new" element={<NewSalePage />} />
             <Route path="/credits" element={<CreditsPage/>} />
-            <Route path="/settings" element={<div>Settings Page (Coming Soon)</div>} />
+            <Route path="/settings" element={<SettingsPage/>} />
             
             {/* Standard unauthorized landing page inside layout */}
             <Route path="/unauthorized" element={<UnauthorizedPage />} />

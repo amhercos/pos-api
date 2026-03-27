@@ -12,26 +12,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip"; 
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function MainLayout() {
   return (
     <TooltipProvider delayDuration={0}>
-      <SidebarProvider className="max-w-full overflow-x-hidden">
+      <SidebarProvider className="max-w-full overflow-hidden">
         <AppSidebar />
-        <SidebarInset className="flex flex-col min-w-0 max-w-full overflow-x-hidden bg-white">
-          
-          {/* THIN HEADER: h-12 (48px) for a professional, space-efficient look */}
-          <header className="flex h-12 shrink-0 items-center px-4 bg-white/80 backdrop-blur-md sticky top-0 z-[40] border-b border-slate-100/50">
+        <SidebarInset className="flex flex-col h-screen min-w-0 max-w-full bg-white overflow-hidden">
+          <header className="flex h-12 shrink-0 items-center px-4 bg-white sticky top-0 z-[40] border-b border-slate-100">
             <div className="flex items-center gap-2">
-              {/* SidebarTrigger with a slight left margin gap */}
-              <SidebarTrigger className="h-8 w-8 hover:bg-slate-100 transition-colors" />
-              
-              <Separator
-                orientation="vertical"
-                className="mx-2 h-4 bg-slate-200"
-              />
-              
+              <SidebarTrigger className="h-8 w-8" />
+              <Separator orientation="vertical" className="mx-2 h-4" />
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
@@ -44,8 +36,7 @@ export function MainLayout() {
             </div>
           </header>
 
-      
-          <main className="flex flex-1 flex-col overflow-x-hidden">
+          <main className="flex-1 min-h-0 w-full overflow-y-auto relative custom-scrollbar">
             <Outlet />
           </main>
           

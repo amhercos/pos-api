@@ -9,5 +9,8 @@ namespace Application.Interfaces.Repositories
     {
         Task AddAsync(Store store, CancellationToken ct);
         Task<bool> ExistsByNameAsync(string name, CancellationToken ct);
+        // StoreSettings
+        Task<Store?> GetStoreWithSettingsAsync(Guid storeId, CancellationToken ct);
+        Task UpdateAsync(Store store, CancellationToken ct);
     }
 }

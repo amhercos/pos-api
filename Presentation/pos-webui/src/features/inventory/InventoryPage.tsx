@@ -44,8 +44,7 @@ export function InventoryPage() {
 
   return (
     <div className="flex flex-col h-screen bg-white text-slate-900 overflow-hidden font-sans antialiased">
-      {/* THINNER HEADER: Compressed into one functional bar */}
-      <div className="px-6 py-4 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-slate-100 bg-white z-10">
+      <div className="px-6 py-4 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-slate-100 bg-white z-10 shrink-0">
         <div className="flex items-baseline gap-3">
           <h1 className="text-xl font-bold tracking-tight">Inventory</h1>
           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest border-l pl-3 border-slate-200">Master Catalog</span>
@@ -65,8 +64,7 @@ export function InventoryPage() {
         </div>
       </div>
 
-      {/* FILTER BAR: Minimalist spacing */}
-      <div className="px-6 py-3 max-w-7xl mx-auto w-full flex items-center gap-4 bg-slate-50/30">
+      <div className="px-6 py-3 max-w-7xl mx-auto w-full flex items-center gap-4 bg-slate-50/30 shrink-0">
         <div className="relative flex-1 max-w-xs group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 transition-colors" />
           <Input 
@@ -83,7 +81,6 @@ export function InventoryPage() {
               <Filter className="h-3 w-3 mr-2 text-slate-400" />
               <SelectValue placeholder="Category" />
             </SelectTrigger>
-            {/* Keeping the dropdown design you liked */}
             <SelectContent 
               position="popper" 
               sideOffset={8}
@@ -109,8 +106,8 @@ export function InventoryPage() {
         </div>
       </div>
 
-      {/* TABLE AREA: Maximized space */}
-      <div className="flex-1 overflow-y-auto px-6 max-w-7xl mx-auto w-full pb-20 custom-scrollbar">
+      {/* FIXED SCROLL AREA */}
+      <div className="flex-1 overflow-y-auto px-6 max-w-7xl mx-auto w-full custom-scrollbar">
         <InventoryTable 
           products={filtered} 
           loading={loading} 
@@ -118,7 +115,6 @@ export function InventoryPage() {
           onEdit={(p) => setEditingProduct(p)} 
         />
         
-        {/* PAGINATION: Slimmer footer */}
         <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 pb-10">
           <div className="flex items-center gap-3">
             <span className="text-[11px] font-bold text-slate-400 uppercase">Page {currentPage}</span>

@@ -12,3 +12,11 @@ export interface RecentTransaction {
   paymentType: 'Cash' | 'Credit';
   itemCount: number;
 }
+
+export interface NearExpiryProduct {
+  id: string;
+  name: string;
+  stock: number;
+  expiryDate: string | null;
+  daysUntilExpiry: number;
+}
