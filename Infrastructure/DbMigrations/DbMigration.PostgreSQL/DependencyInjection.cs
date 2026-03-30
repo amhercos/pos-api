@@ -1,45 +1,51 @@
 ﻿using Application.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
-namespace Infrastructure.Persistence
+namespace DbMigration.PostgreSQL
 {
     public static class DependencyInjection
     {
-        /// <summary>
-        /// Registers the PosDbContext with PostgreSQL configuration.
-        /// </summary>
         public static IServiceCollection UsePostgreSQL(this InfrastructureOption option, IConfiguration? tempConfiguration = null)
         {
             var services = option.Services;
             var configuration = tempConfiguration ?? option.Configuration;
+            var assemblyName = typeof(PostgresPosDbContext).Assembly.FullName;
 
             string conString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-            services.AddDbContext<PosDbContext>(options =>
+     
+            services.AddDbContext<PostgresPosDbContext>(options =>
             {
                 options.UseNpgsql(
                     conString,
                     npgsqlOptionsAction: opt =>
                     {
-                        opt.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                        opt.MigrationsAssembly(assemblyName);
                         opt.MigrationsHistoryTable("__EFMigrationsHistory", "public");
                     }
                 );
+                options.ConfigureWarnings(w => 
+                w.Ignore(RelationalEventId.PendingModelChangesWarning));
             });
 
-            // Register against the interface for Clean Architecture Handlers
+            
+
+
+            services.AddScoped<PosDbContext>(provider =>
+                provider.GetRequiredService<PostgresPosDbContext>());
+
             services.AddScoped<IPosDbContext>(provider =>
-                provider.GetRequiredService<PosDbContext>());
+                provider.GetRequiredService<PostgresPosDbContext>());
 
             services.AddScoped<DbContext>(provider =>
-                provider.GetRequiredService<PosDbContext>());
+                provider.GetRequiredService<PostgresPosDbContext>());
 
             return services;
         }

@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Source control
+.git/
+.gitignore
+
+# OS files
+thumbs.db
+Desktop.ini
+
+appsettings.Development.json
+*.pfx
+*.pubxml
