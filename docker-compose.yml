@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15
+    container_name: bizflow-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password1
+      POSTGRES_DB: BizFlowDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d BizFlowDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizflow-api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5130:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=BizFlowDb;Username=postgres;Password=password1
+      - Cors__AllowedOrigins__0=http://localhost:47897
+
+  frontend:
+    build:
+      context: ./Presentation/pos-webui
+      dockerfile: Dockerfile
+    container_name: bizflow-ui
+    ports:
+      - "47897:47897"
+    environment:
+      - VITE_API_URL=http://localhost:5130
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

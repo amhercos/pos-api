@@ -7,11 +7,15 @@ using System.Text.Json.Serialization;
 
 namespace DbMigration.PostgreSQL
 {
-    public class PostgresPosDbContext(
-        DbContextOptions<PosDbContext> options,
-        ICurrentUserService currentUserService)
-        : PosDbContext(options, currentUserService)
+    public class PostgresPosDbContext : PosDbContext
     {
+        public PostgresPosDbContext(
+            DbContextOptions options,
+            ICurrentUserService currentUserService)
+            : base(options, currentUserService)
+        {
+        }
+
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -32,26 +36,26 @@ namespace DbMigration.PostgreSQL
             }
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
+        //protected override void OnModelCreating(ModelBuilder modelBuilder)
+        //{
+        //    base.OnModelCreating(modelBuilder);
 
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                var clrType = entityType.ClrType;
-                if (clrType == null) continue;
+        //    foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        //    {
+        //        var clrType = entityType.ClrType;
+        //        if (clrType == null) continue;
 
-                foreach (var property in clrType.GetProperties())
-                {
-                    var jsonAttribute = property.GetCustomAttribute<JsonPropertyNameAttribute>();
-                    if (jsonAttribute != null)
-                    {
-                        modelBuilder.Entity(clrType)
-                            .Property(property.Name)
-                            .HasColumnName(jsonAttribute.Name);
-                    }
-                }
-            }
-        }
+        //        foreach (var property in clrType.GetProperties())
+        //        {
+        //            var jsonAttribute = property.GetCustomAttribute<JsonPropertyNameAttribute>();
+        //            if (jsonAttribute != null)
+        //            {
+        //                modelBuilder.Entity(clrType)
+        //                    .Property(property.Name)
+        //                    .HasColumnName(jsonAttribute.Name);
+        //            }
+        //        }
+        //    }
+        //}
     }
 }

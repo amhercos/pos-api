@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial_BizFlow : Migration
+    public partial class Initial_docker : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -27,32 +27,6 @@ namespace DbMigration.PostgreSQL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetRoles", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Categories",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CategoryName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Categories", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CustomerCredits",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CustomerName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    ContactInfo = table.Column<string>(type: "text", nullable: true),
-                    CreditAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CustomerCredits", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -91,70 +65,13 @@ namespace DbMigration.PostgreSQL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CategoryId1 = table.Column<Guid>(type: "uuid", nullable: false),
-                    Price = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Stock = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    LowStockThreshold = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
-                    ExpiryDate = table.Column<DateOnly>(type: "date", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Products", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Products_Categories_CategoryId",
-                        column: x => x.CategoryId,
-                        principalTable: "Categories",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Products_Categories_CategoryId1",
-                        column: x => x.CategoryId1,
-                        principalTable: "Categories",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CreditPayments",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CustomerCreditId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CustomerCreditId1 = table.Column<Guid>(type: "uuid", nullable: false),
-                    AmountPaid = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    PaymentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CreditPayments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CreditPayments_CustomerCredits_CustomerCreditId",
-                        column: x => x.CustomerCreditId,
-                        principalTable: "CustomerCredits",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CreditPayments_CustomerCredits_CustomerCreditId1",
-                        column: x => x.CustomerCreditId1,
-                        principalTable: "CustomerCredits",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetUsers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Role = table.Column<string>(type: "text", nullable: false),
-                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FullName = table.Column<string>(type: "text", nullable: false),
+                    Role = table.Column<string>(type: "text", nullable: true),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UserName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -183,21 +100,62 @@ namespace DbMigration.PostgreSQL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "StoresSettings",
+                name: "Categories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CategoryName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Categories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Categories_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CustomerCredits",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CustomerName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ContactInfo = table.Column<string>(type: "text", nullable: true),
+                    CreditAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CustomerCredits", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CustomerCredits_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StoreSettings",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     StoreId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContactInfo = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: true),
                     LowStockAlertThreshold = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
-                    NearExpiryAlertDays = table.Column<int>(type: "integer", nullable: false, defaultValue: 30)
+                    NearExpiryAlertDays = table.Column<int>(type: "integer", nullable: false, defaultValue: 30),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StoresSettings", x => x.Id);
+                    table.PrimaryKey("PK_StoreSettings", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_StoresSettings_Stores_StoreId",
+                        name: "FK_StoreSettings_Stores_StoreId",
                         column: x => x.StoreId,
                         principalTable: "Stores",
                         principalColumn: "Id",
@@ -290,20 +248,82 @@ namespace DbMigration.PostgreSQL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Transactions",
+                name: "Products",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TransactionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    TotalAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    PaymentType = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
-                    UserId1 = table.Column<Guid>(type: "uuid", nullable: false),
-                    CustomerCreditId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Id = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CategoryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Stock = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    LowStockThreshold = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
+                    ExpiryDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Transactions", x => x.UserId);
+                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Products_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Products_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CreditPayments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CustomerCreditId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AmountPaid = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CreditPayments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CreditPayments_CustomerCredits_CustomerCreditId",
+                        column: x => x.CustomerCreditId,
+                        principalTable: "CustomerCredits",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CreditPayments_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Transactions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TransactionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    PaymentType = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CashReceived = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    ChangeAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CustomerCreditId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Transactions", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Transactions_AspNetUsers_UserId",
                         column: x => x.UserId,
@@ -311,9 +331,15 @@ namespace DbMigration.PostgreSQL.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Transactions_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "AspNetUsers",
+                        name: "FK_Transactions_CustomerCredits_CustomerCreditId",
+                        column: x => x.CustomerCreditId,
+                        principalTable: "CustomerCredits",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Transactions_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -323,8 +349,8 @@ namespace DbMigration.PostgreSQL.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
                     TransactionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TransactionUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
@@ -339,16 +365,16 @@ namespace DbMigration.PostgreSQL.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_TransactionItems_Stores_StoreId",
+                        column: x => x.StoreId,
+                        principalTable: "Stores",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_TransactionItems_Transactions_TransactionId",
                         column: x => x.TransactionId,
                         principalTable: "Transactions",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_TransactionItems_Transactions_TransactionUserId",
-                        column: x => x.TransactionUserId,
-                        principalTable: "Transactions",
-                        principalColumn: "UserId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -401,14 +427,19 @@ namespace DbMigration.PostgreSQL.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Categories_StoreId",
+                table: "Categories",
+                column: "StoreId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CreditPayments_CustomerCreditId",
                 table: "CreditPayments",
                 column: "CustomerCreditId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CreditPayments_CustomerCreditId1",
+                name: "IX_CreditPayments_StoreId",
                 table: "CreditPayments",
-                column: "CustomerCreditId1");
+                column: "StoreId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CustomerCredits_CustomerName",
@@ -416,23 +447,30 @@ namespace DbMigration.PostgreSQL.Migrations
                 column: "CustomerName");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CustomerCredits_StoreId",
+                table: "CustomerCredits",
+                column: "StoreId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
                 table: "Products",
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_CategoryId1",
+                name: "IX_Products_Name_StoreId",
                 table: "Products",
-                column: "CategoryId1");
+                columns: new[] { "Name", "StoreId" },
+                unique: true,
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_Name",
+                name: "IX_Products_StoreId",
                 table: "Products",
-                column: "Name");
+                column: "StoreId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_StoresSettings_StoreId",
-                table: "StoresSettings",
+                name: "IX_StoreSettings_StoreId",
+                table: "StoreSettings",
                 column: "StoreId",
                 unique: true);
 
@@ -442,14 +480,24 @@ namespace DbMigration.PostgreSQL.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TransactionItems_StoreId",
+                table: "TransactionItems",
+                column: "StoreId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TransactionItems_TransactionId",
                 table: "TransactionItems",
                 column: "TransactionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TransactionItems_TransactionUserId",
-                table: "TransactionItems",
-                column: "TransactionUserId");
+                name: "IX_Transactions_CustomerCreditId",
+                table: "Transactions",
+                column: "CustomerCreditId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Transactions_StoreId",
+                table: "Transactions",
+                column: "StoreId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_TransactionDate",
@@ -457,9 +505,9 @@ namespace DbMigration.PostgreSQL.Migrations
                 column: "TransactionDate");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Transactions_UserId1",
+                name: "IX_Transactions_UserId",
                 table: "Transactions",
-                column: "UserId1");
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -484,16 +532,13 @@ namespace DbMigration.PostgreSQL.Migrations
                 name: "CreditPayments");
 
             migrationBuilder.DropTable(
-                name: "StoresSettings");
+                name: "StoreSettings");
 
             migrationBuilder.DropTable(
                 name: "TransactionItems");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
-
-            migrationBuilder.DropTable(
-                name: "CustomerCredits");
 
             migrationBuilder.DropTable(
                 name: "Products");
@@ -506,6 +551,9 @@ namespace DbMigration.PostgreSQL.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "CustomerCredits");
 
             migrationBuilder.DropTable(
                 name: "Stores");

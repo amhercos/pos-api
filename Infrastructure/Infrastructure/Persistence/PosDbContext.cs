@@ -7,12 +7,18 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Infrastructure.Persistence
 {
-    public class PosDbContext(
-        DbContextOptions<PosDbContext> options,
-        ICurrentUserService currentUserService)
-        : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IPosDbContext
+    public class PosDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IPosDbContext
     {
+        private readonly ICurrentUserService _currentUserService;
         private IDbContextTransaction? _currentTransaction;
+
+        public PosDbContext(
+            DbContextOptions options,
+            ICurrentUserService currentUserService)
+            : base(options)
+        {
+            _currentUserService = currentUserService;
+        }
 
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<Product> Products => Set<Product>();
@@ -22,7 +28,6 @@ namespace Infrastructure.Persistence
         public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
         public DbSet<Store> Stores => Set<Store>();
         public DbSet<StoreSettings> StoreSettings => Set<StoreSettings>();
-
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken)
         {
@@ -60,12 +65,13 @@ namespace Infrastructure.Persistence
             builder.HasPostgresExtension("uuid-ossp");
             builder.ApplyConfigurationsFromAssembly(typeof(PosDbContext).Assembly);
 
-            builder.Entity<Category>().HasQueryFilter(c => c.StoreId == currentUserService.StoreId);
-            builder.Entity<Product>().HasQueryFilter(p => p.StoreId == currentUserService.StoreId && !p.IsDeleted);
-            builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == currentUserService.StoreId);
-            builder.Entity<CustomerCredit>().HasQueryFilter(cc => cc.StoreId == currentUserService.StoreId);
-            builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == currentUserService.StoreId);
-            builder.Entity<CreditPayment>().HasQueryFilter(cp => cp.StoreId == currentUserService.StoreId);
+            // Use the private field _currentUserService here
+            builder.Entity<Category>().HasQueryFilter(c => c.StoreId == _currentUserService.StoreId);
+            builder.Entity<Product>().HasQueryFilter(p => p.StoreId == _currentUserService.StoreId && !p.IsDeleted);
+            builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == _currentUserService.StoreId);
+            builder.Entity<CustomerCredit>().HasQueryFilter(cc => cc.StoreId == _currentUserService.StoreId);
+            builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == _currentUserService.StoreId);
+            builder.Entity<CreditPayment>().HasQueryFilter(cp => cp.StoreId == _currentUserService.StoreId);
 
             foreach (var entityType in builder.Model.GetEntityTypes())
             {

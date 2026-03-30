@@ -1,7 +1,9 @@
 using Application;
 using Infrastructure;
 using Infrastructure.Persistence;
+using DbMigration.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using pos_webapi.Middleware;
@@ -28,12 +30,14 @@ try
     // Services Configuration
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
+
     var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
+    var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
     builder.Services.AddCors(options =>
     {
         options.AddPolicy(name: myAllowSpecificOrigins, policy =>
         {
-            policy.WithOrigins("http://localhost:47897", "http://localhost:3000")
+            policy.WithOrigins(allowedOrigins)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
@@ -43,6 +47,8 @@ try
     //DI
     builder.Services.AddInfrastructureServices(configuration);
     builder.Services.AddApplicationServices();
+    var infraOption = new InfrastructureOption(builder.Services, configuration);
+    infraOption.UsePostgreSQL();
 
     // JWT Authentication Services
     string secretString = configuration["JwtSettings:Key"]
@@ -103,12 +109,34 @@ try
         var services = scope.ServiceProvider;
         try
         {
+            // This will now successfully resolve to PostgresPosDbContext
+            var context = services.GetRequiredService<PosDbContext>();
+            Log.Information("Checking for pending migrations...");
+
+            int retryCount = 0;
+            while (retryCount < 5)
+            {
+                try
+                {
+                    // This will now find your 'Initial_BizFlow_Fixed' migration
+                    await context.Database.MigrateAsync();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    Log.Warning("Database not ready yet. Retrying ({Count}/5)... Error: {Msg}", retryCount, ex.Message);
+                    await Task.Delay(3000); // Increased delay slightly for Docker DB startup
+                    if (retryCount >= 5) throw;
+                }
+            }
+
             await DbInitializer.SeedAdminUser(services);
-            Log.Information("Database seeding completed.");
+            Log.Information("Database migration and seeding completed.");
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred during database seeding.");
+            Log.Error(ex, "An error occurred during database initialization (Migration/Seeding).");
         }
     }
 

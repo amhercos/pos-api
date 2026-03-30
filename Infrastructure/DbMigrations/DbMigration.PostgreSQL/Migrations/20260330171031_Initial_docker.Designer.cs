@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations
 {
     [DbContext(typeof(PostgresPosDbContext))]
-    [Migration("20260319155605_NullableProductField")]
-    partial class NullableProductField
+    [Migration("20260330171031_Initial_docker")]
+    partial class Initial_docker
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -122,7 +122,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -134,6 +134,9 @@ namespace DbMigration.PostgreSQL.Migrations
 
                     b.Property<DateOnly?>("ExpiryDate")
                         .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LowStockThreshold")
                         .ValueGeneratedOnAdd()
@@ -161,9 +164,11 @@ namespace DbMigration.PostgreSQL.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("Name");
-
                     b.HasIndex("StoreId");
+
+                    b.HasIndex("Name", "StoreId")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("Products");
                 });
@@ -197,12 +202,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ContactInfo")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
                     b.Property<int>("LowStockAlertThreshold")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -216,12 +215,15 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StoreId")
                         .IsUnique();
 
-                    b.ToTable("StoresSettings");
+                    b.ToTable("StoreSettings");
                 });
 
             modelBuilder.Entity("Domain.Entities.Transaction", b =>
@@ -563,8 +565,7 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasOne("Domain.Entities.Category", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Domain.Entities.Store", "Store")
                         .WithMany()

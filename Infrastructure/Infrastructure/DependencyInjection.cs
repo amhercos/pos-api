@@ -18,12 +18,6 @@ namespace Infrastructure
             IConfiguration configuration)
         {
 
-            services.AddDbContext<PosDbContext>((sp, options) =>
-            {
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly(typeof(PosDbContext).Assembly.FullName));
-                       
-            });
 
             services.AddIdentity<User, IdentityRole<Guid>>(options =>
             {
@@ -42,9 +36,6 @@ namespace Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddHttpContextAccessor();
 
-
-            services.AddScoped<IPosDbContext>(provider =>
-                provider.GetRequiredService<PosDbContext>());
 
             // Register Repositories
              services.AddScoped<IStoreRepository, StoreRepository>();
