@@ -31,6 +31,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=BizFlowDb;Username=postgres;Password=password1
       - Cors__AllowedOrigins__0=http://localhost:47897
+      - Cors__AllowedOrigins__1=tauri://localhost
+      - Cors__AllowedOrigins__2=http://127.0.0.1:47897
 
   frontend:
     build:
@@ -40,7 +42,7 @@ services:
     ports:
       - "47897:47897"
     environment:
-      - VITE_API_URL=http://localhost:5130
+      - VITE_API_URL=http://backend:8080
     depends_on:
       - backend
 

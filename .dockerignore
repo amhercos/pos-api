@@ -21,3 +21,6 @@ Desktop.ini
 appsettings.Development.json
 *.pfx
 *.pubxml
+
+node_modules/
+Presentation/pos-webui/node_modules/
