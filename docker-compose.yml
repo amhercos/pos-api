@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  bizflow-api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -34,7 +34,7 @@ services:
       - Cors__AllowedOrigins__1=tauri://localhost
       - Cors__AllowedOrigins__2=http://127.0.0.1:47897
 
-  frontend:
+  bizflow-ui:
     build:
       context: ./Presentation/pos-webui
       dockerfile: Dockerfile
@@ -42,9 +42,9 @@ services:
     ports:
       - "47897:47897"
     environment:
-      - VITE_API_URL=http://backend:8080
+      - VITE_API_URL=http://bizflow-api:8080
     depends_on:
-      - backend
+      - bizflow-api
 
 volumes:
   postgres_data:
