@@ -22,6 +22,7 @@ export interface Product {
 }
 
 export interface CreateTransactionCommand {
+  localId?: string;
   items: { 
     productId: string; 
     quantity: number; 
@@ -34,6 +35,8 @@ export interface CreateTransactionCommand {
   customerCreditId?: string;
   newCustomerName?: string;
   newCustomerContact?: string;
+  isOfflineSync?: boolean;
+  offlineCreatedAt?: string;
 }
 
 export interface TransactionResponse {
@@ -42,7 +45,10 @@ export interface TransactionResponse {
 }
 
 export interface ApiError {
+  code?: string;
+  message?: string;
   response?: {
+    status?: number;
     data?: {
       Message?: string;
     };

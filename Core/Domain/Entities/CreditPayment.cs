@@ -7,12 +7,14 @@ namespace Domain.Entities
 {
     public class CreditPayment : BaseEntity
     {
+        public Guid? LocalId { get; set; }
+        public bool IsOfflineSync { get; set; }
         public Guid StoreId { get; set; }
         public Store Store { get; set; } = null!;  
         public Guid CustomerCreditId { get; set; }
         public CustomerCredit CustomerCredit { get; set; } = null!;
         public decimal AmountPaid { get; set; }
-        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
+        public DateTime PaymentDate { get; set; }
         public decimal RemainingCredit => CustomerCredit.CreditAmount - AmountPaid;
     }
 }

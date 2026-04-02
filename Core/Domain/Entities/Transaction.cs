@@ -8,7 +8,7 @@ namespace Domain.Entities
 {
     public class Transaction : BaseEntity
     {
-        public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
+        public DateTime TransactionDate { get; set; } 
         public decimal TotalAmount { get; set; }
         public PaymentType PaymentType { get; set; }
         public Guid UserId  { get; set; }
@@ -22,5 +22,8 @@ namespace Domain.Entities
         public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
         public Guid? CustomerCreditId { get; set; }
         public CustomerCredit CustomerCredit { get; set; } = null!;
+
+        public bool IsOfflineSync { get; set; }
+        public Guid? LocalId { get; set; }
     }
 }
