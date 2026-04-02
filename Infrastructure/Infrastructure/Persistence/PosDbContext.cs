@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Domain.Entities.Common;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -61,17 +62,26 @@ namespace Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
+           
             builder.HasPostgresExtension("uuid-ossp");
             builder.ApplyConfigurationsFromAssembly(typeof(PosDbContext).Assembly);
 
-            // Use the private field _currentUserService here
             builder.Entity<Category>().HasQueryFilter(c => c.StoreId == _currentUserService.StoreId);
             builder.Entity<Product>().HasQueryFilter(p => p.StoreId == _currentUserService.StoreId && !p.IsDeleted);
             builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == _currentUserService.StoreId);
             builder.Entity<CustomerCredit>().HasQueryFilter(cc => cc.StoreId == _currentUserService.StoreId);
             builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == _currentUserService.StoreId);
             builder.Entity<CreditPayment>().HasQueryFilter(cp => cp.StoreId == _currentUserService.StoreId);
+
+            foreach (var entityType in builder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
+                {
+                    builder.Entity(entityType.ClrType)
+                        .Property("RowVersion")
+                        .IsRowVersion();
+                }
+            }
 
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
