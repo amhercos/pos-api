@@ -11,14 +11,13 @@ import CreditsPage from "./features/credit/credits-page";
 import { Toaster } from "sonner";
 import { UnauthorizedPage } from "./features/auth/components/unauthorized-page";
 import SettingsPage from "./features/settings/settings-page";
-import { initTables } from "./services/db";
+
 import { useEffect } from "react";
 
 
 
 function App() {
   useEffect(() => {
-    initTables().catch(console.error);
 }, []);
   return (
     <BrowserRouter>

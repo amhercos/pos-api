@@ -13,14 +13,14 @@
     "windows": [
       {
         "title": "BizFlow POS",
-        "width": 800,
-        "height": 600,
+        "width": 1024,
+        "height": 768,
         "resizable": true,
         "fullscreen": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' http://localhost:5130 ws://localhost:47897"
     }
   },
   "bundle": {
