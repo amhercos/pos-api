@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\Core\Application\Application.csproj" />
     <ProjectReference Include="..\..\Core\Domain\Domain.csproj" />
     <ProjectReference Include="..\..\Infrastructure\DbMigrations\DbMigration.PostgreSQL\DbMigration.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\DbMigrations\DbMigration.SQLite\DbMigration.SQLite.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
