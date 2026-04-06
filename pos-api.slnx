@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/Infrastructure/DbMigrations/">
     <Project Path="Infrastructure/DbMigrations/DbMigration.PostgreSQL/DbMigration.PostgreSQL.csproj" Id="1bf16afe-6dd6-45ec-8983-5d9453ebe270" />
+    <Project Path="Infrastructure/DbMigrations/DbMigration.SQLite/DbMigration.SQLite.csproj" Id="2f6b764d-c7c6-48e2-877b-c2240d1ec1eb" />
   </Folder>
   <Folder Name="/Presentation/">
     <Project Path="Presentation/pos-webapi/pos-webapi.csproj" />

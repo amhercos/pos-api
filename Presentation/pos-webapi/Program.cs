@@ -2,6 +2,7 @@ using Application;
 using Infrastructure;
 using Infrastructure.Persistence;
 using DbMigration.PostgreSQL;
+using DbMigration.SQLite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,13 +20,14 @@ try
     Log.Information("Starting BizFlow API...");
 
     var builder = WebApplication.CreateBuilder(args);
+    builder.Logging.ClearProviders();
+
     var configuration = builder.Configuration;
-    //Serilog Configuration
+
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .Enrich.FromLogContext());
 
     // Services Configuration
     builder.Services.AddControllers();
@@ -48,7 +50,16 @@ try
     builder.Services.AddInfrastructureServices(configuration);
     builder.Services.AddApplicationServices();
     var infraOption = new InfrastructureOption(builder.Services, configuration);
-    infraOption.UsePostgreSQL();
+    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "PostgreSQL";
+
+    if (dbProvider == "SQLite")
+    {
+        infraOption.UseSQLite();
+    }
+    else
+    {
+        infraOption.UsePostgreSQL();
+    }
 
     // JWT Authentication Services
     string secretString = configuration["JwtSettings:Key"]
@@ -109,7 +120,7 @@ try
         var services = scope.ServiceProvider;
         try
         {
-            // This will now successfully resolve to PostgresPosDbContext
+           
             var context = services.GetRequiredService<PosDbContext>();
             Log.Information("Checking for pending migrations...");
 
@@ -118,7 +129,6 @@ try
             {
                 try
                 {
-                    // This will now find your 'Initial_BizFlow_Fixed' migration
                     await context.Database.MigrateAsync();
                     break;
                 }
@@ -126,7 +136,7 @@ try
                 {
                     retryCount++;
                     Log.Warning("Database not ready yet. Retrying ({Count}/5)... Error: {Msg}", retryCount, ex.Message);
-                    await Task.Delay(3000); // Increased delay slightly for Docker DB startup
+                    await Task.Delay(3000); 
                     if (retryCount >= 5) throw;
                 }
             }
@@ -151,7 +161,10 @@ try
         app.UseSwaggerUI();
     }
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
     app.UseRouting();
     app.UseCors(myAllowSpecificOrigins);
     app.UseAuthentication();
