@@ -61,7 +61,6 @@ export function useSale() {
     setIsSubmitting(true);
 
     try {
-    
       await apiClient.post<TransactionResponse>("/Transactions/checkout", command);
       
       toast.success("Transaction completed successfully");

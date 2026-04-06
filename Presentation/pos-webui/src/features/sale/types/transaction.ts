@@ -22,7 +22,6 @@ export interface Product {
 }
 
 export interface CreateTransactionCommand {
-  localId?: string;
   items: { 
     productId: string; 
     quantity: number; 
@@ -35,10 +34,7 @@ export interface CreateTransactionCommand {
   customerCreditId?: string;
   newCustomerName?: string;
   newCustomerContact?: string;
-  isOfflineSync?: boolean;
-  offlineCreatedAt?: string;
 }
-
 export interface TransactionResponse {
   transactionId: string;
   message: string;

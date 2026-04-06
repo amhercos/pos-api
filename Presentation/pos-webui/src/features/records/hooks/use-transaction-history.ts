@@ -11,21 +11,21 @@ export const useTransactionHistory = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const fetchHistory = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get<RecentTransaction[]>(
-        `/Transactions/recent?page=${page}&count=${pageSize}`
-      );
-      setTransactions(response.data);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        console.error("Failed to fetch history:", err.response?.data || err.message);
-      }
-    } finally {
-      setLoading(false);
+ const fetchHistory = useCallback(async (): Promise<void> => {
+  setLoading(true);
+  try {
+    const response = await apiClient.get<RecentTransaction[]>(
+      `/Transactions/recent?page=${page}&pageSize=${pageSize}` 
+    );
+    setTransactions(response.data);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      console.error("Failed to fetch history:", err.response?.data || err.message);
     }
-  }, [page, pageSize]);
+  } finally {
+    setLoading(false);
+  }
+}, [page, pageSize]);
 
   const getTransactionById = async (id: string): Promise<TransactionDetails | null> => {
     try {

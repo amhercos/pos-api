@@ -78,12 +78,12 @@ export function useInventory() {
     }
   };
 
-  const updateProduct = async (id: string, updatedData: UpdateProductRequest): Promise<void> => {
-    try {
-      await apiClient.put(`/Product/${id}`, updatedData);
-      await fetchData(1, 24, true); 
-      toast.success("Product updated");
-    } catch (err: unknown) {
+const updateProduct = async (id: string, updatedData: UpdateProductRequest): Promise<void> => {
+  try {
+    await apiClient.put(`/Product/${id}`, { ...updatedData, id }); 
+    await fetchData(1, 24, true); 
+    toast.success("Product updated");
+  } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const error = err as AxiosError<BaseErrorResponse>;
         toast.error(error.response?.data?.message || "Failed to update product");
@@ -93,7 +93,7 @@ export function useInventory() {
 
   const addCategory = async (name: string): Promise<void> => {
     try {
-      await apiClient.post("/Categories", { name });
+      await apiClient.post("/Categories", { CategoryName : name });
       await fetchData(1, 24, true);
       toast.success(`Category "${name}" created`);
     } catch (err: unknown) {

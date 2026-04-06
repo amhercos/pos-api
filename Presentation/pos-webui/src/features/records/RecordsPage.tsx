@@ -49,7 +49,6 @@ export function RecordsPage() {
   return (
     <div className="flex flex-col gap-5 p-4 lg:p-6 max-w-6xl mx-auto w-full bg-white min-h-screen text-slate-900">
       
-      {/* --- Apple Style Header --- */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Records</h1>
@@ -66,7 +65,6 @@ export function RecordsPage() {
         </Button>
       </div>
 
-      {/* --- Refined Filter Bar --- */}
       <div className="flex flex-col md:flex-row items-center gap-2">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -74,7 +72,7 @@ export function RecordsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search Reference ID..." 
-            className="pl-9 h-10 border-slate-100 bg-slate-50/50 rounded-xl focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-slate-200 transition-all text-[13px]" 
+            className="pl-9 h-10 border-slate-100 bg-slate-50/50 rounded-xl text-[13px]" 
           />
         </div>
 
@@ -83,7 +81,7 @@ export function RecordsPage() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full md:w-48 h-10 justify-start text-left font-semibold text-[12px] rounded-xl border-slate-100 bg-white hover:bg-slate-50 transition-all"
+                className="w-full md:w-48 h-10 justify-start text-left font-semibold text-[12px] rounded-xl border-slate-100 bg-white"
               >
                 <CalendarIcon className="mr-2 h-3.5 w-3.5 text-slate-400" />
                 {date ? format(date, "MMM dd, yyyy") : <span>Date</span>}
@@ -99,21 +97,20 @@ export function RecordsPage() {
             </PopoverContent>
           </Popover>
 
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 border-slate-100 rounded-xl text-slate-400 hover:text-slate-900">
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 border-slate-100 rounded-xl text-slate-400">
             <SlidersHorizontal className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* --- Main Table Container --- */}
       <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="hover:bg-transparent border-b border-slate-100">
-              <TableHead className="text-[11px] font-bold uppercase text-slate-400 tracking-wider pl-6 h-11">Timestamp</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase text-slate-400 tracking-wider h-11">Reference</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase text-slate-400 tracking-wider h-11">Method</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase text-slate-400 tracking-wider text-right pr-6 h-11">Net Amount</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase text-slate-400 pl-6 h-11">Timestamp</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase text-slate-400 h-11">Reference</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase text-slate-400 h-11">Method</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase text-slate-400 text-right pr-6 h-11">Net Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,7 +124,7 @@ export function RecordsPage() {
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-24">
                   <ReceiptText className="h-8 w-8 text-slate-100 mx-auto mb-2" />
-                  <p className="text-xs font-medium text-slate-400">NO ENTRIES FOUND FOR THIS DATE</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">No entries for this date</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -135,10 +132,12 @@ export function RecordsPage() {
                 <TableRow 
                   key={tx.id} 
                   onClick={() => handleOpenReceipt(tx.id)}
-                  className="group cursor-pointer hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0"
+                  className="group cursor-pointer hover:bg-slate-50/80 border-b border-slate-50 last:border-0"
                 >
                   <TableCell className="py-4 pl-6">
-                    <p className="text-[13px] font-semibold text-slate-900 leading-none">{format(new Date(tx.transactionDate), "MMM dd")}</p>
+                    <p className="text-[13px] font-semibold text-slate-900 leading-none">
+                      {format(new Date(tx.transactionDate), "MMM dd")}
+                    </p>
                     <p className="text-[11px] text-slate-400 font-medium mt-1">
                       {format(new Date(tx.transactionDate), "hh:mm aa")}
                     </p>
@@ -168,7 +167,6 @@ export function RecordsPage() {
           </TableBody>
         </Table>
 
-        {/* --- Unified Pagination Footer --- */}
         <div className="px-5 py-3 border-t border-slate-50 bg-slate-50/20 flex items-center justify-between">
             <span className="text-[11px] font-medium text-slate-400">
               {filteredTransactions.length} results
@@ -179,7 +177,7 @@ export function RecordsPage() {
                   size="sm" 
                   onClick={() => setPage(page - 1)} 
                   disabled={page === 1} 
-                  className="h-8 text-[11px] font-bold text-slate-400 hover:text-slate-900"
+                  className="h-8 text-[11px] font-bold text-slate-400"
                 >
                   <ChevronLeft className="h-3.5 w-3.5 mr-1"/> Prev
                 </Button>
@@ -189,7 +187,7 @@ export function RecordsPage() {
                   size="sm" 
                   onClick={() => setPage(page + 1)} 
                   disabled={transactions.length < pageSize} 
-                  className="h-8 text-[11px] font-bold text-slate-400 hover:text-slate-900"
+                  className="h-8 text-[11px] font-bold text-slate-400"
                 >
                   Next <ChevronRight className="h-3.5 w-3.5 ml-1"/>
                 </Button>
