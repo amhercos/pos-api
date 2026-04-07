@@ -56,10 +56,10 @@ public class TransactionsController(IMediator mediator, ICurrentUserService curr
     [HttpGet("recent")]
     public async Task<ActionResult<List<RecentTransactionDto>>> GetRecent(
     [FromQuery] int page = 1,
-    [FromQuery] int count = 3)
+    [FromQuery] int pageSize = 3)
     { 
 
-        var query = new GetRecentTransactionsQuery(currentUserService.StoreId, page, count);
+        var query = new GetRecentTransactionsQuery(currentUserService.StoreId, page, pageSize);
         var result = await mediator.Send(query);
         return Ok(result);
     }

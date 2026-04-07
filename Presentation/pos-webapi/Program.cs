@@ -24,6 +24,25 @@ try
 
     var configuration = builder.Configuration;
 
+    // dynamic sqlite path
+    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "PostgreSQL";
+    if (dbProvider == "SQLite")
+    {
+        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var bizFlowFolder = Path.Combine(appDataPath, "BizFlow");
+
+        if (!Directory.Exists(bizFlowFolder))
+        {
+            Directory.CreateDirectory(bizFlowFolder);
+        }
+
+        var dbPath = Path.Combine(bizFlowFolder, "bizflow.db");
+        // Override the connection string with the absolute path in AppData
+        configuration["ConnectionStrings:SQLiteConnection"] = $"Data Source={dbPath}";
+
+        Log.Information("SQLite Database Path: {Path}", dbPath);
+    }
+
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
@@ -50,8 +69,8 @@ try
     builder.Services.AddInfrastructureServices(configuration);
     builder.Services.AddApplicationServices();
     var infraOption = new InfrastructureOption(builder.Services, configuration);
-    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "PostgreSQL";
 
+    // Using the variable we defined above
     if (dbProvider == "SQLite")
     {
         infraOption.UseSQLite();
@@ -111,7 +130,7 @@ try
             [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
         });
     });
-   
+
 
     var app = builder.Build();
 
@@ -120,7 +139,7 @@ try
         var services = scope.ServiceProvider;
         try
         {
-           
+
             var context = services.GetRequiredService<PosDbContext>();
             Log.Information("Checking for pending migrations...");
 
@@ -136,7 +155,7 @@ try
                 {
                     retryCount++;
                     Log.Warning("Database not ready yet. Retrying ({Count}/5)... Error: {Msg}", retryCount, ex.Message);
-                    await Task.Delay(3000); 
+                    await Task.Delay(3000);
                     if (retryCount >= 5) throw;
                 }
             }
@@ -161,10 +180,10 @@ try
         app.UseSwaggerUI();
     }
 
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseHttpsRedirection();
-    }
+    //if (!app.Environment.IsDevelopment())
+    //{
+    //    app.UseHttpsRedirection();
+    //}
     app.UseRouting();
     app.UseCors(myAllowSpecificOrigins);
     app.UseAuthentication();

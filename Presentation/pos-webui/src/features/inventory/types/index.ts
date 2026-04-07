@@ -25,6 +25,7 @@ export interface CreateProductRequest {
 }
 
 export interface UpdateProductRequest {
+  id : string;
   name: string;
   description: string | null;
   price: number;

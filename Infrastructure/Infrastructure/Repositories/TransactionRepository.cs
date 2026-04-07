@@ -8,6 +8,13 @@ namespace Infrastructure.Repositories;
 
 public class TransactionRepository(PosDbContext context) : ITransactionRepository
 {
+    private DateTime GetPhStartOfTodayUtc()
+    {
+        var phNow = DateTime.UtcNow.AddHours(8);
+        var phTodayStart = new DateTime(phNow.Year, phNow.Month, phNow.Day, 0, 0, 0);
+        return phTodayStart.AddHours(-8);
+    }
+
     public void Add(Transaction transaction) => context.Transactions.Add(transaction);
 
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken ct)
@@ -30,18 +37,20 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
 
     public async Task<decimal> GetTotalRevenueTodayAsync(Guid storeId, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
+        var startUtc = GetPhStartOfTodayUtc();
+
         return await context.Transactions
             .AsNoTracking()
-            .Where(t => t.StoreId == storeId && t.TransactionDate.Date >= today)
+            .Where(t => t.StoreId == storeId && t.TransactionDate >= startUtc)
             .SumAsync(t => (decimal?)t.TotalAmount, ct) ?? 0;
     }
 
     public async Task<int> GetTotalTransactionsTodayAsync(Guid storeId, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
+        var startUtc = GetPhStartOfTodayUtc();
+
         return await context.Transactions
-            .CountAsync(t => t.StoreId == storeId && t.TransactionDate.Date == today, ct);
+            .CountAsync(t => t.StoreId == storeId && t.TransactionDate >= startUtc, ct);
     }
 
     public async Task<(List<Transaction> Items, int TotalCount)> GetRecentTransactionsAsync(

@@ -20,14 +20,6 @@ public class CreateTransactionHandler(
         var storeId = currentUserService.StoreId;
         var userId = currentUserService.UserId ?? Guid.Empty;
 
-        // Idempotency Check
-        if (request.LocalId.HasValue)
-        {
-            var existing = await context.Transactions
-                .FirstOrDefaultAsync(t => t.LocalId == request.LocalId && t.StoreId == storeId, ct);
-            if (existing != null) return existing.Id;
-        }
-
         using var dbTransaction = await context.Database.BeginTransactionAsync(ct);
 
         try
@@ -37,15 +29,12 @@ public class CreateTransactionHandler(
                 Id = Guid.NewGuid(),
                 StoreId = storeId,
                 UserId = userId,
-                LocalId = request.LocalId,
-                IsOfflineSync = request.IsOfflineSync,
-                TransactionDate = (request.IsOfflineSync && request.OfflineCreatedAt.HasValue)
-                    ? request.OfflineCreatedAt.Value
-                    : DateTime.UtcNow,
+                TransactionDate = DateTime.UtcNow,
                 TotalAmount = request.TotalAmount,
                 PaymentType = request.PaymentType,
                 CashReceived = request.CashReceived,
                 ChangeAmount = request.ChangeAmount,
+                CustomerCreditId = request.CustomerCreditId,
                 Items = new List<TransactionItem>()
             };
 
@@ -66,11 +55,10 @@ public class CreateTransactionHandler(
                         CustomerName = request.NewCustomerName,
                         ContactInfo = request.NewCustomerContact,
                         CreditAmount = 0,
-                        Status = CreditStatus.Settled,
+                        Status = CreditStatus.Active,
                         StoreId = storeId
                     };
                     creditRepository.Add(creditAccount);
-                    await context.SaveChangesAsync(ct);
                 }
 
                 if (creditAccount == null) throw new Exception("Credit account required.");
@@ -78,8 +66,6 @@ public class CreateTransactionHandler(
                 creditAccount.CreditAmount += transaction.TotalAmount;
                 creditAccount.Status = CreditStatus.Active;
                 transaction.CustomerCreditId = creditAccount.Id;
-                transaction.CashReceived = 0;
-                transaction.ChangeAmount = 0;
 
                 creditRepository.Update(creditAccount);
             }
@@ -95,7 +81,7 @@ public class CreateTransactionHandler(
             foreach (var item in request.Items)
             {
                 var product = await productRepository.GetByIdAsync(item.ProductId, ct);
-                if (product == null) throw new Exception("Product not found.");
+                if (product == null) throw new Exception($"Product {item.ProductId} not found.");
 
                 product.Stock -= item.Quantity;
                 productRepository.Update(product);

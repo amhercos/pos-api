@@ -7,9 +7,10 @@
   ],
   "permissions": [
     "core:default",
-    "sql:default",
-    "sql:allow-load",
-    "sql:allow-execute",
-    "sql:allow-select"
+    "log:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:webview:default"
   ]
 }
