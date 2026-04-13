@@ -15,8 +15,8 @@ namespace DbMigration.PostgreSQL
             var configuration = tempConfiguration ?? option.Configuration;
             var assemblyName = typeof(PostgresPosDbContext).Assembly.FullName;
 
-            string conString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            string conString = configuration.GetConnectionString("PostgresConnection")
+                ?? throw new InvalidOperationException("Connection string 'PostgresConnection' not found.");
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 

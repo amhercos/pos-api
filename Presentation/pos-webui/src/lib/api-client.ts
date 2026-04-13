@@ -7,7 +7,7 @@ const isProduction = import.meta.env.PROD;
 
 const getBaseUrl = (): string => {
   if (isProduction || isTauri) {
-    return "http://localhost:5130/api";
+    return "http://127.0.0.1:5130/api"; 
   }
   return import.meta.env.VITE_API_BASE_URL || "/api";
 };

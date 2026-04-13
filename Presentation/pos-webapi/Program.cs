@@ -11,7 +11,9 @@ using pos_webapi.Middleware;
 using Serilog;
 using System.Text;
 
+
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
@@ -22,10 +24,13 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
 
+    // Tauri Sidecar to find appsettings.json
+    builder.Configuration.SetBasePath(AppContext.BaseDirectory);
+    builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
     var configuration = builder.Configuration;
 
-    // dynamic sqlite path
-    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "PostgreSQL";
+    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "SQLite";
     if (dbProvider == "SQLite")
     {
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -43,10 +48,19 @@ try
         Log.Information("SQLite Database Path: {Path}", dbPath);
     }
 
-    builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
+    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    {
+        loggerConfiguration
+            .MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .WriteTo.Console();
+
+        /* 
+        loggerConfiguration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services);
+        */
+    });
 
     // Services Configuration
     builder.Services.AddControllers();
@@ -107,7 +121,6 @@ try
 
     builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
-    // Swagger Configuration
     builder.Services.AddSwaggerGen(c =>
     {
         c.SwaggerDoc("v1", new OpenApiInfo
@@ -173,17 +186,14 @@ try
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-
-    //if (!app.Environment.IsDevelopment())
+ 
+    //if (app.Environment.IsDevelopment())
     //{
-    //    app.UseHttpsRedirection();
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
     //}
+
     app.UseRouting();
     app.UseCors(myAllowSpecificOrigins);
     app.UseAuthentication();

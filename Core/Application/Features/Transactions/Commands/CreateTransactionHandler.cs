@@ -67,7 +67,7 @@ public class CreateTransactionHandler(
                 creditAccount.Status = CreditStatus.Active;
                 transaction.CustomerCreditId = creditAccount.Id;
 
-                creditRepository.Update(creditAccount);
+                //creditRepository.Update(creditAccount);
             }
             else // Cash Validation
             {
@@ -84,7 +84,7 @@ public class CreateTransactionHandler(
                 if (product == null) throw new Exception($"Product {item.ProductId} not found.");
 
                 product.Stock -= item.Quantity;
-                productRepository.Update(product);
+                //productRepository.Update(product);
 
                 transaction.Items.Add(new TransactionItem
                 {

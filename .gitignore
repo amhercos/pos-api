@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Ignore compiled backend binaries for Tauri sidecar
+src-tauri/binaries/*.exe
+
 # SQLite Databases & Temporary Files
 *.db
 *.db-wal

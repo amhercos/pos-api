@@ -57,6 +57,7 @@ export function EditProductModal({
     setLoading(true);
     try {
       await onUpdate(product.id, { 
+        id: product.id,
         name: formData.name,
         price: Number(formData.price), 
         stock: Number(formData.stockQuantity), 
