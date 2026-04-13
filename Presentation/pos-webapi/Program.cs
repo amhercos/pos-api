@@ -2,7 +2,6 @@ using Application;
 using Infrastructure;
 using Infrastructure.Persistence;
 using DbMigration.PostgreSQL;
-using DbMigration.SQLite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,7 +9,6 @@ using Microsoft.OpenApi;
 using pos_webapi.Middleware;
 using Serilog;
 using System.Text;
-
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -24,29 +22,15 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
 
-    // Tauri Sidecar to find appsettings.json
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5130);
+    });
+
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
     builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
     var configuration = builder.Configuration;
-
-    var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "SQLite";
-    if (dbProvider == "SQLite")
-    {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var bizFlowFolder = Path.Combine(appDataPath, "BizFlow");
-
-        if (!Directory.Exists(bizFlowFolder))
-        {
-            Directory.CreateDirectory(bizFlowFolder);
-        }
-
-        var dbPath = Path.Combine(bizFlowFolder, "bizflow.db");
-        // Override the connection string with the absolute path in AppData
-        configuration["ConnectionStrings:SQLiteConnection"] = $"Data Source={dbPath}";
-
-        Log.Information("SQLite Database Path: {Path}", dbPath);
-    }
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     {
@@ -54,49 +38,34 @@ try
             .MinimumLevel.Information()
             .Enrich.FromLogContext()
             .WriteTo.Console();
-
-        /* 
-        loggerConfiguration
-            .ReadFrom.Configuration(context.Configuration)
-            .ReadFrom.Services(services);
-        */
     });
 
     // Services Configuration
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
 
+   
     var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
-    var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
     builder.Services.AddCors(options =>
     {
         options.AddPolicy(name: myAllowSpecificOrigins, policy =>
         {
-            policy.WithOrigins(allowedOrigins)
+            policy.AllowAnyOrigin()
                   .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
+                  .AllowAnyHeader();
         });
     });
 
-    //DI
+    // DI & PostgreSQL Force
     builder.Services.AddInfrastructureServices(configuration);
     builder.Services.AddApplicationServices();
-    var infraOption = new InfrastructureOption(builder.Services, configuration);
 
-    // Using the variable we defined above
-    if (dbProvider == "SQLite")
-    {
-        infraOption.UseSQLite();
-    }
-    else
-    {
-        infraOption.UsePostgreSQL();
-    }
+    var infraOption = new InfrastructureOption(builder.Services, configuration);
+    infraOption.UsePostgreSQL();
 
     // JWT Authentication Services
     string secretString = configuration["JwtSettings:Key"]
-        ?? throw new ArgumentNullException("JwtSettings:Key", "The JWT Secret Key is missing from configuration.");
+        ?? throw new ArgumentNullException("JwtSettings:Key", "The JWT Secret Key is missing.");
     var key = Encoding.UTF8.GetBytes(secretString);
 
     builder.Services.AddAuthentication(options =>
@@ -121,6 +90,8 @@ try
 
     builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
+
+  // swagger
     builder.Services.AddSwaggerGen(c =>
     {
         c.SwaggerDoc("v1", new OpenApiInfo
@@ -152,47 +123,24 @@ try
         var services = scope.ServiceProvider;
         try
         {
-
             var context = services.GetRequiredService<PosDbContext>();
-            Log.Information("Checking for pending migrations...");
-
-            int retryCount = 0;
-            while (retryCount < 5)
-            {
-                try
-                {
-                    await context.Database.MigrateAsync();
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    retryCount++;
-                    Log.Warning("Database not ready yet. Retrying ({Count}/5)... Error: {Msg}", retryCount, ex.Message);
-                    await Task.Delay(3000);
-                    if (retryCount >= 5) throw;
-                }
-            }
-
+            Log.Information("Applying PostgreSQL Migrations...");
+            await context.Database.MigrateAsync();
             await DbInitializer.SeedAdminUser(services);
-            Log.Information("Database migration and seeding completed.");
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred during database initialization (Migration/Seeding).");
+            Log.Error(ex, "Database initialization failed.");
         }
     }
 
-    // --- Middleware Pipeline ---
+    // Middleware Pipeline
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
 
- 
-    //if (app.Environment.IsDevelopment())
-    //{
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
-    //}
 
     app.UseRouting();
     app.UseCors(myAllowSpecificOrigins);
