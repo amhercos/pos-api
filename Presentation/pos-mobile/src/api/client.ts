@@ -6,7 +6,7 @@ import * as SecureStore from "expo-secure-store";
 const getBaseUrl = (): string => {
   if (__DEV__) {
     // local ipconfig
-    return "http://192.168.254.109:5130/api";
+    return "http://192.168.254.110:5130/api";
   }
   // cloud api
   return "https://cloud-api.com/api";
