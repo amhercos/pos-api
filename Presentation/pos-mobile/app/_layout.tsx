@@ -35,6 +35,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
   const navigateTo = (path: string) => {
     props.navigation.closeDrawer();
+    // Path must include the (tabs) group to keep the navigation state
     router.push(path as Href);
   };
 
@@ -71,7 +72,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => navigateTo("/pricing")}
+            onPress={() => navigateTo("/(tabs)/pricing")}
             className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
           >
             <Tag size={20} color="#64748b" />
@@ -116,12 +117,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
-        // defaultStatus is a top-level prop of Drawer, not inside screenOptions
         defaultStatus="closed"
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
-          // 'front' ensures the drawer is an overlay that can be dismissed
           drawerType: "front",
           drawerStyle: {
             width: isTablet ? 320 : "75%",
@@ -133,7 +132,6 @@ export default function RootLayout() {
         }}
       >
         <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
-        <Drawer.Screen name="pricing" options={{ title: "Pricing" }} />
       </Drawer>
     </GestureHandlerRootView>
   );
