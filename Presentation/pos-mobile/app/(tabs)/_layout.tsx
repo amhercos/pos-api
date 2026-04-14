@@ -1,19 +1,21 @@
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import {
-  BarChart3,
   LayoutDashboard,
   Menu,
   Package,
   Receipt,
   ShoppingCart,
-  Tag,
 } from "lucide-react-native";
 import React from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, useWindowDimensions } from "react-native";
 
 export default function TabLayout() {
   const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
+
+  const isLandscape = width > height;
+  const isTablet = width >= 768;
 
   return (
     <Tabs
@@ -41,17 +43,21 @@ export default function TabLayout() {
         tabBarActiveTintColor: "#2563eb",
         tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
-          height: 80, // Increased slightly for comfort
-          paddingBottom: 20,
+          height: isLandscape ? 65 : 80,
+          paddingBottom: isLandscape ? 10 : 20,
           paddingTop: 10,
           borderTopWidth: 1,
           borderTopColor: "#f1f5f9",
           backgroundColor: "#ffffff",
           elevation: 0,
+
+          paddingHorizontal: isTablet && isLandscape ? width * 0.15 : 0,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "700",
+          // Hide labels in landscape to save more room for the product grid
+          display: isLandscape && !isTablet ? "none" : "flex",
         },
       }}
     >
@@ -84,7 +90,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* New: Credit/Debt Navigation */}
       <Tabs.Screen
         name="credits"
         options={{
@@ -94,24 +99,8 @@ export default function TabLayout() {
         }}
       />
 
-      {/* New: Special Pricing Navigation */}
-      <Tabs.Screen
-        name="pricing"
-        options={{
-          title: "Special Pricing",
-          tabBarLabel: "Pricing",
-          tabBarIcon: ({ color }) => <Tag size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: "Analytics",
-          tabBarLabel: "Reports",
-          tabBarIcon: ({ color }) => <BarChart3 size={22} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="pricing" options={{ href: null }} />
+      <Tabs.Screen name="reports" options={{ href: null }} />
     </Tabs>
   );
 }
