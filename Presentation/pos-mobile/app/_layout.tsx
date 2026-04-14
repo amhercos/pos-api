@@ -1,5 +1,5 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { router } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as SecureStore from "expo-secure-store";
 import {
@@ -10,6 +10,7 @@ import {
   Tag,
   User,
 } from "lucide-react-native";
+import React from "react";
 import {
   ScrollView,
   Text,
@@ -21,13 +22,20 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
+  const router = useRouter();
+
   const handleLogout = async () => {
     try {
       await SecureStore.deleteItemAsync("token");
-      router.replace("/login");
+      router.replace("/login" as Href);
     } catch (e) {
       console.error("Logout failed", e);
     }
+  };
+
+  const navigateTo = (path: string) => {
+    props.navigation.closeDrawer();
+    router.push(path as Href);
   };
 
   return (
@@ -55,7 +63,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         </Text>
         <View className="gap-y-1 mb-8">
           <TouchableOpacity
-            onPress={() => router.push("/reports")}
+            onPress={() => navigateTo("/(tabs)/reports")}
             className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
           >
             <BarChart3 size={20} color="#64748b" />
@@ -63,7 +71,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/pricing")}
+            onPress={() => navigateTo("/pricing")}
             className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
           >
             <Tag size={20} color="#64748b" />
@@ -81,7 +89,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
             <User size={20} color="#64748b" />
             <Text className="ml-3 font-bold text-slate-700">Profile</Text>
           </TouchableOpacity>
-
           <TouchableOpacity className="flex-row items-center p-4 rounded-2xl active:bg-slate-100">
             <Settings size={20} color="#64748b" />
             <Text className="ml-3 font-bold text-slate-700">Settings</Text>
@@ -109,10 +116,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        // defaultStatus is a top-level prop of Drawer, not inside screenOptions
         defaultStatus="closed"
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
+          // 'front' ensures the drawer is an overlay that can be dismissed
           drawerType: "front",
           drawerStyle: {
             width: isTablet ? 320 : "75%",
@@ -123,13 +132,8 @@ export default function RootLayout() {
           swipeEnabled: true,
         }}
       >
-        <Drawer.Screen
-          name="(tabs)"
-          options={{
-            drawerLabel: "Home",
-            title: "Overview",
-          }}
-        />
+        <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
+        <Drawer.Screen name="pricing" options={{ title: "Pricing" }} />
       </Drawer>
     </GestureHandlerRootView>
   );

@@ -24,8 +24,6 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: "#ffffff",
-          elevation: 0,
-          shadowOpacity: 0,
         },
         headerTitleStyle: {
           fontWeight: "800",
@@ -50,13 +48,11 @@ export default function TabLayout() {
           borderTopColor: "#f1f5f9",
           backgroundColor: "#ffffff",
           elevation: 0,
-
           paddingHorizontal: isTablet && isLandscape ? width * 0.15 : 0,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "700",
-          // Hide labels in landscape to save more room for the product grid
           display: isLandscape && !isTablet ? "none" : "flex",
         },
       }}
@@ -99,8 +95,23 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen name="pricing" options={{ href: null }} />
-      <Tabs.Screen name="reports" options={{ href: null }} />
+      {/* --- HIDDEN TABS --- */}
+      {/* Remove the (tabs)/ prefix here. It just needs to be the filename */}
+      <Tabs.Screen
+        name="pricing"
+        options={{
+          href: null,
+          title: "Special Pricing",
+        }}
+      />
+
+      <Tabs.Screen
+        name="reports"
+        options={{
+          href: null,
+          title: "Transaction Reports",
+        }}
+      />
     </Tabs>
   );
 }

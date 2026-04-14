@@ -73,6 +73,9 @@ namespace Infrastructure.Persistence
             builder.Entity<TransactionItem>().HasQueryFilter(ti => ti.StoreId == _currentUserService.StoreId);
             builder.Entity<CreditPayment>().HasQueryFilter(cp => cp.StoreId == _currentUserService.StoreId);
 
+            builder.Entity<Product>()
+                   .ToTable(t => t.HasCheckConstraint("CK_Product_Stock_NonNegative", "\"Stock\" >= 0"));
+
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
                 if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)

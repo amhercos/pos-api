@@ -77,14 +77,20 @@ public class CreateTransactionHandler(
                 transaction.ChangeAmount = request.CashReceived - transaction.TotalAmount;
             }
 
-            // Inventory & Item Mapping
+
             foreach (var item in request.Items)
             {
                 var product = await productRepository.GetByIdAsync(item.ProductId, ct);
-                if (product == null) throw new Exception($"Product {item.ProductId} not found.");
+
+                if (product == null)
+                    throw new Exception($"Product not found: {item.ProductId}");
+
+                if (product.Stock < item.Quantity)
+                {
+                    throw new Exception($"Insufficient stock for {product.Name}. Available: {product.Stock}");
+                }
 
                 product.Stock -= item.Quantity;
-                //productRepository.Update(product);
 
                 transaction.Items.Add(new TransactionItem
                 {
