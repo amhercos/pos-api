@@ -9,6 +9,7 @@ namespace Domain.Entities.Common
     {
         public Guid Id { get; set; }
         [Timestamp]
-        public byte[] RowVersion { get; set; } = null!;
+
+        public uint RowVersion { get; set; }
     }
 }

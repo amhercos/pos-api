@@ -1,9 +1,10 @@
-﻿using Application.Interfaces;
-using Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿    using Application.Interfaces;
+    using Infrastructure.Persistence;
+    using Infrastructure.Services;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Diagnostics;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
 
 namespace DbMigration.PostgreSQL
 {
@@ -14,38 +15,32 @@ namespace DbMigration.PostgreSQL
             var services = option.Services;
             var configuration = tempConfiguration ?? option.Configuration;
             var assemblyName = typeof(PostgresPosDbContext).Assembly.FullName;
+            var masterConnection = configuration.GetConnectionString("PostgresConnection");
 
-            string conString = configuration.GetConnectionString("PostgresConnection")
-                ?? throw new InvalidOperationException("Connection string 'PostgresConnection' not found.");
+ 
+            services.AddDbContext<MasterDbContext>(options =>
+                options.UseNpgsql(masterConnection, o => o.MigrationsAssembly(assemblyName)));
 
-            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            services.AddScoped<IConnectionResolver, ConnectionResolver>();
 
-     
-            services.AddDbContext<PostgresPosDbContext>(options =>
+           // dynamic connection
+            services.AddDbContext<PostgresPosDbContext>((serviceProvider, options) =>
             {
-                options.UseNpgsql(
-                    conString,
-                    npgsqlOptionsAction: opt =>
-                    {
-                        opt.MigrationsAssembly(assemblyName);
-                        opt.MigrationsHistoryTable("__EFMigrationsHistory", "public");
-                    }
-                );
-                options.ConfigureWarnings(w => 
-                w.Ignore(RelationalEventId.PendingModelChangesWarning));
+                var resolver = serviceProvider.GetRequiredService<IConnectionResolver>();
+
+                options.UseNpgsql(resolver.GetConnectionString(), opt =>
+                {
+                    opt.MigrationsAssembly(assemblyName);
+                    opt.MigrationsHistoryTable("__EFMigrationsHistory", "public");
+                });
+
+                options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
             });
 
-            
-
-
-            services.AddScoped<PosDbContext>(provider =>
-                provider.GetRequiredService<PostgresPosDbContext>());
-
-            services.AddScoped<IPosDbContext>(provider =>
-                provider.GetRequiredService<PostgresPosDbContext>());
-
-            services.AddScoped<DbContext>(provider =>
-                provider.GetRequiredService<PostgresPosDbContext>());
+            // Abstractions
+            services.AddScoped<PosDbContext>(p => p.GetRequiredService<PostgresPosDbContext>());
+            services.AddScoped<IPosDbContext>(p => p.GetRequiredService<PostgresPosDbContext>());
+            services.AddScoped<ITenantMigrator, PostgresTenantMigrator>();
 
             return services;
         }

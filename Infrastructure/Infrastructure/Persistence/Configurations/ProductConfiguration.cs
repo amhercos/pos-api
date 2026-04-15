@@ -14,29 +14,20 @@ namespace Infrastructure.Persistence.Configurations
                    .HasMaxLength(200)
                    .IsRequired();
 
-            builder.Property(p => p.Description)
-                   .HasMaxLength(500);
+            builder.Property(p => p.Price).IsRequired();
+            builder.Property(p => p.Stock).HasDefaultValue(0);
 
-            builder.Property(p => p.Price)
-                   .IsRequired();
+            builder.Ignore(p => p.Store);
 
-            builder.Property(p => p.Stock)
-                   .HasDefaultValue(0);
-
-            builder.Property(p => p.LowStockThreshold)
-                   .HasDefaultValue(5);
-
-            // Many Category => One Product
+        
             builder.HasOne(p => p.Category)
-            .WithMany(c => c.Products)
-                .HasForeignKey(p => p.CategoryId)
+                   .WithMany(c => c.Products)
+                   .HasForeignKey(p => p.CategoryId)
                    .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasIndex(p => new { p.Name, p.StoreId })
                     .IsUnique()
                     .HasFilter("\"IsDeleted\" = false");
-            builder.HasIndex(p => p.CategoryId);
         }
     }
 }
-

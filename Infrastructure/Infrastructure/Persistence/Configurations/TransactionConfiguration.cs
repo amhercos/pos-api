@@ -13,15 +13,13 @@ namespace Infrastructure.Persistence.Configurations
         {
             builder.HasKey(t => t.Id);
 
+            builder.Ignore(t => t.Store);
+            builder.Ignore(t => t.User);
+
             builder.Property(t => t.PaymentType)
                    .HasMaxLength(20)
                    .IsRequired();
 
-            
-            builder.HasOne(t => t.User)
-                   .WithMany()
-                   .HasForeignKey(t => t.UserId)
-                   .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(t => t.CustomerCredit)
                    .WithMany()

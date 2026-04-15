@@ -56,12 +56,14 @@ try
         });
     });
 
-    // DI & PostgreSQL Force
-    builder.Services.AddInfrastructureServices(configuration);
-    builder.Services.AddApplicationServices();
+
 
     var infraOption = new InfrastructureOption(builder.Services, configuration);
     infraOption.UsePostgreSQL();
+
+    // DI & PostgreSQL Force
+    builder.Services.AddInfrastructureServices(configuration);
+    builder.Services.AddApplicationServices();
 
     // JWT Authentication Services
     string secretString = configuration["JwtSettings:Key"]

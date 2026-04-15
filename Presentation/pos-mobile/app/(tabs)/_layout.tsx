@@ -8,7 +8,7 @@ import {
   ShoppingCart,
 } from "lucide-react-native";
 import React from "react";
-import { TouchableOpacity, useWindowDimensions } from "react-native";
+import { Platform, TouchableOpacity, useWindowDimensions } from "react-native";
 
 export default function TabLayout() {
   const navigation = useNavigation();
@@ -24,40 +24,43 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: "#ffffff",
-          elevation: 0,
-          shadowOpacity: 0,
+          height: Platform.OS === "ios" ? 100 : 60, // Compact header
         },
         headerTitleStyle: {
           fontWeight: "800",
-          fontSize: 18,
+          fontSize: 16, // Slightly smaller
           color: "#0f172a",
         },
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-            className="ml-5 p-2 bg-slate-50 rounded-xl"
+            className="ml-4 p-1.5 bg-slate-50 rounded-lg"
           >
-            <Menu size={20} color="#0f172a" />
+            <Menu size={18} color="#0f172a" />
           </TouchableOpacity>
         ),
         tabBarActiveTintColor: "#2563eb",
         tabBarInactiveTintColor: "#94a3b8",
+
+        // --- COMPACT BOTTOM BAR DESIGN ---
         tabBarStyle: {
-          height: isLandscape ? 65 : 80,
-          paddingBottom: isLandscape ? 10 : 20,
-          paddingTop: 10,
+          height: isLandscape ? 50 : 65, // Reduced from 80
+          paddingBottom: Platform.OS === "ios" ? 20 : 8, // Optimized for safe areas
+          paddingTop: 8,
           borderTopWidth: 1,
           borderTopColor: "#f1f5f9",
           backgroundColor: "#ffffff",
           elevation: 0,
-
-          paddingHorizontal: isTablet && isLandscape ? width * 0.15 : 0,
+          paddingHorizontal: isTablet ? width * 0.1 : 0,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: "700",
-          // Hide labels in landscape to save more room for the product grid
+          fontWeight: "600",
+          marginTop: -4, // Pull label closer to icon
           display: isLandscape && !isTablet ? "none" : "flex",
+        },
+        tabBarIconStyle: {
+          marginBottom: 0, // Remove default spacing
         },
       }}
     >
@@ -67,7 +70,7 @@ export default function TabLayout() {
           title: "Home",
           tabBarLabel: "Home",
           tabBarIcon: ({ color }) => (
-            <LayoutDashboard size={22} color={color} />
+            <LayoutDashboard size={20} color={color} /> // Reduced from 22
           ),
         }}
       />
@@ -77,7 +80,7 @@ export default function TabLayout() {
         options={{
           title: "New Sale",
           tabBarLabel: "Sale",
-          tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
+          tabBarIcon: ({ color }) => <ShoppingCart size={20} color={color} />,
         }}
       />
 
@@ -86,21 +89,25 @@ export default function TabLayout() {
         options={{
           title: "Inventory",
           tabBarLabel: "Stock",
-          tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Package size={20} color={color} />,
         }}
       />
 
       <Tabs.Screen
         name="credits"
         options={{
-          title: "Credit & Debt",
+          title: "Credits",
           tabBarLabel: "Credits",
-          tabBarIcon: ({ color }) => <Receipt size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Receipt size={20} color={color} />,
         }}
       />
 
-      <Tabs.Screen name="pricing" options={{ href: null }} />
-      <Tabs.Screen name="reports" options={{ href: null }} />
+      {/* Hidden Tabs */}
+      <Tabs.Screen name="reports" options={{ href: null, title: "Reports" }} />
+      <Tabs.Screen
+        name="pricing"
+        options={{ href: null, title: "Special Pricing" }}
+      />
     </Tabs>
   );
 }

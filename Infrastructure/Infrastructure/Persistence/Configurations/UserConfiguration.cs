@@ -11,13 +11,9 @@ namespace Infrastructure.Persistence.Configurations
             builder.Property(u => u.UserName)
                 .IsRequired()
                 .HasMaxLength(100);
-            builder.Property(u => u.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            builder.HasOne(u => u.Store)
-                .WithMany()
-                .HasForeignKey(u => u.StoreId)
-                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Ignore(u => u.Store);
         }
     }
 }
