@@ -2,15 +2,13 @@
 using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Application.Features.Auth.Commands
 {
-    public class AddStaffHandler(UserManager<User> userManager,
-            IPosDbContext context,
-            ICurrentUserService currentUserService) : IRequestHandler<AddStaffCommand, bool>
+    public class AddStaffHandler(
+        UserManager<User> userManager,
+        IPosDbContext context,
+        ICurrentUserService currentUserService) : IRequestHandler<AddStaffCommand, bool>
     {
         public async Task<bool> Handle(AddStaffCommand request, CancellationToken ct)
         {
@@ -25,12 +23,20 @@ namespace Application.Features.Auth.Commands
                 UserName = request.Email,
                 FullName = request.FullName,
                 StoreId = storeOwnerId,
-                Role = "Cashier",
                 CreatedAt = DateTime.UtcNow
             };
 
+       
             var result = await userManager.CreateAsync(cashier, request.Password);
-            return result.Succeeded;
+
+            if (!result.Succeeded)
+            {
+                return false;
+            }
+
+            var roleResult = await userManager.AddToRoleAsync(cashier, "Cashier");
+
+            return roleResult.Succeeded;
         }
     }
 }

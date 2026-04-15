@@ -29,20 +29,19 @@ namespace Infrastructure.Services
                 return masterConnection;
 
             using var scope = _serviceProvider.CreateScope();
-            var masterContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+            var masterContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
 
             var store = masterContext.Stores
                 .AsNoTracking()
                 .FirstOrDefault(s => s.Id == _currentUser.StoreId && s.IsActive);
 
+          
             if (store != null && store.MigrationStatus != MigrationStatus.Success)
             {
-                throw new InvalidOperationException("Your store database is still being provisioned. Please wait a few seconds.");
+                throw new InvalidOperationException("Your store is still being prepared. Please wait a moment.");
             }
 
-            return !string.IsNullOrEmpty(store?.ConnectionString)
-                ? store.ConnectionString
-                : masterConnection;
+            return masterConnection;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Features.Staff.Commands;
+using Application.Interfaces;
 using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +15,13 @@ public class DeleteStaffHandler(
         var merchantStoreId = currentUserService.StoreId;
         var staff = await userManager.FindByIdAsync(request.Id.ToString());
 
-        if (staff == null || staff.StoreId != merchantStoreId || staff.Role != "Cashier")
+        if (staff == null || staff.StoreId != merchantStoreId)
+        {
+            return false;
+        }
+
+        var isCashier = await userManager.IsInRoleAsync(staff, "Cashier");
+        if (!isCashier)
         {
             return false;
         }

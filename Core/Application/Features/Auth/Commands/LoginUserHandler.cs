@@ -4,14 +4,12 @@ using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
-
 namespace Application.Features.Auth.Commands
 {
-    public class LoginUserHandler (
+    public class LoginUserHandler(
         UserManager<User> userManager,
         IJwtService tokenService) : IRequestHandler<LoginUserCommand, AuthResponseDto>
     {
-
         public async Task<AuthResponseDto> Handle(LoginUserCommand request, CancellationToken cancellationToken)
         {
             var user = await userManager.FindByNameAsync(request.Username);
@@ -21,13 +19,19 @@ namespace Application.Features.Auth.Commands
                 throw new UnauthorizedAccessException("Invalid username or password.");
             }
 
-            var token = tokenService.GenerateToken(user);
+          
+            var token = await tokenService.GenerateToken(user);
+
+            
+            var roles = await userManager.GetRolesAsync(user);
+            var primaryRole = roles.FirstOrDefault() ?? "User";
 
             return new AuthResponseDto(
                 Token: token,
                 FullName: user.FullName,
                 Username: user.UserName!,
-                Role: user.Role);
+                Role: primaryRole
+            );
         }
     }
 }

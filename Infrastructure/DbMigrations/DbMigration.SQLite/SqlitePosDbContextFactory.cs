@@ -31,6 +31,7 @@ namespace DbMigration.SQLite
             public Guid? UserId => Guid.Empty;
             public Guid StoreId => Guid.Empty;
             public string? Role => "Admin";
+            public string? SchemaName => "public";
         }
     }
 }

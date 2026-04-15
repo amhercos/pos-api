@@ -1,4 +1,7 @@
-﻿### ⚙️ BizFlow Database Migration Guide
+﻿
+---
+
+### ⚙️ BizFlow Database Migration Guide
 
 ### 📌 System Configuration
 
@@ -6,42 +9,55 @@
 | --- | --- |
 | **Migration Project** | `Infrastructure/DbMigrations/DbMigration.PostgreSQL` |
 | **Startup Project** | `Infrastructure/DbMigrations/DbMigration.PostgreSQL` |
-| **Context Class** | `PostgresPosDbContext` |
 | **Target Framework** | `.NET 10.0` |
 
 ---
 
-### ### Pre-Migration Requirements
-
-1. **Version Alignment**: Ensure all EF Core packages (Design, Tools, PostgreSQL) are consolidated to version `10.0.5` via NuGet Manager.
-2. **appsettings.json**: Ensure a copy of `appsettings.json` with your `DefaultConnection` is inside the `DbMigration.PostgreSQL` folder.
-3. **Configurations**: Verify `OnModelCreating` uses `builder.ApplyConfigurationsFromAssembly` to load explicit Foreign Key mappings.
+### 🗄️ Context Map
+| Context Name | Responsibility | Schema |
+| :--- | :--- | :--- |
+| **`AppIdentityDbContext`** | Global Stores, Users, Roles, Identity | `public` |
+| **`PostgresPosDbContext`** | Business Logic (Products, Sales, Inventory) | `tenant_xxx` |
 
 ---
 
-### ### Visual Studio: Package Manager Console (PMC)
+### 🚀 Migration Commands (.NET CLI)
+
+#### 1. System/Global Migration (`AppIdentityDbContext`)
+**Run this first.** This creates the `Stores` and `Identity` tables in the `public` schema. This is required for registration and login to function.
+
+```bash
+# Add System Migration
+dotnet ef migrations add Initial_Identity --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context AppIdentityDbContext --framework net10.0
+
+# Update System Database
+dotnet ef database update --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context AppIdentityDbContext --framework net10.0
+```
+
+#### 2. Tenant Migration (`PostgresPosDbContext`)
+**Run this second.** This generates the "Template" for merchant schemas. Note: You generally **do not** run `database update` for this context manually in production; the `StoreMigrationService` handles it.
+
+```bash
+# Add Tenant Migration
+dotnet ef migrations add Initial_Tenant_Schema --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --framework net10.0
+
+# Optional: Update 'public' schema for development testing
+dotnet ef database update --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --framework net10.0
+```
+
+---
+
+### 🛠️ Visual Studio: Package Manager Console (PMC)
 
 ```powershell
-# 1. Add a New Migration
-Add-Migration Initial_BizFlow_Fixed -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL -Context PostgresPosDbContext
+# --- AppIdentityDbContext (SYSTEM) ---
+Add-Migration Initial_Identity -Context AppIdentityDbContext -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL
+Update-Database -Context AppIdentityDbContext -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL
 
-# 2. Apply Changes to Database
-Update-Database -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL -Context PostgresPosDbContext
-
-# 3. Remove Last Migration (Undo)
-Remove-Migration -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL -Context PostgresPosDbContext
-
+# --- PostgresPosDbContext (TENANT) ---
+Add-Migration Initial_Tenant -Context PostgresPosDbContext -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL
+# Only run update-database if you want to apply migrations to the default 'public' schema
+Update-Database -Context PostgresPosDbContext -Project DbMigration.PostgreSQL -StartupProject DbMigration.PostgreSQL
 ```
 
-### ### .NET CLI (Terminal/Command Prompt)
-
-```
-# 1. Add a New Migration
-dotnet ef migrations add Initial_BizFlow_Fixed --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --framework net10.0
-
-# 2. Apply Changes to Database
-dotnet ef database update --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --framework net10.0
-
-# 3. Generate SQL Script
-dotnet ef migrations script --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --output Migrations_Setup.sql
-```
+---

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class Category : BaseEntity
+    public class Category : BaseEntity , ITenantEntity
     {
         public required string CategoryName { get; set; }
         public ICollection<Product> Products { get; set; } = new List<Product>();

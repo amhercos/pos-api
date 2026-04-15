@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
-    public class StoreRepository(PosDbContext context) : IStoreRepository
+    public class StoreRepository(AppIdentityDbContext context) : IStoreRepository
     {
 
         public async Task AddAsync(Store store, CancellationToken ct)

@@ -2,12 +2,15 @@
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Domain.Entities;
 
 namespace Application.Features.Staff.Queries
 {
     public class GetStaffHandler(
-    IUserRepository userRepository,
-    ICurrentUserService currentUserService) : IRequestHandler<GetStaffQuery, IEnumerable<StaffDto>>
+        IUserRepository userRepository,
+        UserManager<User> userManager,
+        ICurrentUserService currentUserService) : IRequestHandler<GetStaffQuery, IEnumerable<StaffDto>>
     {
         public async Task<IEnumerable<StaffDto>> Handle(GetStaffQuery request, CancellationToken ct)
         {
@@ -18,13 +21,22 @@ namespace Application.Features.Staff.Queries
 
             var staffMembers = await userRepository.GetStaffByStoreIdAsync(storeId, ct);
 
+            var staffDtos = new List<StaffDto>();
 
-            return staffMembers.Select(s => new StaffDto(
-                s.Id.ToString(),
-                s.FullName,
-                s.Email ?? string.Empty,
-                s.Role ?? "Cashier",
-                s.CreatedAt));
+            foreach (var s in staffMembers)
+            {
+                var roles = await userManager.GetRolesAsync(s);
+                var role = roles.FirstOrDefault() ?? "Cashier";
+
+                staffDtos.Add(new StaffDto(
+                    s.Id.ToString(),
+                    s.FullName,
+                    s.Email ?? string.Empty,
+                    role,
+                    s.CreatedAt));
+            }
+
+            return staffDtos;
         }
     }
 }

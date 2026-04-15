@@ -12,7 +12,7 @@ namespace Infrastructure.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<StoreMigrationService> _logger;
-        private const int IntervalSeconds = 5;
+        private const int IntervalSeconds = 30;
 
         public StoreMigrationService(
             IServiceProvider serviceProvider,
@@ -32,7 +32,7 @@ namespace Infrastructure.Services
                 {
                     using var scope = _serviceProvider.CreateScope();
 
-                    var masterContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+                    var masterContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
                     var migrator = scope.ServiceProvider.GetRequiredService<ITenantMigrator>();
 
                     var pendingStores = await masterContext.Stores

@@ -125,10 +125,15 @@ try
         var services = scope.ServiceProvider;
         try
         {
-            var context = services.GetRequiredService<PosDbContext>();
-            Log.Information("Applying PostgreSQL Migrations...");
-            await context.Database.MigrateAsync();
+            var identityContext = services.GetRequiredService<AppIdentityDbContext>();
+            Log.Information("Applying Identity PostgreSQL Migrations...");
+            await identityContext.Database.MigrateAsync();
+
+
+            Log.Information("Seeding Admin User...");
             await DbInitializer.SeedAdminUser(services);
+
+            Log.Information("Database initialization completed successfully.");
         }
         catch (Exception ex)
         {

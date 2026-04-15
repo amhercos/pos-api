@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class Transaction : BaseEntity
+    public class Transaction : BaseEntity , ITenantEntity
     {
         public DateTime TransactionDate { get; set; } 
         public decimal TotalAmount { get; set; }

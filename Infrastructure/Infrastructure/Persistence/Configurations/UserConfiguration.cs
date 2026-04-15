@@ -8,10 +8,13 @@ namespace Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<User> builder)
         {
+            builder.Property(u => u.FullName)
+             .IsRequired()
+             .HasMaxLength(255);
+
             builder.Property(u => u.UserName)
                 .IsRequired()
                 .HasMaxLength(100);
-
 
             builder.Ignore(u => u.Store);
         }

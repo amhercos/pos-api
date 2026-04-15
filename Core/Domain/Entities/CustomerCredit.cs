@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class CustomerCredit : BaseEntity
+    public class CustomerCredit : BaseEntity, ITenantEntity
 
     {
         public required string CustomerName { get; set; }

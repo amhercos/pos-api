@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class CreditPayment : BaseEntity
+    public class CreditPayment : BaseEntity , ITenantEntity
     {
         public Guid? LocalId { get; set; }
         public bool IsOfflineSync { get; set; }
