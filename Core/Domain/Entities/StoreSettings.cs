@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class StoreSettings : BaseEntity
+    public class StoreSettings : BaseEntity, ITenantEntity
     {
         public Guid StoreId { get; set; }
 

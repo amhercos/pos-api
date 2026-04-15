@@ -21,4 +21,18 @@ public class CurrentUserService : ICurrentUserService
 
     public Guid StoreId =>
         Guid.TryParse(_httpContextAccessor.HttpContext?.User?.FindFirstValue("StoreId"), out var id) ? id : Guid.Empty;
+
+    public string? SchemaName =>
+        _httpContextAccessor.HttpContext?.User?.FindFirstValue("SchemaName");
+
+    public Guid? GetTenantId()
+    {
+        if (_httpContextAccessor.HttpContext?.User.IsInRole("SuperAdmin") ?? false)
+        {
+            return null;
+        }
+
+        var claim = _httpContextAccessor.HttpContext?.User.FindFirst("StoreId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
+    }
 }

@@ -1,52 +1,55 @@
 ﻿using Application.Interfaces;
 using Domain.Entities.Common;
+using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
-namespace DbMigration.PostgreSQL
+namespace DbMigration.PostgreSQL;
+
+public class PostgresPosDbContext : PosDbContext
 {
-    public class PostgresPosDbContext : PosDbContext
+    private readonly ICurrentUserService _currentUserService;
+
+    public PostgresPosDbContext(
+        DbContextOptions<PostgresPosDbContext> options,
+        ICurrentUserService currentUserService)
+        : base(options, currentUserService)
     {
-        public PostgresPosDbContext(
-            DbContextOptions options,
-            ICurrentUserService currentUserService)
-            : base(options, currentUserService)
-        {
-        }
+        _currentUserService = currentUserService;
+    }
 
-        protected override void OnModelCreating(ModelBuilder builder)
-        {
-            base.OnModelCreating(builder);
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
 
-            foreach (var entityType in builder.Model.GetEntityTypes())
+        base.OnModelCreating(builder);
+
+        builder.Ignore<User>();
+        builder.Ignore<Store>();
+
+        if (string.IsNullOrWhiteSpace(_currentUserService.SchemaName))
+        {
+            builder.HasDefaultSchema(null);
+            foreach (var entity in builder.Model.GetEntityTypes())
             {
-                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
-                {
-                    builder.Entity(entityType.ClrType)
-                        .Property(nameof(BaseEntity.RowVersion))
-                        .IsRowVersion();
-                }
+                entity.SetSchema(null);
             }
         }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                return await base.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation)
-            {
-                var message = pg.ConstraintName switch
-                {
-                    "IX_AspNetUsers_UserName" => "The username is already taken.",
-                    "IX_Categories_CategoryName" => "This category name already exists.",
-                    "IX_Products_Name" => "A product with this name already exists in this store.",
-                    _ => "A record with this information already exists."
-                };
+        ApplyPostgresConcurrencyTokens(builder);
+    }
 
-                throw new InvalidOperationException($"A unique constraint violation occurred: {message}", dbEx);
+    private static void ApplyPostgresConcurrencyTokens(ModelBuilder builder)
+    {
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
+            {
+                builder.Entity(entityType.ClrType)
+                    .Property(nameof(BaseEntity.RowVersion))
+                    .HasColumnName("xmin")
+                    .HasColumnType("xid")
+                    .ValueGeneratedOnAddOrUpdate()
+                    .IsConcurrencyToken();
             }
         }
     }

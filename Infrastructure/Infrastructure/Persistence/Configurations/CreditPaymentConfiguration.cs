@@ -11,7 +11,7 @@ namespace Infrastructure.Persistence.Configurations
             builder.HasKey(cp => cp.Id);
 
             builder.HasOne(cp => cp.CustomerCredit)
-                   .WithMany() // Or WithMany(c => c.Payments) if you added the collection
+                   .WithMany()
                    .HasForeignKey(cp => cp.CustomerCreditId)
                    .OnDelete(DeleteBehavior.Cascade);
 

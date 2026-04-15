@@ -11,30 +11,27 @@ namespace DbMigration.PostgreSQL
     {
         public PostgresPosDbContext CreateDbContext(string[] args)
         {
-
             IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 
-
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new InvalidOperationException(
-                    "The connection string 'DefaultConnection' was not found in 'appsettings.json'.");
+                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             }
 
-            var optionsBuilder = new DbContextOptionsBuilder<PosDbContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<PostgresPosDbContext>();
 
             optionsBuilder.UseNpgsql(connectionString, sqlOptions =>
             {
                 sqlOptions.MigrationsAssembly(typeof(PostgresPosDbContextFactory).Assembly.FullName);
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public");
-            });
 
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+            });
 
             var dummyUserService = new DesignTimeCurrentUserService();
 
@@ -45,7 +42,8 @@ namespace DbMigration.PostgreSQL
         {
             public Guid? UserId => Guid.Empty;
             public Guid StoreId => Guid.Empty;
-            public string? Role => "Admin"; 
+            public string? Role => "Admin";
+            public string? SchemaName => null;
         }
     }
 }

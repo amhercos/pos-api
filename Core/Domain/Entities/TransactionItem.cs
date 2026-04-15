@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Domain.Entities
 {
-    public class TransactionItem : BaseEntity
+    public class TransactionItem : BaseEntity , ITenantEntity
     {
         public Guid StoreId { get; set; }
         public Store Store { get; set; } = null!;

@@ -8,19 +8,18 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-public class RegisterStoreOwnerHandler
-    (
-        UserManager<User> userManager,
-        IStoreRepository storeRepository,
-        IPosDbContext context,
-        ITenantConnectionStringBuilder connectionStringBuilder,
-        IServiceProvider serviceProvider, 
-        ILogger<RegisterStoreOwnerHandler> logger 
-    ) : IRequestHandler<RegisterStoreOwnerCommand, bool>
+public class RegisterStoreOwnerHandler(
+    UserManager<User> userManager,
+    RoleManager<IdentityRole<Guid>> roleManager, // Added RoleManager
+    IStoreRepository storeRepository,
+    IPosDbContext context,
+    ITenantConnectionStringBuilder connectionStringBuilder,
+    IServiceProvider serviceProvider,
+    ILogger<RegisterStoreOwnerHandler> logger
+) : IRequestHandler<RegisterStoreOwnerCommand, bool>
 {
     public async Task<bool> Handle(RegisterStoreOwnerCommand request, CancellationToken ct)
     {
-
         await context.BeginTransactionAsync(ct);
 
         try
@@ -47,7 +46,6 @@ public class RegisterStoreOwnerHandler
                 UserName = request.Email,
                 FullName = request.FullName,
                 StoreId = store.Id,
-                Role = "StoreOwner",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -59,6 +57,12 @@ public class RegisterStoreOwnerHandler
                 return false;
             }
 
+            if (!await roleManager.RoleExistsAsync("StoreOwner"))
+            {
+                await roleManager.CreateAsync(new IdentityRole<Guid> { Name = "StoreOwner", NormalizedName = "STOREOWNER" });
+            }
+            await userManager.AddToRoleAsync(user, "StoreOwner");
+
             await context.CommitTransactionAsync(ct);
 
             _ = Task.Run(async () =>
@@ -67,14 +71,13 @@ public class RegisterStoreOwnerHandler
                 {
                     using var scope = serviceProvider.CreateScope();
                     var migrator = scope.ServiceProvider.GetRequiredService<ITenantMigrator>();
-
                     await migrator.MigrateTenantAsync(tenantConnectionString, CancellationToken.None);
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Instant migration trigger failed for {StoreName}", request.BusinessName);
                 }
-            }, ct);
+            }); 
 
             return true;
         }

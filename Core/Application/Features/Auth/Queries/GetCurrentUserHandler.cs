@@ -1,9 +1,13 @@
 ﻿using Application.Dto;
 using Application.Features.Auth.Queries;
 using Application.Interfaces.Repositories;
+using Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
-public class GetCurrentUserHandler(IUserRepository userRepository)
+public class GetCurrentUserHandler(
+    IUserRepository userRepository,
+    UserManager<User> userManager)
     : IRequestHandler<GetCurrentUserQuery, CurrentUserResponse?>
 {
     public async Task<CurrentUserResponse?> Handle(GetCurrentUserQuery request, CancellationToken ct)
@@ -15,10 +19,14 @@ public class GetCurrentUserHandler(IUserRepository userRepository)
             throw new KeyNotFoundException($"User with ID {request.UserId} was not found.");
         }
 
+ 
+        var roles = await userManager.GetRolesAsync(user);
+        var primaryRole = roles.FirstOrDefault() ?? "Guest";
+
         return new CurrentUserResponse(
             user.UserName ?? string.Empty,
             user.FullName ?? "Unknown User",
-            user.Role ?? "Guest",
+            primaryRole,
             user.StoreId
         );
     }
