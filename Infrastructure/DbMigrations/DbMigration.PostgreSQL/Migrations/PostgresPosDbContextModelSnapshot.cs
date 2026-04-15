@@ -37,21 +37,19 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryName")
+                    b.HasIndex("CategoryName", "StoreId")
                         .IsUnique();
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("Categories");
                 });
@@ -80,11 +78,11 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
@@ -92,8 +90,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerCreditId");
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("CreditPayments");
                 });
@@ -116,11 +112,11 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -131,8 +127,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerName");
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("CustomerCredits");
                 });
@@ -150,8 +144,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<DateOnly?>("ExpiryDate")
                         .HasColumnType("date");
@@ -160,9 +153,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<int>("LowStockThreshold")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(5);
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -173,11 +164,11 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<int>("Stock")
                         .ValueGeneratedOnAdd()
@@ -191,13 +182,14 @@ namespace DbMigration.PostgreSQL.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("StoreId");
-
                     b.HasIndex("Name", "StoreId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", t =>
+                        {
+                            t.HasCheckConstraint("CK_Product_Stock_NonNegative", "\"Stock\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Store", b =>
@@ -206,18 +198,30 @@ namespace DbMigration.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ConnectionString")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<string>("MigrationNotes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MigrationStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<string>("StoreName")
                         .IsRequired()
@@ -245,11 +249,11 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(30);
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
@@ -292,11 +296,11 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("integer");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
@@ -315,11 +319,7 @@ namespace DbMigration.PostgreSQL.Migrations
 
                     b.HasIndex("CustomerCreditId");
 
-                    b.HasIndex("StoreId");
-
                     b.HasIndex("TransactionDate");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Transactions");
                 });
@@ -336,11 +336,11 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
@@ -355,8 +355,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("StoreId");
 
                     b.HasIndex("TransactionId");
 
@@ -377,9 +375,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -440,8 +436,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
-
-                    b.HasIndex("StoreId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -576,17 +570,6 @@ namespace DbMigration.PostgreSQL.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Entities.Category", b =>
-                {
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany("Categories")
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Store");
-                });
-
             modelBuilder.Entity("Domain.Entities.CreditPayment", b =>
                 {
                     b.HasOne("Domain.Entities.CustomerCredit", "CustomerCredit")
@@ -595,26 +578,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("CustomerCredit");
-
-                    b.Navigation("Store");
-                });
-
-            modelBuilder.Entity("Domain.Entities.CustomerCredit", b =>
-                {
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Store");
                 });
 
             modelBuilder.Entity("Domain.Entities.Product", b =>
@@ -624,15 +588,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Category");
-
-                    b.Navigation("Store");
                 });
 
             modelBuilder.Entity("Domain.Entities.StoreSettings", b =>
@@ -651,23 +607,7 @@ namespace DbMigration.PostgreSQL.Migrations
                         .HasForeignKey("CustomerCreditId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("CustomerCredit");
-
-                    b.Navigation("Store");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.TransactionItem", b =>
@@ -678,12 +618,6 @@ namespace DbMigration.PostgreSQL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domain.Entities.Transaction", "Transaction")
                         .WithMany("Items")
                         .HasForeignKey("TransactionId")
@@ -692,19 +626,7 @@ namespace DbMigration.PostgreSQL.Migrations
 
                     b.Navigation("Product");
 
-                    b.Navigation("Store");
-
                     b.Navigation("Transaction");
-                });
-
-            modelBuilder.Entity("Domain.Entities.User", b =>
-                {
-                    b.HasOne("Domain.Entities.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Store");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -770,8 +692,6 @@ namespace DbMigration.PostgreSQL.Migrations
 
             modelBuilder.Entity("Domain.Entities.Store", b =>
                 {
-                    b.Navigation("Categories");
-
                     b.Navigation("Settings")
                         .IsRequired();
                 });

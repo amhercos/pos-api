@@ -35,15 +35,18 @@ namespace Infrastructure
             services.AddTransient<IJwtService, JwtService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddHttpContextAccessor();
+            services.AddHostedService<StoreMigrationService>();
+            services.AddScoped<ITenantConnectionStringBuilder, TenantConnectionStringBuilder>();
 
 
             // Register Repositories
-             services.AddScoped<IStoreRepository, StoreRepository>();
+            services.AddScoped<IStoreRepository, StoreRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ICustomerCreditRepository, CustomerCreditRepository>();
+
 
             return services;
         }

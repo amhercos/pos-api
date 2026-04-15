@@ -62,10 +62,21 @@ namespace Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-           
+
             builder.HasPostgresExtension("uuid-ossp");
+
             builder.ApplyConfigurationsFromAssembly(typeof(PosDbContext).Assembly);
 
+            // tenant isolation
+            builder.Entity<Category>().Ignore(c => c.Store);
+            builder.Entity<Product>().Ignore(p => p.Store);
+            builder.Entity<Transaction>().Ignore(t => t.User);
+            builder.Entity<User>().Ignore(u => u.Store);
+            builder.Entity<CustomerCredit>().Ignore(cc => cc.Store);
+            builder.Entity<TransactionItem>().Ignore(ti => ti.Store);
+            builder.Entity<CreditPayment>().Ignore(cp => cp.Store);
+
+            // global query filters for tenant isolation
             builder.Entity<Category>().HasQueryFilter(c => c.StoreId == _currentUserService.StoreId);
             builder.Entity<Product>().HasQueryFilter(p => p.StoreId == _currentUserService.StoreId && !p.IsDeleted);
             builder.Entity<Transaction>().HasQueryFilter(t => t.StoreId == _currentUserService.StoreId);
@@ -75,17 +86,8 @@ namespace Infrastructure.Persistence
 
             builder.Entity<Product>()
                    .ToTable(t => t.HasCheckConstraint("CK_Product_Stock_NonNegative", "\"Stock\" >= 0"));
-
-            foreach (var entityType in builder.Model.GetEntityTypes())
-            {
-                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
-                {
-                    builder.Entity(entityType.ClrType)
-                        .Property("RowVersion")
-                        .IsRowVersion();
-                }
-            }
-
+                
+            // decimal 
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
                 var properties = entityType.GetProperties()

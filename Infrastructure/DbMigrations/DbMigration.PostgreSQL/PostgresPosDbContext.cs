@@ -1,9 +1,8 @@
 ﻿using Application.Interfaces;
+using Domain.Entities.Common;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace DbMigration.PostgreSQL
 {
@@ -14,6 +13,21 @@ namespace DbMigration.PostgreSQL
             ICurrentUserService currentUserService)
             : base(options, currentUserService)
         {
+        }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            foreach (var entityType in builder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
+                {
+                    builder.Entity(entityType.ClrType)
+                        .Property(nameof(BaseEntity.RowVersion))
+                        .IsRowVersion();
+                }
+            }
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -35,27 +49,5 @@ namespace DbMigration.PostgreSQL
                 throw new InvalidOperationException($"A unique constraint violation occurred: {message}", dbEx);
             }
         }
-
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    base.OnModelCreating(modelBuilder);
-
-        //    foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        //    {
-        //        var clrType = entityType.ClrType;
-        //        if (clrType == null) continue;
-
-        //        foreach (var property in clrType.GetProperties())
-        //        {
-        //            var jsonAttribute = property.GetCustomAttribute<JsonPropertyNameAttribute>();
-        //            if (jsonAttribute != null)
-        //            {
-        //                modelBuilder.Entity(clrType)
-        //                    .Property(property.Name)
-        //                    .HasColumnName(jsonAttribute.Name);
-        //            }
-        //        }
-        //    }
-        //}
     }
 }
