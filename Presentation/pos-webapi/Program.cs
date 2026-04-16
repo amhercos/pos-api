@@ -30,6 +30,7 @@ try
 
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
     builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+    builder.Configuration.AddEnvironmentVariables();
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     {
