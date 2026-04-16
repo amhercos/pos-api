@@ -15,11 +15,11 @@ public class PostgresIdentityContextFactory : IDesignTimeDbContextFactory<AppIde
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("PostgresConnection");
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            throw new InvalidOperationException("Connection string 'PostgresConnection' not found.");
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<AppIdentityDbContext>();
