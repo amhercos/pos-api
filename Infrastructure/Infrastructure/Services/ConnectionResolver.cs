@@ -13,7 +13,10 @@ namespace Infrastructure.Services
         private readonly ICurrentUserService _currentUser;
         private readonly IServiceProvider _serviceProvider;
 
-        public ConnectionResolver(IConfiguration config, ICurrentUserService currentUser, IServiceProvider serviceProvider)
+        public ConnectionResolver(
+            IConfiguration config,
+            ICurrentUserService currentUser,
+            IServiceProvider serviceProvider)
         {
             _config = config;
             _currentUser = currentUser;
@@ -22,26 +25,39 @@ namespace Infrastructure.Services
 
         public string GetConnectionString()
         {
-            var masterConnection = _config.GetConnectionString("PostgresConnection")
-                ?? throw new InvalidOperationException("Master connection string not found.");
 
-            if (_currentUser.StoreId == Guid.Empty)
-                return masterConnection;
+            var connectionString = _config.GetConnectionString("PostgresConnection");
 
-            using var scope = _serviceProvider.CreateScope();
-            var masterContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
-
-            var store = masterContext.Stores
-                .AsNoTracking()
-                .FirstOrDefault(s => s.Id == _currentUser.StoreId && s.IsActive);
-
-          
-            if (store != null && store.MigrationStatus != MigrationStatus.Success)
+            if (string.IsNullOrEmpty(connectionString) || connectionString.Contains("PLACEHOLDER"))
             {
-                throw new InvalidOperationException("Your store is still being prepared. Please wait a moment.");
+                throw new InvalidOperationException(
+                    "Database Connection String is missing or set to PLACEHOLDER. " +
+                    "Check your appsettings.Development.json or Environment Variables.");
             }
 
-            return masterConnection;
+            if (_currentUser.StoreId != Guid.Empty)
+            {
+                // Use a temporary scope to check the Store status in the Master DB
+                using var scope = _serviceProvider.CreateScope();
+                var masterContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+
+                var store = masterContext.Stores
+                    .AsNoTracking()
+                    .FirstOrDefault(s => s.Id == _currentUser.StoreId);
+
+                if (store == null || !store.IsActive)
+                {
+                    throw new UnauthorizedAccessException("This store is inactive or does not exist.");
+                }
+
+                if (store.MigrationStatus != MigrationStatus.Success)
+                {
+         
+                    throw new InvalidOperationException("Your store environment is being prepared. Please try again in a few seconds.");
+                }
+            }
+
+            return connectionString;
         }
     }
 }

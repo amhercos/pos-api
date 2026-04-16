@@ -5,9 +5,10 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5130",
+      "applicationUrl": "http://localhost:8080",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__PostgresConnection": "Host=localhost;Port=5432;Database=BizFlowDb;Username=postgres;Password=password1"
       }
     },
     "https": {

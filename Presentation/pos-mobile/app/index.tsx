@@ -1,5 +1,5 @@
 import { authService } from "@/src/services/authService";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -13,11 +13,11 @@ import { useAuth } from "../src/context/AuthContext";
 
 export default function LoginScreen() {
   const { setToken } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (): Promise<void> => {
     if (!username || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -26,12 +26,14 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const result = await authService.login({ username, password });
+
       await setToken(result.token);
+
+      // Navigates to app/(tabs)/dashboard.tsx
+      router.replace("/(tabs)/dashboard");
     } catch (err) {
-      Alert.alert(
-        "Login Failed",
-        err instanceof Error ? err.message : "Unknown error",
-      );
+      const error = err as Error;
+      Alert.alert("Login Failed", error.message);
     } finally {
       setIsLoading(false);
     }
@@ -40,37 +42,28 @@ export default function LoginScreen() {
   return (
     <View className="flex-1 justify-center p-6 bg-white">
       <View className="mb-8">
-        <Text className="text-3xl font-bold text-slate-900">BizFlow Login</Text>
+        <Text className="text-3xl font-bold text-slate-900">BizFlow</Text>
         <Text className="text-slate-500 mt-2">
-          Enter your credentials to access your store
+          Enter credentials to access your store
         </Text>
       </View>
 
       <View className="gap-y-4">
-        <View>
-          <Text className="text-sm font-medium text-slate-700 mb-1">
-            Username
-          </Text>
-          <TextInput
-            className="border border-slate-200 p-4 rounded-xl text-slate-900 bg-slate-50"
-            placeholder="Enter Username"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-        </View>
-        <View>
-          <Text className="text-sm font-medium text-slate-700 mb-1">
-            Password
-          </Text>
-          <TextInput
-            className="border border-slate-200 p-4 rounded-xl text-slate-900 bg-slate-50"
-            placeholder="Enter Password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
+        <TextInput
+          className="border border-slate-200 p-4 rounded-xl text-slate-900 bg-slate-50"
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
+        <TextInput
+          className="border border-slate-200 p-4 rounded-xl text-slate-900 bg-slate-50"
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
         <TouchableOpacity
           onPress={handleLogin}
           disabled={isLoading}
@@ -84,8 +77,9 @@ export default function LoginScreen() {
             </Text>
           )}
         </TouchableOpacity>
+
         <View className="mt-6 flex-row justify-center">
-          <Text className="text-slate-500">Don't have a store yet? </Text>
+          <Text className="text-slate-500">New store? </Text>
           <Link href="/register" asChild>
             <TouchableOpacity>
               <Text className="text-slate-900 font-bold underline">

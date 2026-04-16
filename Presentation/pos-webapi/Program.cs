@@ -5,10 +5,12 @@ using DbMigration.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using pos_webapi.Middleware;
 using Serilog;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -22,14 +24,17 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
 
-    // Azure App Service default port
+
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5130";
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.ListenAnyIP(8080);
+        options.ListenAnyIP(int.Parse(port));
     });
 
+    // Configuration Loading
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
-    builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+    builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
     builder.Configuration.AddEnvironmentVariables();
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
@@ -44,27 +49,34 @@ try
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
 
-    // CORS for Mobile & Testing
+  
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("_myAllowSpecificOrigins", policy =>
         {
-            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+            policy.AllowAnyOrigin() // For production, you can later restrict this to your frontend URL
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
         });
     });
 
+    // Infrastructure & Application DI
     var infraOption = new InfrastructureOption(builder.Services, builder.Configuration);
     infraOption.UsePostgreSQL();
 
     builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddApplicationServices();
 
-    // Security
+    // JWT Security Configuration
     string secretString = builder.Configuration["JwtSettings:Key"]
         ?? throw new ArgumentNullException("JwtSettings:Key");
     var key = Encoding.UTF8.GetBytes(secretString);
 
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -86,7 +98,7 @@ try
 
     var app = builder.Build();
 
-    // --- Enterprise Auto-Migration Block ---
+    // Auto-Migration Block
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -107,11 +119,17 @@ try
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
+
+  
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "BizFlow API V1");
+        c.RoutePrefix = string.Empty;
+    });
 
     app.UseRouting();
     app.UseCors("_myAllowSpecificOrigins");
+
     app.UseAuthentication();
     app.UseAuthorization();
 
