@@ -101,7 +101,7 @@ namespace DbMigration.PostgreSQL
             CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
         );
         INSERT INTO ""{schema}"".""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
-        VALUES ('{migrationId}', '9.0.0');"; // Use your actual EF version
+        VALUES ('{migrationId}', '9.0.0');";
             await cmd.ExecuteNonQueryAsync(ct);
         }
 
