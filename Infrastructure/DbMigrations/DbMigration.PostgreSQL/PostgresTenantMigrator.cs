@@ -35,12 +35,24 @@ namespace DbMigration.PostgreSQL
                     SearchPath = schemaName
                 }.ToString();
 
+                // 1. Ensure Schema Exists
                 using (var connection = new NpgsqlConnection(tenantConnectionString))
                 {
                     await connection.OpenAsync(ct);
                     using var cmd = connection.CreateCommand();
                     cmd.CommandText = $@"CREATE SCHEMA IF NOT EXISTS ""{schemaName}"";";
                     await cmd.ExecuteNonQueryAsync(ct);
+
+                    // 2. RECONCILIATION CHECK: 
+                    // Check if 'Categories' exists but '__EFMigrationsHistory' does not.
+                    bool tablesExist = await TableExistsAsync(connection, schemaName, "Categories", ct);
+                    bool historyExists = await TableExistsAsync(connection, schemaName, "__EFMigrationsHistory", ct);
+
+                    if (tablesExist && !historyExists)
+                    {
+                        _logger.LogWarning("Schema {Schema} has existing tables but no EF history. Patching history table...", schemaName);
+                        await SeedMigrationHistoryAsync(connection, schemaName, "20260416100426_Initial_Tenant_Schema", ct);
+                    }
                 }
 
                 var optionsBuilder = new DbContextOptionsBuilder<PostgresPosDbContext>();
@@ -55,20 +67,10 @@ namespace DbMigration.PostgreSQL
                 using var context = new PostgresPosDbContext(optionsBuilder.Options, migrationContext);
 
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync(ct);
-                var migrationsList = pendingMigrations.ToList();
-
-                if (migrationsList.Any())
+                if (pendingMigrations.Any())
                 {
-                    _logger.LogInformation("Schema {Schema} is out of date. Applying {Count} migrations: {List}",
-                        schemaName, migrationsList.Count, string.Join(", ", migrationsList));
-
                     await context.Database.MigrateAsync(ct);
-
                     _logger.LogInformation("Successfully updated {Schema} to latest version.", schemaName);
-                }
-                else
-                {
-                    _logger.LogDebug("Schema {Schema} is already up to date.", schemaName);
                 }
             }
             catch (Exception ex)
@@ -76,6 +78,31 @@ namespace DbMigration.PostgreSQL
                 _logger.LogError(ex, "Migration failed for {Schema}", schemaName);
                 throw;
             }
+        }
+
+        // Helper: Check for existing tables to prevent "Relation already exists"
+        private async Task<bool> TableExistsAsync(NpgsqlConnection conn, string schema, string table, CancellationToken ct)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = @schema AND table_name = @table)";
+            cmd.Parameters.AddWithValue("schema", schema);
+            cmd.Parameters.AddWithValue("table", table);
+            return (bool)(await cmd.ExecuteScalarAsync(ct) ?? false);
+        }
+
+        // Helper: Seed the history table manually
+        private async Task SeedMigrationHistoryAsync(NpgsqlConnection conn, string schema, string migrationId, CancellationToken ct)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $@"
+        CREATE TABLE IF NOT EXISTS ""{schema}"".""__EFMigrationsHistory"" (
+            ""MigrationId"" character varying(150) NOT NULL,
+            ""ProductVersion"" character varying(32) NOT NULL,
+            CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
+        );
+        INSERT INTO ""{schema}"".""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
+        VALUES ('{migrationId}', '9.0.0');"; // Use your actual EF version
+            await cmd.ExecuteNonQueryAsync(ct);
         }
 
         private class MigrationUserContext(string schema) : ICurrentUserService
