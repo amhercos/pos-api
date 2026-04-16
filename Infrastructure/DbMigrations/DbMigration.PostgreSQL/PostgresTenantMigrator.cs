@@ -24,8 +24,6 @@ namespace DbMigration.PostgreSQL
 
         public async Task MigrateTenantAsync(string schemaName, CancellationToken ct)
         {
-            _logger.LogInformation("Migrating schema: {Schema}", schemaName);
-
             try
             {
                 using var scope = _serviceProvider.CreateScope();
@@ -37,7 +35,6 @@ namespace DbMigration.PostgreSQL
                     SearchPath = schemaName
                 }.ToString();
 
-                // 2. Ensure Schema exists physically
                 using (var connection = new NpgsqlConnection(tenantConnectionString))
                 {
                     await connection.OpenAsync(ct);
@@ -46,23 +43,33 @@ namespace DbMigration.PostgreSQL
                     await cmd.ExecuteNonQueryAsync(ct);
                 }
 
-                // 3. Re-build Options for this specific run
                 var optionsBuilder = new DbContextOptionsBuilder<PostgresPosDbContext>();
                 optionsBuilder.UseNpgsql(tenantConnectionString, x =>
                 {
-                    x.MigrationsAssembly(typeof(PostgresPosDbContext).Assembly.FullName);
+                    x.MigrationsAssembly("DbMigration.PostgreSQL");
                     x.MigrationsHistoryTable("__EFMigrationsHistory", schemaName);
                 })
                 .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
                 var migrationContext = new MigrationUserContext(schemaName);
-
                 using var context = new PostgresPosDbContext(optionsBuilder.Options, migrationContext);
 
-                // 4. Run Migration
-                await context.Database.MigrateAsync(ct);
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync(ct);
+                var migrationsList = pendingMigrations.ToList();
 
-                _logger.LogInformation("Successfully migrated {Schema}", schemaName);
+                if (migrationsList.Any())
+                {
+                    _logger.LogInformation("Schema {Schema} is out of date. Applying {Count} migrations: {List}",
+                        schemaName, migrationsList.Count, string.Join(", ", migrationsList));
+
+                    await context.Database.MigrateAsync(ct);
+
+                    _logger.LogInformation("Successfully updated {Schema} to latest version.", schemaName);
+                }
+                else
+                {
+                    _logger.LogDebug("Schema {Schema} is already up to date.", schemaName);
+                }
             }
             catch (Exception ex)
             {

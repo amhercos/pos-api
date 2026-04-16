@@ -46,9 +46,10 @@
                 services.AddScoped<IProductRepository, ProductRepository>();
                 services.AddScoped<ITransactionRepository, TransactionRepository>();
                 services.AddScoped<ICustomerCreditRepository, CustomerCreditRepository>();
+                services.AddScoped<IPromotionRepository, PromotionRepository>();
 
 
-                return services;
+            return services;
             }
         }
     }

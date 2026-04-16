@@ -31,6 +31,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
     public DbSet<CustomerCredit> CustomerCredits => Set<CustomerCredit>();
     public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
     public DbSet<StoreSettings> StoreSettings => Set<StoreSettings>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
 
     public async Task BeginTransactionAsync(CancellationToken ct)
         => _currentTransaction = await Database.BeginTransactionAsync(ct);
@@ -61,7 +62,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-   
+
         var schema = GetCurrentSchema();
         if (!string.IsNullOrWhiteSpace(schema))
         {
@@ -90,15 +91,38 @@ public abstract class PosDbContext : DbContext, IPosDbContext
             property.SetScale(2);
         }
     }
-
     private LambdaExpression CreateTenantFilter(Type type)
     {
         var parameter = Expression.Parameter(type, "e");
-        var property = Expression.Property(parameter, nameof(ITenantEntity.StoreId));
-        var service = Expression.Constant(_currentUserService);
-        var serviceProperty = Expression.Property(service, nameof(ICurrentUserService.StoreId));
 
-        var body = Expression.Equal(property, serviceProperty);
-        return Expression.Lambda(body, parameter);
+        // 1. Tenant Filter (Required for all ITenantEntities)
+        var storeIdProperty = Expression.Property(parameter, nameof(ITenantEntity.StoreId));
+        var serviceConstant = Expression.Constant(_currentUserService);
+        var serviceStoreIdProperty = Expression.Property(serviceConstant, nameof(ICurrentUserService.StoreId));
+        var tenantExpression = Expression.Equal(storeIdProperty, serviceStoreIdProperty);
+
+        Expression finalBody = tenantExpression;
+
+        var isActiveProp = type.GetProperty("IsActive");
+        if (isActiveProp != null)
+        {
+            var isActiveExpression = Expression.Equal(
+                Expression.Property(parameter, isActiveProp),
+                Expression.Constant(true)
+            );
+            finalBody = Expression.AndAlso(finalBody, isActiveExpression);
+        }
+
+        var isDeletedProp = type.GetProperty("IsDeleted");
+        if (isDeletedProp != null)
+        {
+            var isDeletedExpression = Expression.Equal(
+                Expression.Property(parameter, isDeletedProp),
+                Expression.Constant(false)
+            );
+            finalBody = Expression.AndAlso(finalBody, isDeletedExpression);
+        }
+
+        return Expression.Lambda(finalBody, parameter);
     }
 }
