@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 import { InventoryService } from "../services/inventoryService";
 import type {
-    Category,
-    CreateProductRequest,
-    Product,
-    UpdateProductRequest,
+  Category,
+  CreateProductRequest,
+  Product,
+  UpdateProductRequest,
 } from "../types/inventory";
 
 export function useInventory() {
@@ -104,7 +104,7 @@ export function useInventory() {
     try {
       await InventoryService.deleteCategory(id);
       Toast.show({ type: "info", text1: "Deleted", text2: "Category removed" });
-      refresh(); // Refresh to update both categories and products (in case some items lost their category)
+      refresh();
     } catch (err) {
       handleError(err, "Failed to delete category");
     }

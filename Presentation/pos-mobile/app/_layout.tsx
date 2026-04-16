@@ -1,7 +1,6 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { Href, useRouter } from "expo-router";
+import { Slot, useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import * as SecureStore from "expo-secure-store";
 import {
   BarChart3,
   LogOut,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react-native";
 import React from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -20,23 +20,31 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
+import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { drawerNavigationRef } from "../src/utils/drawerRef";
 
-function CustomDrawerContent(props: DrawerContentComponentProps) {
+function CustomDrawerContent(
+  props: DrawerContentComponentProps,
+): React.JSX.Element {
+  const { setToken } = useAuth();
   const router = useRouter();
 
-  const handleLogout = async () => {
+  drawerNavigationRef.current = props.navigation;
+
+  const handleLogout = async (): Promise<void> => {
     try {
-      await SecureStore.deleteItemAsync("token");
-      router.replace("/login" as Href);
+      await setToken(null);
     } catch (e) {
-      console.error("Logout failed", e);
+      console.error("[Drawer] Logout failed:", e);
     }
   };
 
-  const navigateTo = (path: string) => {
+  const navigateTo = (path: string): void => {
     props.navigation.closeDrawer();
-    // Path must include the (tabs) group to keep the navigation state
-    router.push(path as Href);
+    const screen = path.split("/").pop();
+    if (screen) {
+      props.navigation.navigate("(tabs)", { screen });
+    }
   };
 
   return (
@@ -59,41 +67,32 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           </Text>
         </View>
 
-        <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
-          Management
-        </Text>
+        <SectionHeader title="Management" />
         <View className="gap-y-1 mb-8">
-          <TouchableOpacity
+          <DrawerItem
+            icon={<BarChart3 size={20} color="#64748b" />}
+            label="Analytics"
             onPress={() => navigateTo("/(tabs)/reports")}
-            className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
-          >
-            <BarChart3 size={20} color="#64748b" />
-            <Text className="ml-3 font-bold text-slate-700">Analytics</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
+          />
+          <DrawerItem
+            icon={<Tag size={20} color="#64748b" />}
+            label="Special Pricing"
             onPress={() => navigateTo("/(tabs)/pricing")}
-            className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
-          >
-            <Tag size={20} color="#64748b" />
-            <Text className="ml-3 font-bold text-slate-700">
-              Special Pricing
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
 
-        <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
-          Account
-        </Text>
+        <SectionHeader title="Account" />
         <View className="gap-y-1">
-          <TouchableOpacity className="flex-row items-center p-4 rounded-2xl active:bg-slate-100">
-            <User size={20} color="#64748b" />
-            <Text className="ml-3 font-bold text-slate-700">Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="flex-row items-center p-4 rounded-2xl active:bg-slate-100">
-            <Settings size={20} color="#64748b" />
-            <Text className="ml-3 font-bold text-slate-700">Settings</Text>
-          </TouchableOpacity>
+          <DrawerItem
+            icon={<User size={20} color="#64748b" />}
+            label="Profile"
+            onPress={() => {}}
+          />
+          <DrawerItem
+            icon={<Settings size={20} color="#64748b" />}
+            label="Settings"
+            onPress={() => {}}
+          />
         </View>
 
         <View className="mt-auto pt-6 border-t border-slate-100">
@@ -110,29 +109,68 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
   );
 }
 
-export default function RootLayout() {
+const SectionHeader = ({ title }: { title: string }) => (
+  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
+    {title}
+  </Text>
+);
+
+const DrawerItem = ({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
+  >
+    {icon}
+    <Text className="ml-3 font-bold text-slate-700">{label}</Text>
+  </TouchableOpacity>
+);
+
+function RootLayoutNav(): React.JSX.Element {
+  const { token, isLoading } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer
-        defaultStatus="closed"
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerType: "front",
-          drawerStyle: {
-            width: isTablet ? 320 : "75%",
-            borderRightWidth: 1,
-            borderRightColor: "#f1f5f9",
-          },
-          overlayColor: "rgba(15, 23, 42, 0.5)",
-          swipeEnabled: true,
-        }}
-      >
-        <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
-      </Drawer>
+      {!token ? (
+        <Slot />
+      ) : (
+        <Drawer
+          drawerContent={(props) => <CustomDrawerContent {...props} />}
+          screenOptions={{
+            headerShown: false,
+            drawerType: isTablet ? "permanent" : "front",
+            drawerStyle: { width: isTablet ? 320 : "75%" },
+            overlayColor: "rgba(15, 23, 42, 0.5)",
+          }}
+        >
+          <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
+        </Drawer>
+      )}
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout(): React.JSX.Element {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
 {
     [DbContext(typeof(PostgresPosDbContext))]
-    [Migration("20260415204625_Initial_Tenant_Schema")]
+    [Migration("20260416100426_Initial_Tenant_Schema")]
     partial class Initial_Tenant_Schema
     {
         /// <inheritdoc />
@@ -191,6 +191,64 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
                     b.ToTable("Products", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Promotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MainProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("PromoPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int?>("PromoQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TieUpProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("TieUpQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("MainProductId");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("TieUpProductId");
+
+                    b.ToTable("Promotions", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.StoreSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -335,6 +393,24 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Promotion", b =>
+                {
+                    b.HasOne("Domain.Entities.Product", "MainProduct")
+                        .WithMany()
+                        .HasForeignKey("MainProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Product", "TieUpProduct")
+                        .WithMany()
+                        .HasForeignKey("TieUpProductId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("MainProduct");
+
+                    b.Navigation("TieUpProduct");
                 });
 
             modelBuilder.Entity("Domain.Entities.Transaction", b =>
