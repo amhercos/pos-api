@@ -1,0 +1,35 @@
+name: BizFlow Backend CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Image names must be lowercase
+          tags: ghcr.io/${{ github.repository_owner }}/bizflow-api:latest
+
+      - name: Trigger Render Deployment
+        # You will add RENDER_DEPLOY_HOOK_URL to GitHub Secrets
+        run: curl -X GET "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
