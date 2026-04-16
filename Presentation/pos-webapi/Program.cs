@@ -22,15 +22,14 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
 
+    // Azure App Service default port
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.ListenAnyIP(5130);
+        options.ListenAnyIP(8080);
     });
 
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
     builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
-    var configuration = builder.Configuration;
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     {
@@ -40,41 +39,31 @@ try
             .WriteTo.Console();
     });
 
-    // Services Configuration
+    // Core Services
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
 
-   
-    var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
+    // CORS for Mobile & Testing
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy(name: myAllowSpecificOrigins, policy =>
+        options.AddPolicy("_myAllowSpecificOrigins", policy =>
         {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
         });
     });
 
-
-
-    var infraOption = new InfrastructureOption(builder.Services, configuration);
+    var infraOption = new InfrastructureOption(builder.Services, builder.Configuration);
     infraOption.UsePostgreSQL();
 
-    // DI & PostgreSQL Force
-    builder.Services.AddInfrastructureServices(configuration);
+    builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddApplicationServices();
 
-    // JWT Authentication Services
-    string secretString = configuration["JwtSettings:Key"]
-        ?? throw new ArgumentNullException("JwtSettings:Key", "The JWT Secret Key is missing.");
+    // Security
+    string secretString = builder.Configuration["JwtSettings:Key"]
+        ?? throw new ArgumentNullException("JwtSettings:Key");
     var key = Encoding.UTF8.GetBytes(secretString);
 
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -84,83 +73,53 @@ try
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = configuration["JwtSettings:Issuer"],
-            ValidAudience = configuration["JwtSettings:Audience"],
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
 
     builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
-
-  // swagger
-    builder.Services.AddSwaggerGen(c =>
-    {
-        c.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "Point of Sale API",
-            Version = "v1"
-        });
-
-        c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
-        {
-            Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
-            In = ParameterLocation.Header,
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer"
-        });
-
-        c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
-        });
-    });
-
+    builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
 
+    // --- Enterprise Auto-Migration Block ---
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
         try
         {
             var identityContext = services.GetRequiredService<AppIdentityDbContext>();
-            Log.Information("Applying Identity PostgreSQL Migrations...");
+            Log.Information("Checking Identity migrations...");
             await identityContext.Database.MigrateAsync();
 
-
-            Log.Information("Seeding Admin User...");
+            Log.Information("Seeding Admin Data...");
             await DbInitializer.SeedAdminUser(services);
-
-            Log.Information("Database initialization completed successfully.");
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Database initialization failed.");
+            Log.Error(ex, "Database migration failed during startup.");
         }
     }
 
-    // Middleware Pipeline
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
-
-    app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 
     app.UseRouting();
-    app.UseCors(myAllowSpecificOrigins);
+    app.UseCors("_myAllowSpecificOrigins");
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
-
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "BizFlow API host terminated unexpectedly");
+    Log.Fatal(ex, "Host terminated unexpectedly");
 }
 finally
 {

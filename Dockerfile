@@ -1,22 +1,29 @@
-# Stage 1: Build and Publish
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
+# STAGE 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
-# Copy everything from the local directory
+# Copy all project files to maintain folder structure
+COPY ["Presentation/pos-webapi/pos-webapi.csproj", "Presentation/pos-webapi/"]
+COPY ["Core/Application/Application.csproj", "Core/Application/"]
+COPY ["Core/Domain/Domain.csproj", "Core/Domain/"]
+COPY ["Infrastructure/Infrastructure/Infrastructure.csproj", "Infrastructure/Infrastructure/"]
+COPY ["Infrastructure/DbMigrations/DbMigration.PostgreSQL/DbMigration.PostgreSQL.csproj", "Infrastructure/DbMigrations/DbMigration.PostgreSQL/"]
+
+# Restore dependencies
+RUN dotnet restore "Presentation/pos-webapi/pos-webapi.csproj"
+
+# Copy full source and publish
 COPY . .
+WORKDIR "/src/Presentation/pos-webapi"
+RUN dotnet publish "pos-webapi.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Restore and Publish in one go to be safe
-RUN dotnet publish "Presentation/pos-webapi/pos-webapi.csproj" -c Release -o /app/publish
-
-# Stage 2: Final Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# STAGE 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_ENVIRONMENT=Production
 
-# Copy from the build-env stage
-COPY --from=build-env /app/publish .
-
-# Set environment variables for the container
-ENV ASPNETCORE_HTTP_PORTS=8080
-ENV ASPNETCORE_ENVIRONMENT=Development
+COPY --from=build /app/publish .
 
 ENTRYPOINT ["dotnet", "pos-webapi.dll"]
