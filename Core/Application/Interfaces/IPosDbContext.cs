@@ -13,6 +13,7 @@ public interface IPosDbContext
     DbSet<CustomerCredit> CustomerCredits { get; }
     DbSet<CreditPayment> CreditPayments { get; }
     DbSet<StoreSettings> StoreSettings { get; }
+    DbSet<Promotion> Promotions { get; }
 
     DatabaseFacade Database { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

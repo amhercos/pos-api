@@ -24,49 +24,40 @@ namespace Infrastructure.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Store Migration Watchdog started in State-Driven mode using MasterDbContext.");
+            _logger.LogInformation("Store Migration Watchdog started in Auto-Sync mode.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     using var scope = _serviceProvider.CreateScope();
-
                     var masterContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
                     var migrator = scope.ServiceProvider.GetRequiredService<ITenantMigrator>();
 
-                    var pendingStores = await masterContext.Stores
-                        .Where(s => s.IsActive &&
-                                   (s.MigrationStatus == MigrationStatus.Pending ||
-                                    s.MigrationStatus == MigrationStatus.Failed))
+                    var stores = await masterContext.Stores
+                        .Where(s => s.IsActive)
                         .ToListAsync(stoppingToken);
 
-                    if (pendingStores.Any())
+                    foreach (var store in stores)
                     {
-                        _logger.LogInformation("Found {Count} stores requiring migration.", pendingStores.Count);
+                        try { 
+                       
+                            await migrator.MigrateTenantAsync(store.ConnectionString!, stoppingToken);
 
-                        foreach (var store in pendingStores)
-                        {
-                            try
+
+                            if (store.MigrationStatus != MigrationStatus.Success)
                             {
-                                _logger.LogInformation("Processing migration for store: {StoreName}", store.StoreName);
-
-                                store.MigrationStatus = MigrationStatus.Processing;
-                                await masterContext.SaveChangesAsync(stoppingToken);
-
-                                await migrator.MigrateTenantAsync(store.ConnectionString!, stoppingToken);
-
                                 store.MigrationStatus = MigrationStatus.Success;
-                                store.MigrationNotes = $"Migrated successfully at {DateTime.UtcNow} UTC";
+                                store.MigrationNotes = $"Updated to latest version at {DateTime.UtcNow} UTC";
+                                await masterContext.SaveChangesAsync(stoppingToken);
                             }
-                            catch (Exception ex)
-                            {
-                                store.MigrationStatus = MigrationStatus.Failed;
-                                store.MigrationNotes = ex.Message;
-                                _logger.LogError(ex, "Migration failed for store {StoreId} ({StoreName})", store.Id, store.StoreName);
-                            }
-
+                        }
+                        catch (Exception ex)
+                        {
+                            store.MigrationStatus = MigrationStatus.Failed;
+                            store.MigrationNotes = $"Auto-Sync Failed: {ex.Message}";
                             await masterContext.SaveChangesAsync(stoppingToken);
+                            _logger.LogError(ex, "Sync failed for {StoreName}", store.StoreName);
                         }
                     }
                 }
