@@ -1,17 +1,18 @@
 import { authService } from "@/src/services/authService";
-import { Link, router } from "expo-router"; // Added Link
-import * as SecureStore from "expo-secure-store";
+import { Link } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useAuth } from "../src/context/AuthContext";
 
 export default function LoginScreen() {
+  const { setToken } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,8 +26,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const result = await authService.login({ username, password });
-      await SecureStore.setItemAsync("token", result.token);
-      router.replace("/(tabs)");
+      await setToken(result.token);
     } catch (err) {
       Alert.alert(
         "Login Failed",

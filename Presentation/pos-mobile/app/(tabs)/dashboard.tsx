@@ -180,7 +180,6 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Recent Transactions List */}
       <View className="mb-10">
         <View className="flex-row justify-between items-center mb-4 px-1">
           <Text className="text-lg font-bold text-slate-900">Recent Sales</Text>

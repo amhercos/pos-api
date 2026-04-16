@@ -62,7 +62,6 @@ public abstract class PosDbContext : DbContext, IPosDbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-
         var schema = GetCurrentSchema();
         if (!string.IsNullOrWhiteSpace(schema))
         {
@@ -82,7 +81,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
             }
         }
 
-        // Decimal Precision
+        // decimal precision
         foreach (var property in builder.Model.GetEntityTypes()
             .SelectMany(t => t.GetProperties())
             .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
@@ -90,12 +89,28 @@ public abstract class PosDbContext : DbContext, IPosDbContext
             property.SetPrecision(18);
             property.SetScale(2);
         }
+
+       //global datetime converter
+        var dateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc)
+        );
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(dateTimeConverter);
+                }
+            }
+        }
     }
     private LambdaExpression CreateTenantFilter(Type type)
     {
         var parameter = Expression.Parameter(type, "e");
 
-        // 1. Tenant Filter (Required for all ITenantEntities)
         var storeIdProperty = Expression.Property(parameter, nameof(ITenantEntity.StoreId));
         var serviceConstant = Expression.Constant(_currentUserService);
         var serviceStoreIdProperty = Expression.Property(serviceConstant, nameof(ICurrentUserService.StoreId));
