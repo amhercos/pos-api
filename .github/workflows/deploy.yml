@@ -30,6 +30,6 @@ jobs:
           # Image names must be lowercase
           tags: ghcr.io/${{ github.repository_owner }}/bizflow-api:latest
 
-      - name: Trigger Render Deployment
-        # You will add RENDER_DEPLOY_HOOK_URL to GitHub Secrets
-        run: curl -X GET "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+    #   - name: Trigger Render Deployment
+    # # You will add RENDER_DEPLOY_HOOK_URL to GitHub Secrets
+    # run: curl -X GET "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
