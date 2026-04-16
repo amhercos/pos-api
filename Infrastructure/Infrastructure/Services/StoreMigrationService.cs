@@ -24,6 +24,10 @@ namespace Infrastructure.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("Store Migration Watchdog warm up...");
+
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
             _logger.LogInformation("Store Migration Watchdog started in Auto-Sync mode.");
 
             while (!stoppingToken.IsCancellationRequested)
