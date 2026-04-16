@@ -3,13 +3,13 @@ import { RegisterRequest } from "@/src/types/auth";
 import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function RegisterScreen() {
@@ -34,7 +34,7 @@ export default function RegisterScreen() {
     try {
       await authService.register(formData);
       Alert.alert("Success", "Store registered! You can now login.", [
-        { text: "OK", onPress: () => router.replace("/login") },
+        { text: "OK", onPress: () => router.replace("/") },
       ]);
     } catch (err: unknown) {
       // Strict Error Handling
@@ -152,7 +152,7 @@ export default function RegisterScreen() {
 
         <View className="flex-row justify-center mt-6 mb-10">
           <Text className="text-slate-500">Already have an account? </Text>
-          <Link href="/login" asChild>
+          <Link href="/" asChild>
             <TouchableOpacity>
               <Text className="text-slate-900 font-bold underline">Login</Text>
             </TouchableOpacity>

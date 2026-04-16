@@ -140,6 +140,40 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
                 });
 
             migrationBuilder.CreateTable(
+                name: "Promotions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    StoreId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MainProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PromoQuantity = table.Column<int>(type: "integer", nullable: true),
+                    PromoPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    TieUpProductId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TieUpQuantity = table.Column<int>(type: "integer", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Promotions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Promotions_Products_MainProductId",
+                        column: x => x.MainProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Promotions_Products_TieUpProductId",
+                        column: x => x.TieUpProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TransactionItems",
                 columns: table => new
                 {
@@ -197,6 +231,26 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
                 filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Promotions_IsActive",
+                table: "Promotions",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Promotions_MainProductId",
+                table: "Promotions",
+                column: "MainProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Promotions_StoreId",
+                table: "Promotions",
+                column: "StoreId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Promotions_TieUpProductId",
+                table: "Promotions",
+                column: "TieUpProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TransactionItems_ProductId",
                 table: "TransactionItems",
                 column: "ProductId");
@@ -222,6 +276,9 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
         {
             migrationBuilder.DropTable(
                 name: "CreditPayments");
+
+            migrationBuilder.DropTable(
+                name: "Promotions");
 
             migrationBuilder.DropTable(
                 name: "StoreSettings");

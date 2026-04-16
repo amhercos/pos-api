@@ -12,7 +12,7 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
     {
         var phNow = DateTime.UtcNow.AddHours(8);
         var phTodayStart = new DateTime(phNow.Year, phNow.Month, phNow.Day, 0, 0, 0);
-        return phTodayStart.AddHours(-8);
+        return DateTime.SpecifyKind(phTodayStart.AddHours(-8), DateTimeKind.Utc);
     }
 
     public void Add(Transaction transaction) => context.Transactions.Add(transaction);
