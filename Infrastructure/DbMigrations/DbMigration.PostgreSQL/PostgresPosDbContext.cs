@@ -26,7 +26,11 @@ public class PostgresPosDbContext : PosDbContext
         builder.Ignore<User>();
         builder.Ignore<Store>();
 
-        if (string.IsNullOrWhiteSpace(_currentUserService.SchemaName))
+        if (!string.IsNullOrWhiteSpace(_currentUserService.SchemaName))
+        {
+            builder.HasDefaultSchema(_currentUserService.SchemaName);
+        }
+        else
         {
             builder.HasDefaultSchema(null);
             foreach (var entity in builder.Model.GetEntityTypes())
