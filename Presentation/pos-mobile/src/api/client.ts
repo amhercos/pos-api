@@ -1,29 +1,41 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios, { type AxiosError } from "axios";
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
-const getBaseUrl = (): string => {
-  return "https://bizflow-api-otoh.onrender.com/api";
-};
+const BASE_URL = "https://bizflow-ohsr.onrender.com/api";
 
-export const apiClient = axios.create({
-  baseURL: getBaseUrl(),
-  timeout: 15000,
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+apiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    const token = await SecureStore.getItemAsync("token");
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
+  (response: AxiosResponse) => response,
+  async (error) => {
     const status = error.response?.status;
     const originalRequest = error.config;
 
     const urlPath = originalRequest?.url?.toLowerCase() || "";
-    const isAuthEndpoint =
-      urlPath.includes("/auth/login") || urlPath.includes("/auth/register");
+    const isAuthEndpoint = urlPath.includes("/auth/");
 
     if (status === 401 && !isAuthEndpoint) {
       await Promise.all([
@@ -31,7 +43,7 @@ apiClient.interceptors.response.use(
         AsyncStorage.removeItem("bizflow_user"),
       ]);
 
-      if (router.canDismiss()) router.dismissAll();
+      router.dismissAll();
       router.replace("/");
     }
 
