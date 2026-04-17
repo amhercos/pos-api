@@ -29,8 +29,7 @@ namespace DbMigration.PostgreSQL
             optionsBuilder.UseNpgsql(connectionString, sqlOptions =>
             {
                 sqlOptions.MigrationsAssembly(typeof(PostgresPosDbContextFactory).Assembly.FullName);
-
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public");
             });
 
             var dummyUserService = new DesignTimeCurrentUserService();

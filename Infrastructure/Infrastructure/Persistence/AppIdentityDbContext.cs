@@ -14,8 +14,9 @@ namespace Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            //builder.HasDefaultSchema("public");
+            
             base.OnModelCreating(builder);
+            builder.HasDefaultSchema("public");
 
             builder.Entity<Store>(entity => {
                 entity.HasIndex(s => s.StoreName)
