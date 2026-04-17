@@ -22,7 +22,7 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
         return await context.Transactions
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Include("User")
+            .Include(t => t.User)
             .Include(t => t.Items)
                 .ThenInclude(ti => ti.Product)
             .FirstOrDefaultAsync(t => t.Id == id && t.StoreId == currentUserService.StoreId, ct);
