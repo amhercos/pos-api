@@ -33,7 +33,7 @@ try
 
     // Configuration Loading
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
-    builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
     builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
     builder.Configuration.AddEnvironmentVariables();
 
@@ -54,7 +54,7 @@ try
     {
         options.AddPolicy("_myAllowSpecificOrigins", policy =>
         {
-            policy.AllowAnyOrigin() // For production, you can later restrict this to your frontend URL
+            policy.AllowAnyOrigin()
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
