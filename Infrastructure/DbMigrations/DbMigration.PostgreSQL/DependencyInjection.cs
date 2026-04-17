@@ -21,7 +21,7 @@ public static class DependencyInjection
         options.UseNpgsql(masterConnection, o =>
         {
             o.MigrationsAssembly(assemblyName);
-            o.MigrationsHistoryTable("__EFMigrationsHistory", "public");
+            o.MigrationsHistoryTable("__EFMigrationsHistory");
         }));
 
         services.AddScoped<IConnectionResolver, ConnectionResolver>();
