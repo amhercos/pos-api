@@ -32,6 +32,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
     public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
     public DbSet<StoreSettings> StoreSettings => Set<StoreSettings>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<User> Users => Set<User>();
 
     public async Task BeginTransactionAsync(CancellationToken ct)
         => _currentTransaction = await Database.BeginTransactionAsync(ct);
