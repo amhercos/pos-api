@@ -14,11 +14,15 @@ public static class DependencyInjection
     {
         var services = option.Services;
         var configuration = tempConfiguration ?? option.Configuration;
-        var assemblyName = typeof(PostgresPosDbContext).Assembly.FullName;
+        var assemblyName = typeof(PostgresPosDbContext).Assembly.GetName().Name;
         var masterConnection = configuration.GetConnectionString("PostgresConnection");
 
         services.AddDbContext<AppIdentityDbContext>(options =>
-            options.UseNpgsql(masterConnection, o => o.MigrationsAssembly(assemblyName)));
+        options.UseNpgsql(masterConnection, o =>
+        {
+            o.MigrationsAssembly(assemblyName);
+            o.MigrationsHistoryTable("__EFMigrationsHistory", "public");
+        }));
 
         services.AddScoped<IConnectionResolver, ConnectionResolver>();
 
@@ -32,7 +36,6 @@ public static class DependencyInjection
             options.UseNpgsql(resolver.GetConnectionString(), opt =>
             {
                 opt.MigrationsAssembly(assemblyName);
-
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schemaName ?? "public");
             })
             .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, TenantModelCacheKeyFactory>();
