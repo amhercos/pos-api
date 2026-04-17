@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
-# 1. Copy project files (Exactly as you had it)
+# 1. Copy project files
 COPY ["Presentation/pos-webapi/pos-webapi.csproj", "Presentation/pos-webapi/"]
 COPY ["Core/Application/Application.csproj", "Core/Application/"]
 COPY ["Core/Domain/Domain.csproj", "Core/Domain/"]
@@ -22,9 +22,11 @@ RUN dotnet publish "pos-webapi.csproj" -c Release -o /app/publish /p:UseAppHost=
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-# Port 8080 is standard for Render
+RUN apk add --no-cache krb5-libs
+
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 
 COPY --from=build /app/publish .
 
