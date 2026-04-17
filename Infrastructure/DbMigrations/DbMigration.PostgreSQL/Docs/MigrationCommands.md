@@ -61,3 +61,13 @@ Update-Database -Context PostgresPosDbContext -Project DbMigration.PostgreSQL -S
 ```
 
 ---
+### Create Identity Migration (public schema)
+```
+
+dotnet ef migrations add Initial_Identity --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context AppIdentityDbContext --output-dir Migrations/Identity --framework net10.0
+```
+
+###Create POS Migrations (Tenant Schema)
+```
+dotnet ef migrations add Initial_Tenant_Schema --project Infrastructure/DbMigrations/DbMigration.PostgreSQL --startup-project Infrastructure/DbMigrations/DbMigration.PostgreSQL --context PostgresPosDbContext --output-dir Migrations/PostgresPosDb --framework net10.0
+```
