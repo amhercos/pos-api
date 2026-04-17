@@ -2,6 +2,7 @@
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -35,42 +36,36 @@ namespace DbMigration.PostgreSQL
                     SearchPath = schemaName
                 }.ToString();
 
-                // 1. Ensure Schema Exists
                 using (var connection = new NpgsqlConnection(tenantConnectionString))
                 {
                     await connection.OpenAsync(ct);
                     using var cmd = connection.CreateCommand();
                     cmd.CommandText = $@"CREATE SCHEMA IF NOT EXISTS ""{schemaName}"";";
                     await cmd.ExecuteNonQueryAsync(ct);
-
-                    // 2. RECONCILIATION CHECK: 
-                    // Check if 'Categories' exists but '__EFMigrationsHistory' does not.
-                    bool tablesExist = await TableExistsAsync(connection, schemaName, "Categories", ct);
-                    bool historyExists = await TableExistsAsync(connection, schemaName, "__EFMigrationsHistory", ct);
-
-                    if (tablesExist && !historyExists)
-                    {
-                        _logger.LogWarning("Schema {Schema} has existing tables but no EF history. Patching history table...", schemaName);
-                        await SeedMigrationHistoryAsync(connection, schemaName, "20260416100426_Initial_Tenant_Schema", ct);
-                    }
                 }
 
+               
                 var optionsBuilder = new DbContextOptionsBuilder<PostgresPosDbContext>();
                 optionsBuilder.UseNpgsql(tenantConnectionString, x =>
                 {
+                    
                     x.MigrationsAssembly("DbMigration.PostgreSQL");
+                    x.MigrationsAssembly(typeof(PostgresPosDbContext).Assembly.GetName().Name);
                     x.MigrationsHistoryTable("__EFMigrationsHistory", schemaName);
                 })
+                 //.ReplaceService<IMigrationsAssembly, MigrationsAssembly>()
                 .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
                 var migrationContext = new MigrationUserContext(schemaName);
                 using var context = new PostgresPosDbContext(optionsBuilder.Options, migrationContext);
 
+                // 3. Apply the migrations
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync(ct);
                 if (pendingMigrations.Any())
                 {
+                    _logger.LogInformation("Applying {Count} migrations to schema {Schema}...", pendingMigrations.Count(), schemaName);
                     await context.Database.MigrateAsync(ct);
-                    _logger.LogInformation("Successfully updated {Schema} to latest version.", schemaName);
+                    _logger.LogInformation("Migration successful for {Schema}.", schemaName);
                 }
             }
             catch (Exception ex)
@@ -80,7 +75,7 @@ namespace DbMigration.PostgreSQL
             }
         }
 
-        // Helper: Check for existing tables to prevent "Relation already exists"
+        
         private async Task<bool> TableExistsAsync(NpgsqlConnection conn, string schema, string table, CancellationToken ct)
         {
             using var cmd = conn.CreateCommand();
