@@ -49,7 +49,7 @@ namespace DbMigration.PostgreSQL
                 optionsBuilder.UseNpgsql(tenantConnectionString, x =>
                 {
                     
-                    x.MigrationsAssembly("DbMigration.PostgreSQL");
+                    //x.MigrationsAssembly("DbMigration.PostgreSQL");
                     x.MigrationsAssembly(typeof(PostgresPosDbContext).Assembly.GetName().Name);
                     x.MigrationsHistoryTable("__EFMigrationsHistory", schemaName);
                 })
