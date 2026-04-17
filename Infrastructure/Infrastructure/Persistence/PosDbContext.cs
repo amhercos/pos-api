@@ -62,6 +62,13 @@ public abstract class PosDbContext : DbContext, IPosDbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.Entity<User>(entity =>
+        {
+            entity.ToTable("AspNetUsers", "public");
+            entity.HasKey(u => u.Id);
+            entity.Metadata.SetIsTableExcludedFromMigrations(true);
+        });
+
         var schema = GetCurrentSchema();
         if (!string.IsNullOrWhiteSpace(schema))
         {
