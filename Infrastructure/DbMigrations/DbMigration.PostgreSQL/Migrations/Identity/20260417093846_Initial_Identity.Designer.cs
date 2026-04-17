@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigration.PostgreSQL.Migrations.Identity
 {
     [DbContext(typeof(AppIdentityDbContext))]
-    [Migration("20260417070242_Initial_Identity")]
+    [Migration("20260417093846_Initial_Identity")]
     partial class Initial_Identity
     {
         /// <inheritdoc />
@@ -20,7 +20,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("public")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -67,7 +66,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                         .IsUnique()
                         .HasDatabaseName("IX_Stores_StoreName_Unique");
 
-                    b.ToTable("Stores", "public");
+                    b.ToTable("Stores");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -144,7 +143,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasIndex("StoreId");
 
-                    b.ToTable("AspNetUsers", "public");
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -171,7 +170,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex");
 
-                    b.ToTable("AspNetRoles", "public");
+                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -195,7 +194,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetRoleClaims", "public");
+                    b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
@@ -219,7 +218,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserClaims", "public");
+                    b.ToTable("AspNetUserClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
@@ -240,7 +239,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserLogins", "public");
+                    b.ToTable("AspNetUserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
@@ -255,7 +254,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles", "public");
+                    b.ToTable("AspNetUserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
@@ -274,7 +273,7 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("AspNetUserTokens", "public");
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
