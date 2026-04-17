@@ -21,7 +21,7 @@ public static class DependencyInjection
         options.UseNpgsql(masterConnection, o =>
         {
             o.MigrationsAssembly(assemblyName);
-            o.MigrationsHistoryTable("__EFMigrationsHistory");
+            o.MigrationsHistoryTable("__EFMigrationsHistory", "public");
             
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }));
