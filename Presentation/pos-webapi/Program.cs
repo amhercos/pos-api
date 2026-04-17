@@ -98,7 +98,6 @@ try
 
     var app = builder.Build();
 
-    // Auto-Migration Block
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -106,6 +105,7 @@ try
         {
             var identityContext = services.GetRequiredService<AppIdentityDbContext>();
             Log.Information("Checking Identity migrations...");
+
             await identityContext.Database.MigrateAsync();
 
             Log.Information("Seeding Admin Data...");
@@ -113,7 +113,8 @@ try
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Database migration failed during startup.");
+            Log.Fatal(ex, "CRITICAL: Database migration failed. The application cannot start safely.");
+            throw;
         }
     }
 
