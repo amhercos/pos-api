@@ -34,7 +34,7 @@ try
     // Configuration Loading
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
     builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
-    builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
+    builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false);
     builder.Configuration.AddEnvironmentVariables();
 
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
