@@ -22,7 +22,11 @@ public static class DependencyInjection
         {
             o.MigrationsAssembly(assemblyName);
             o.MigrationsHistoryTable("__EFMigrationsHistory");
+            
+            options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }));
+
+       
 
         services.AddScoped<IConnectionResolver, ConnectionResolver>();
 

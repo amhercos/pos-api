@@ -12,12 +12,8 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.EnsureSchema(
-                name: "public");
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
-                schema: "public",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -32,7 +28,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "Stores",
-                schema: "public",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -52,7 +47,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
-                schema: "public",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -67,7 +61,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
-                        principalSchema: "public",
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -75,7 +68,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "AspNetUsers",
-                schema: "public",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -103,14 +95,12 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetUsers_Stores_StoreId",
                         column: x => x.StoreId,
-                        principalSchema: "public",
                         principalTable: "Stores",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserClaims",
-                schema: "public",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -125,7 +115,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetUserClaims_AspNetUsers_UserId",
                         column: x => x.UserId,
-                        principalSchema: "public",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -133,7 +122,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserLogins",
-                schema: "public",
                 columns: table => new
                 {
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
@@ -147,7 +135,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetUserLogins_AspNetUsers_UserId",
                         column: x => x.UserId,
-                        principalSchema: "public",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -155,7 +142,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserRoles",
-                schema: "public",
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -167,14 +153,12 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
                         column: x => x.RoleId,
-                        principalSchema: "public",
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AspNetUserRoles_AspNetUsers_UserId",
                         column: x => x.UserId,
-                        principalSchema: "public",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -182,7 +166,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserTokens",
-                schema: "public",
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -196,7 +179,6 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
                     table.ForeignKey(
                         name: "FK_AspNetUserTokens_AspNetUsers_UserId",
                         column: x => x.UserId,
-                        principalSchema: "public",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -204,57 +186,48 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
-                schema: "public",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",
-                schema: "public",
                 table: "AspNetRoles",
                 column: "NormalizedName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserClaims_UserId",
-                schema: "public",
                 table: "AspNetUserClaims",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserLogins_UserId",
-                schema: "public",
                 table: "AspNetUserLogins",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserRoles_RoleId",
-                schema: "public",
                 table: "AspNetUserRoles",
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
-                schema: "public",
                 table: "AspNetUsers",
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUsers_StoreId",
-                schema: "public",
                 table: "AspNetUsers",
                 column: "StoreId");
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
-                schema: "public",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Stores_StoreName_Unique",
-                schema: "public",
                 table: "Stores",
                 column: "StoreName",
                 unique: true);
@@ -264,36 +237,28 @@ namespace DbMigration.PostgreSQL.Migrations.Identity
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AspNetRoleClaims",
-                schema: "public");
+                name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserClaims",
-                schema: "public");
+                name: "AspNetUserClaims");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserLogins",
-                schema: "public");
+                name: "AspNetUserLogins");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserRoles",
-                schema: "public");
+                name: "AspNetUserRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserTokens",
-                schema: "public");
+                name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles",
-                schema: "public");
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers",
-                schema: "public");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Stores",
-                schema: "public");
+                name: "Stores");
         }
     }
 }
