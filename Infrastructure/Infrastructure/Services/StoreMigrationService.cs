@@ -26,7 +26,7 @@ namespace Infrastructure.Services
         {
             _logger.LogInformation("Store Migration Watchdog warm up...");
 
-            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
 
             _logger.LogInformation("Store Migration Watchdog started in Auto-Sync mode.");
 
