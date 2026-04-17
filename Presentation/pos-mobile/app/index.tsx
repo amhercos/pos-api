@@ -1,5 +1,5 @@
 import { authService } from "@/src/services/authService";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -32,8 +32,6 @@ export default function LoginScreen() {
         fullName: result.fullName,
         role: result.role,
       });
-
-      router.replace("/(tabs)/dashboard");
     } catch (err) {
       const error = err as Error;
       Alert.alert("Login Failed", error.message);
