@@ -1,6 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
 import { apiClient } from "../api/client";
 import {
   ApiError,
@@ -19,7 +17,9 @@ export const authService = {
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>;
-      throw new Error(axiosError.response?.data?.message || "Login failed.");
+      throw new Error(
+        axiosError.response?.data?.message || "Invalid credentials.",
+      );
     }
   },
 
@@ -32,10 +32,5 @@ export const authService = {
         axiosError.response?.data?.message || "Registration failed.",
       );
     }
-  },
-
-  logout: async (): Promise<void> => {
-    await SecureStore.deleteItemAsync("token");
-    await AsyncStorage.removeItem("bizflow_user");
   },
 };

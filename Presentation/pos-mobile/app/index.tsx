@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../src/context/AuthContext";
 
 export default function LoginScreen() {
-  const { setToken } = useAuth();
+  const { authenticate } = useAuth();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -27,9 +27,12 @@ export default function LoginScreen() {
     try {
       const result = await authService.login({ username, password });
 
-      await setToken(result.token);
+      await authenticate(result.token, {
+        userName: result.userName,
+        fullName: result.fullName,
+        role: result.role,
+      });
 
-      // Navigates to app/(tabs)/dashboard.tsx
       router.replace("/(tabs)/dashboard");
     } catch (err) {
       const error = err as Error;
