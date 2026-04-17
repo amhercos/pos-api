@@ -1,5 +1,5 @@
 import { authService } from "@/src/services/authService";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../src/context/AuthContext";
 
 export default function LoginScreen() {
-  const { setToken } = useAuth();
+  const { authenticate } = useAuth();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -27,10 +27,11 @@ export default function LoginScreen() {
     try {
       const result = await authService.login({ username, password });
 
-      await setToken(result.token);
-
-      // Navigates to app/(tabs)/dashboard.tsx
-      router.replace("/(tabs)/dashboard");
+      await authenticate(result.token, {
+        userName: result.userName,
+        fullName: result.fullName,
+        role: result.role,
+      });
     } catch (err) {
       const error = err as Error;
       Alert.alert("Login Failed", error.message);

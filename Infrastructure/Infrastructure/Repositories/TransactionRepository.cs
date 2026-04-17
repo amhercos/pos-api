@@ -1,12 +1,12 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Infrastructure.Persistence;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public class TransactionRepository(PosDbContext context) : ITransactionRepository
+public class TransactionRepository(PosDbContext context, ICurrentUserService currentUserService) : ITransactionRepository
 {
     private DateTime GetPhStartOfTodayUtc()
     {
@@ -20,11 +20,12 @@ public class TransactionRepository(PosDbContext context) : ITransactionRepositor
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         return await context.Transactions
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Include(x => x.User)
+            .Include("User")
             .Include(t => t.Items)
-            .ThenInclude(ti => ti.Product)
-            .FirstOrDefaultAsync(t => t.Id == id, ct);
+                .ThenInclude(ti => ti.Product)
+            .FirstOrDefaultAsync(t => t.Id == id && t.StoreId == currentUserService.StoreId, ct);
     }
 
     public async Task<IEnumerable<Transaction>> GetAllAsync(CancellationToken ct)

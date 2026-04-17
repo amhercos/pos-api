@@ -1,5 +1,5 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { Slot, useRouter } from "expo-router";
+import { Slot } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import {
   BarChart3,
@@ -26,14 +26,13 @@ import { drawerNavigationRef } from "../src/utils/drawerRef";
 function CustomDrawerContent(
   props: DrawerContentComponentProps,
 ): React.JSX.Element {
-  const { setToken } = useAuth();
-  const router = useRouter();
+  const { logout } = useAuth();
 
   drawerNavigationRef.current = props.navigation;
 
   const handleLogout = async (): Promise<void> => {
     try {
-      await setToken(null);
+      await logout();
     } catch (e) {
       console.error("[Drawer] Logout failed:", e);
     }
@@ -97,7 +96,7 @@ function CustomDrawerContent(
 
         <View className="mt-auto pt-6 border-t border-slate-100">
           <TouchableOpacity
-            onPress={handleLogout}
+            onPress={() => void handleLogout()}
             className="flex-row items-center p-4 rounded-2xl bg-rose-50 active:bg-rose-100"
           >
             <LogOut size={20} color="#e11d48" />
@@ -109,7 +108,7 @@ function CustomDrawerContent(
   );
 }
 
-const SectionHeader = ({ title }: { title: string }) => (
+const SectionHeader = ({ title }: { title: string }): React.JSX.Element => (
   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
     {title}
   </Text>
@@ -123,7 +122,7 @@ const DrawerItem = ({
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
-}) => (
+}): React.JSX.Element => (
   <TouchableOpacity
     onPress={onPress}
     className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
@@ -136,7 +135,7 @@ const DrawerItem = ({
 function RootLayoutNav(): React.JSX.Element {
   const { token, isLoading } = useAuth();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
+  const isLargeScreen = width >= 768;
 
   if (isLoading) {
     return (
@@ -155,9 +154,12 @@ function RootLayoutNav(): React.JSX.Element {
           drawerContent={(props) => <CustomDrawerContent {...props} />}
           screenOptions={{
             headerShown: false,
-            drawerType: isTablet ? "permanent" : "front",
-            drawerStyle: { width: isTablet ? 320 : "75%" },
+            drawerType: "front",
+            drawerStyle: {
+              width: isLargeScreen ? 320 : "75%",
+            },
             overlayColor: "rgba(15, 23, 42, 0.5)",
+            swipeEnabled: true,
           }}
         >
           <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
