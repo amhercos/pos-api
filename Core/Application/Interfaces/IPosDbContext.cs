@@ -6,7 +6,6 @@ namespace Application.Interfaces;
 
 public interface IPosDbContext
 {
-    DbSet<User> Users { get; }
     DbSet<Category> Categories { get; }
     DbSet<Product> Products { get; }
     DbSet<Transaction> Transactions { get; }
