@@ -22,9 +22,8 @@ public class PostgresPosDbContext : PosDbContext
     {
 
         base.OnModelCreating(builder);
-
-        builder.Ignore<User>();
         builder.Ignore<Store>();
+        builder.Ignore<User>();
 
         if (!string.IsNullOrWhiteSpace(_currentUserService.SchemaName))
         {
