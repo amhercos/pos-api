@@ -19,31 +19,12 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
 
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken ct)
     {
-        var result = await context.Transactions
-     .IgnoreQueryFilters()
-     .AsNoTracking()
-     .Where(t => t.Id == id && t.StoreId == currentUserService.StoreId)
-     .Select(t => new {
-         Transaction = t,
-         User = context.Set<User>().FirstOrDefault(u => u.Id == t.UserId),
-         Items = t.Items.Select(ti => new {
-             Item = ti,
-             Product = ti.Product
-         }).ToList()
-     })
-     .FirstOrDefaultAsync(ct);
-
-        if (result == null) return null;
-
-        var transaction = result.Transaction;
-        transaction.User = result.User!;
-
-        transaction.Items = result.Items.Select(x => {
-            x.Item.Product = x.Product!;
-            return x.Item;
-        }).ToList();
-
-        return transaction;
+        return await context.Transactions
+         .IgnoreQueryFilters()
+         .AsNoTracking()
+         .Include(t => t.Items)
+             .ThenInclude(ti => ti.Product)
+         .FirstOrDefaultAsync(t => t.Id == id && t.StoreId == currentUserService.StoreId, ct);
     }
 
     public async Task<IEnumerable<Transaction>> GetAllAsync(CancellationToken ct)
