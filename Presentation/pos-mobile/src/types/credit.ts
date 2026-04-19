@@ -41,3 +41,9 @@ export interface RecordCreditPaymentCommand {
   customerCreditId: string;
   amountPaid: number;
 }
+
+export interface UpdateCustomerCreditCommand {
+  id: string;
+  customerName: string;
+  contactInfo: string;
+}
