@@ -14,10 +14,9 @@ export const useReport = (initialPeriod: ReportPeriod = "today") => {
   const fetchReportData = useCallback(async (targetPeriod: ReportPeriod) => {
     setLoading(true);
     try {
-      // Fetch both summary and recent transactions in parallel for better performance
       const [summaryData, transactionsData] = await Promise.all([
         reportService.getSummary(targetPeriod),
-        reportService.getRecentTransactions(1, 10),
+        reportService.getRecentTransactions(1, 10, targetPeriod),
       ]);
 
       setSummary(summaryData);

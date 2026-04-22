@@ -57,7 +57,8 @@ public class TransactionsController(IMediator mediator, ICurrentUserService curr
     [HttpGet("recent")]
     public async Task<ActionResult<List<RecentTransactionDto>>> GetRecent(
     [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 3)
+    [FromQuery] int pageSize = 3,
+    [FromQuery] ReportPeriod period = ReportPeriod.Today)
     { 
 
         var query = new GetRecentTransactionsQuery(currentUserService.StoreId, page, pageSize);
