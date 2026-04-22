@@ -1,11 +1,7 @@
-import { ReceiptModal } from "@/components/reports/ReceiptModal";
-import { TransactionTable } from "@/components/reports/TransactionTable";
-import { useTransactionHistory } from "@/src/hooks/use-transaction-history";
-import { cn } from "@/src/lib/utils";
-import type { TransactionDetails } from "@/src/types/record";
-import { Filter, RefreshCcw, Search } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import { CalendarDays, Filter, RefreshCcw, Search } from "lucide-react-native";
+import React, { ReactElement, useMemo, useState } from "react";
 import {
+  DimensionValue,
   ScrollView,
   Text,
   TextInput,
@@ -14,48 +10,77 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function RecordsScreen() {
+import { ReceiptModal } from "@/components/reports/ReceiptModal";
+import { TransactionTable } from "@/components/reports/TransactionTable";
+import { useReport } from "@/src/hooks/use-report";
+import { useTransactionHistory } from "@/src/hooks/use-transaction-history";
+import { cn } from "@/src/lib/utils";
+import type { ReportPeriod } from "@/src/services/reportService";
+import type { TransactionDetails } from "@/src/types/record";
+
+// Interface for Analytics Card Props
+interface AnalyticsCardProps {
+  label: string;
+  value: string;
+  accent: string;
+  width: DimensionValue;
+}
+
+// Interface for Pagination Props
+interface PaginationProps {
+  page: number;
+  setPage: (p: number) => void;
+  hasMore: boolean;
+}
+
+export default function RecordsScreen(): ReactElement {
+  const {
+    summary,
+    loading: summaryLoading,
+    period,
+    setPeriod,
+  } = useReport("today");
+
   const {
     transactions,
-    loading,
+    loading: historyLoading,
     page,
     setPage,
     pageSize,
-    refresh,
-    summary,
+    refresh: refreshHistory,
     getTransactionById,
+    topProduct,
   } = useTransactionHistory();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const loading: boolean = summaryLoading || historyLoading;
+
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [methodFilter, setMethodFilter] = useState<"All" | "Cash" | "Credit">(
     "All",
   );
   const [selectedTx, setSelectedTx] = useState<TransactionDetails | null>(null);
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
+  const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
 
-  const formatPHP = (val: number) =>
-    `₱${val.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
+  const formatPHP = (val: number): string =>
+    `₱${val.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const handleOpenReceipt = (id: string) => {
+  const handleOpenReceipt = async (id: string): Promise<void> => {
     if (isFetchingDetails) return;
-
-    // 1. Instant UI response
     setIsReceiptOpen(true);
     setSelectedTx(null);
     setIsFetchingDetails(true);
 
-    // 2. Fetch in background without blocking the UI thread
-    getTransactionById(id)
-      .then((data) => {
-        if (data) {
-          setSelectedTx(data);
-        } else {
-          setIsReceiptOpen(false);
-        }
-      })
-      .catch(() => setIsReceiptOpen(false))
-      .finally(() => setIsFetchingDetails(false));
+    try {
+      const data = await getTransactionById(id);
+      if (data) setSelectedTx(data);
+      else setIsReceiptOpen(false);
+    } catch (error: unknown) {
+      console.error("Failed to fetch transaction:", error);
+      setIsReceiptOpen(false);
+    } finally {
+      setIsFetchingDetails(false);
+    }
   };
 
   const filteredTransactions = useMemo(() => {
@@ -70,121 +95,120 @@ export default function RecordsScreen() {
   }, [transactions, searchQuery, methodFilter]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50/50" edges={["top"]}>
-      <ScrollView
-        className="flex-1 px-4 md:px-8 pt-6"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-6">
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View className="px-6 pt-6 flex-row items-center justify-between">
           <View>
             <Text className="text-3xl font-black text-slate-950 tracking-tighter">
-              Records
+              Analytics
             </Text>
-            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">
-              Transaction History
+            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Business Performance
             </Text>
           </View>
           <TouchableOpacity
-            onPress={refresh}
+            onPress={() => refreshHistory()}
             disabled={loading}
-            className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm"
+            className="bg-slate-100 p-3 rounded-2xl"
           >
-            <RefreshCcw size={18} color={loading ? "#cbd5e1" : "#64748b"} />
+            <RefreshCcw size={18} color={loading ? "#cbd5e1" : "#0f172a"} />
           </TouchableOpacity>
         </View>
 
-        {/* Analytics Stats */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-6 -mx-4 px-4"
-        >
-          <AnalyticsCard
-            label="Total Revenue"
-            value={formatPHP(summary?.totalRevenue || 0)}
-            accent="bg-emerald-500"
-          />
-          <AnalyticsCard
-            label="Transactions"
-            value={(summary?.totalTransactions ?? 0).toString()}
-            accent="bg-blue-500"
-          />
-          <AnalyticsCard
-            label="Performance"
-            value="Top Seller"
-            accent="bg-amber-500"
-          />
-        </ScrollView>
+        {/* Period Filter Switcher */}
+        <View className="px-6 py-6">
+          <View className="flex-row bg-slate-100 p-1 rounded-2xl">
+            {(["today", "weekly", "monthly"] as ReportPeriod[]).map((p) => (
+              <TouchableOpacity
+                key={p}
+                onPress={() => setPeriod(p)}
+                className={cn(
+                  "flex-1 py-2.5 rounded-xl items-center",
+                  period === p ? "bg-white shadow-sm" : "",
+                )}
+              >
+                <Text
+                  className={cn(
+                    "text-[10px] font-black uppercase",
+                    period === p ? "text-slate-900" : "text-slate-400",
+                  )}
+                >
+                  {p}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-        {/* Search & Filters */}
-        <View className="flex-row gap-2 mb-4">
-          <View className="flex-1 flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 h-12 shadow-sm">
-            <Search size={18} color="#94a3b8" />
-            <TextInput
-              placeholder="Search Reference ID..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 ml-2 text-sm font-bold text-slate-700"
+        {/* Analytics Stats Grid */}
+        <View className="px-6 mb-8">
+          <View className="flex-row justify-between mb-4">
+            <AnalyticsCard
+              label={`${period} Revenue`}
+              value={formatPHP(summary?.totalRevenue || 0)}
+              accent="bg-emerald-500"
+              width="48%"
+            />
+            <AnalyticsCard
+              label="Volume"
+              value={(summary?.totalTransactions ?? 0).toString()}
+              accent="bg-blue-500"
+              width="48%"
             />
           </View>
-          <TouchableOpacity
-            onPress={() =>
-              setMethodFilter((p) =>
-                p === "All" ? "Cash" : p === "Cash" ? "Credit" : "All",
-              )
-            }
-            className="bg-white border border-slate-100 rounded-2xl px-4 flex-row items-center shadow-sm"
-          >
-            <Filter size={16} color="#64748b" />
-            <Text className="ml-2 text-xs font-black text-slate-600 uppercase">
-              {methodFilter}
-            </Text>
-          </TouchableOpacity>
+          <AnalyticsCard
+            label="Most Popular Item"
+            value={topProduct ? topProduct.name : "No Data"}
+            accent="bg-amber-500"
+            width="100%"
+          />
         </View>
 
-        {/* Table Area */}
-        <View className="mb-20">
+        {/* Filters */}
+        <View className="px-6 mb-4">
+          <View className="flex-row gap-2">
+            <View className="flex-1 flex-row items-center bg-slate-50 rounded-2xl px-4 h-12">
+              <Search size={18} color="#94a3b8" />
+              <TextInput
+                placeholder="Search Reference..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                className="flex-1 ml-2 text-sm font-bold text-slate-700"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                setMethodFilter((prev) =>
+                  prev === "All" ? "Cash" : prev === "Cash" ? "Credit" : "All",
+                )
+              }
+              className="bg-slate-900 rounded-2xl px-4 flex-row items-center"
+            >
+              <Filter size={16} color="white" />
+              <Text className="ml-2 text-[10px] font-black text-white uppercase">
+                {methodFilter}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Transaction History Area */}
+        <View className="px-6 mb-24">
+          <Text className="text-lg font-black text-slate-900 mb-4">
+            Recent Transactions
+          </Text>
           <TransactionTable
             data={filteredTransactions}
             loading={loading}
             onViewDetails={handleOpenReceipt}
           />
 
-          {/* Pagination */}
-          <View className="flex-row items-center justify-between mt-4 px-2">
-            <TouchableOpacity
-              onPress={() => setPage(page - 1)}
-              disabled={page === 1}
-              className={cn(
-                "p-2 rounded-xl",
-                page === 1 ? "opacity-30" : "bg-white border border-slate-100",
-              )}
-            >
-              <Text className="text-[10px] font-black uppercase text-slate-600">
-                Previous
-              </Text>
-            </TouchableOpacity>
-
-            <Text className="text-[10px] font-black text-slate-400">
-              PAGE {page}
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => setPage(page + 1)}
-              disabled={transactions.length < pageSize}
-              className={cn(
-                "p-2 rounded-xl",
-                transactions.length < pageSize
-                  ? "opacity-30"
-                  : "bg-white border border-slate-100",
-              )}
-            >
-              <Text className="text-[10px] font-black uppercase text-slate-600">
-                Next
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Pagination
+            page={page}
+            setPage={setPage}
+            hasMore={transactions.length >= pageSize}
+          />
         </View>
       </ScrollView>
 
@@ -200,17 +224,19 @@ export default function RecordsScreen() {
   );
 }
 
+// --- Strictly Typed Sub-components ---
+
 function AnalyticsCard({
   label,
   value,
   accent,
-}: {
-  label: string;
-  value: string;
-  accent: string;
-}) {
+  width,
+}: AnalyticsCardProps): ReactElement {
   return (
-    <View className="bg-white border border-slate-100 p-5 rounded-[28px] mr-3 shadow-sm min-w-[160px]">
+    <View
+      style={{ width }}
+      className="bg-white border border-slate-100 p-5 rounded-[28px] shadow-sm"
+    >
       <View className={cn("w-8 h-1.5 rounded-full mb-4", accent)} />
       <Text className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
         {label}
@@ -218,6 +244,45 @@ function AnalyticsCard({
       <Text className="text-lg font-black text-slate-950" numberOfLines={1}>
         {value}
       </Text>
+    </View>
+  );
+}
+
+function Pagination({ page, setPage, hasMore }: PaginationProps): ReactElement {
+  return (
+    <View className="flex-row items-center justify-between mt-6">
+      <TouchableOpacity
+        onPress={() => setPage(page - 1)}
+        disabled={page === 1}
+        className={cn(
+          "px-4 py-2 rounded-xl",
+          page === 1 ? "opacity-20" : "bg-slate-100",
+        )}
+      >
+        <Text className="text-[10px] font-black uppercase text-slate-900">
+          Prev
+        </Text>
+      </TouchableOpacity>
+
+      <View className="flex-row items-center">
+        <CalendarDays size={12} color="#94a3b8" />
+        <Text className="ml-2 text-[10px] font-black text-slate-400 uppercase">
+          Page {page}
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        onPress={() => setPage(page + 1)}
+        disabled={!hasMore}
+        className={cn(
+          "px-4 py-2 rounded-xl",
+          !hasMore ? "opacity-20" : "bg-slate-100",
+        )}
+      >
+        <Text className="text-[10px] font-black uppercase text-slate-900">
+          Next
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }

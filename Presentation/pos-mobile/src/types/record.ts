@@ -30,3 +30,8 @@ export interface TransactionDetails {
   userName: string;
   items: TransactionItem[];
 }
+
+export interface TopProduct {
+  name: string;
+  quantitySold: number;
+}

@@ -2,6 +2,7 @@
 using Application.Features.Transactions.Commands;
 using Application.Features.Transactions.Queries;
 using Application.Interfaces;
+using Domain.Entities.Enums;
 using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -46,12 +47,12 @@ public class TransactionsController(IMediator mediator, ICurrentUserService curr
     }
 
     [HttpGet("summary")]
-    public async Task<ActionResult<DailySummaryDto>> GetDailySummary()
+    public async Task<IActionResult> GetSummary([FromQuery] ReportPeriod period = ReportPeriod.Today)
     {
-        var summary = await mediator.Send(new GetDailySummaryQuery());
-
-        return Ok(summary);
+        var result = await mediator.Send(new GetDailySummaryQuery(period));
+        return Ok(result);
     }
+
 
     [HttpGet("recent")]
     public async Task<ActionResult<List<RecentTransactionDto>>> GetRecent(

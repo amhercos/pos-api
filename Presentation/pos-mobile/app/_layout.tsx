@@ -137,16 +137,11 @@ function RootLayoutNav(): React.JSX.Element {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
-  // Pre-emptive server wake-up ping
   useEffect(() => {
     if (token) {
-      // This simple fetch pings the root domain to trigger Render wake-up
-      // so that the Dashboard fetch has a head start.
       fetch("https://bizflow-ohsr.onrender.com/api/Auth/login", {
         method: "OPTIONS",
-      }).catch(() => {
-        /* Silent fail is expected on OPTION pings */
-      });
+      }).catch(() => {});
     }
   }, [token]);
 
@@ -167,7 +162,7 @@ function RootLayoutNav(): React.JSX.Element {
           drawerContent={(props) => <CustomDrawerContent {...props} />}
           screenOptions={{
             headerShown: false,
-            drawerType: isLargeScreen ? "permanent" : "front",
+            drawerType: "front",
             drawerStyle: {
               width: isLargeScreen ? 300 : "80%",
             },
