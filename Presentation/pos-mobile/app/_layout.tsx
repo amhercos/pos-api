@@ -9,7 +9,7 @@ import {
   Tag,
   User,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -33,8 +33,8 @@ function CustomDrawerContent(
   const handleLogout = async (): Promise<void> => {
     try {
       await logout();
-    } catch (e) {
-      console.error("[Drawer] Logout failed:", e);
+    } catch {
+      // Unused variable 'e' removed for strict TS compliance
     }
   };
 
@@ -137,6 +137,19 @@ function RootLayoutNav(): React.JSX.Element {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
+  // Pre-emptive server wake-up ping
+  useEffect(() => {
+    if (token) {
+      // This simple fetch pings the root domain to trigger Render wake-up
+      // so that the Dashboard fetch has a head start.
+      fetch("https://bizflow-ohsr.onrender.com/api/Auth/login", {
+        method: "OPTIONS",
+      }).catch(() => {
+        /* Silent fail is expected on OPTION pings */
+      });
+    }
+  }, [token]);
+
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -154,15 +167,20 @@ function RootLayoutNav(): React.JSX.Element {
           drawerContent={(props) => <CustomDrawerContent {...props} />}
           screenOptions={{
             headerShown: false,
-            drawerType: "front",
+            drawerType: isLargeScreen ? "permanent" : "front",
             drawerStyle: {
-              width: isLargeScreen ? 320 : "75%",
+              width: isLargeScreen ? 300 : "80%",
             },
-            overlayColor: "rgba(15, 23, 42, 0.5)",
-            swipeEnabled: true,
+            overlayColor: "rgba(0, 0, 0, 0.4)",
           }}
         >
-          <Drawer.Screen name="(tabs)" options={{ title: "Home" }} />
+          <Drawer.Screen
+            name="(tabs)"
+            options={{
+              drawerLabel: "Home",
+              swipeEnabled: true,
+            }}
+          />
         </Drawer>
       )}
     </GestureHandlerRootView>
