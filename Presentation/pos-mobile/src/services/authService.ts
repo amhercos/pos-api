@@ -16,10 +16,7 @@ export const authService = {
       );
       return response.data;
     } catch (error) {
-      const axiosError = error as AxiosError<ApiError>;
-      throw new Error(
-        axiosError.response?.data?.message || "Invalid credentials.",
-      );
+      throw error;
     }
   },
 

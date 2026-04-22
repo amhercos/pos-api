@@ -1,68 +1,103 @@
+import { isAxiosError } from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { creditService } from "../services/creditService";
-import { CustomerCredit, CustomerCreditSummary } from "../types/credit";
+import type {
+    ApiErrorResponse,
+    CustomerCredit,
+    CustomerCreditSummary,
+    UpdateCustomerCreditCommand,
+} from "../types/credit";
 
 export function useCredits() {
   const [credits, setCredits] = useState<CustomerCredit[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const fetchCredits = useCallback(
-    async (search?: string, includeSettled: boolean = false) => {
-      setLoading(true);
+    async (
+      search?: string,
+      includeSettled: boolean = false,
+      isRefresh: boolean = false,
+    ) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
       try {
         const data = await creditService.getCredits(search, includeSettled);
         setCredits(data);
       } catch (error) {
-        console.error("Fetch Credits Error:", error);
-        Alert.alert("Error", "Could not load credits. Check your connection.");
+        console.error("[useCredits] fetchCredits Failed:", error);
+        if (!isRefresh) {
+          Alert.alert(
+            "Data Error",
+            "Could not synchronize records with the server.",
+          );
+        }
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     },
     [],
   );
 
-  const getSummary = async (
-    id: string,
-  ): Promise<CustomerCreditSummary | null> => {
-    try {
-      return await creditService.getSummary(id);
-    } catch (error) {
-      Alert.alert("Error", "Failed to retrieve account summary.");
-      return null;
-    }
-  };
+  const getSummary = useCallback(
+    async (id: string): Promise<CustomerCreditSummary | null> => {
+      try {
+        return await creditService.getSummary(id);
+      } catch {
+        Alert.alert("Access Error", "Failed to retrieve the account summary.");
+        return null;
+      }
+    },
+    [],
+  );
 
-  const recordPayment = async (creditId: string, amount: number) => {
+  const recordPayment = async (
+    creditId: string,
+    amount: number,
+  ): Promise<void> => {
     try {
       await creditService.recordPayment({
         customerCreditId: creditId,
         amountPaid: amount,
       });
-      // Refresh list after payment
-      await fetchCredits();
-    } catch (error) {
-      Alert.alert("Payment Failed", "The server rejected the payment record.");
+      await fetchCredits(undefined, false, true);
+    } catch (error: unknown) {
+      let message = "The server rejected the payment record.";
+
+      if (isAxiosError<ApiErrorResponse>(error)) {
+        // Matches your backend's new { Error = ex.Message }
+        message =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          message;
+      }
+
+      Alert.alert("Payment Failed", message);
       throw error;
     }
   };
 
-  const updateCredit = async (id: string, name: string, contact: string) => {
+  const updateCredit = async (
+    command: UpdateCustomerCreditCommand,
+  ): Promise<void> => {
     try {
-      await creditService.updateCredit({
-        id,
-        customerName: name,
-        contactInfo: contact,
-      });
-      await fetchCredits();
-    } catch (error) {
-      Alert.alert("Update Failed", "Could not update customer information.");
+      await creditService.updateCredit(command);
+      await fetchCredits(undefined, false, true);
+    } catch (error: unknown) {
+      let message = "Failed to save customer changes.";
+
+      if (isAxiosError<ApiErrorResponse>(error)) {
+        message = error.response?.data?.error || message;
+      }
+
+      Alert.alert("Update Error", message);
       throw error;
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchCredits();
   }, [fetchCredits]);
@@ -70,9 +105,10 @@ export function useCredits() {
   return {
     credits,
     loading,
+    refreshing,
     fetchCredits,
     getSummary,
     recordPayment,
     updateCredit,
-  };
+  } as const;
 }
