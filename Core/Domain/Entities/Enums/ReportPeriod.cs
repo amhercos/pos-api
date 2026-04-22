@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Domain.Entities.Enums
+﻿namespace Domain.Entities.Enums
 {
-    internal class ReportPeriod
+    public enum ReportPeriod
     {
+        Today,
+        Weekly,
+        Monthly
     }
 }

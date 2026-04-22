@@ -8,7 +8,7 @@ namespace Infrastructure.Repositories;
 
 public class TransactionRepository(PosDbContext context, ICurrentUserService currentUserService) : ITransactionRepository
 {
-    private DateTime GetPhStartOfTodayUtc()
+    public DateTime GetPhStartOfTodayUtc()
     {
         var phNow = DateTime.UtcNow.AddHours(8);
         var phTodayStart = new DateTime(phNow.Year, phNow.Month, phNow.Day, 0, 0, 0);
@@ -26,7 +26,6 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
              .ThenInclude(ti => ti.Product)
          .FirstOrDefaultAsync(t => t.Id == id && t.StoreId == currentUserService.StoreId, ct);
     }
-
     public async Task<IEnumerable<Transaction>> GetAllAsync(CancellationToken ct)
     {
         return await context.Transactions
@@ -35,21 +34,18 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
             .ToListAsync(ct);
     }
 
-    public async Task<decimal> GetTotalRevenueTodayAsync(Guid storeId, CancellationToken ct)
+    public async Task<decimal> GetTotalRevenueAsync(Guid storeId, DateTime startUtc, CancellationToken ct)
     {
-        var startUtc = GetPhStartOfTodayUtc();
-
         return await context.Transactions
             .AsNoTracking()
             .Where(t => t.StoreId == storeId && t.TransactionDate >= startUtc)
             .SumAsync(t => (decimal?)t.TotalAmount, ct) ?? 0;
     }
 
-    public async Task<int> GetTotalTransactionsTodayAsync(Guid storeId, CancellationToken ct)
+    public async Task<int> GetTotalTransactionsAsync(Guid storeId, DateTime startUtc, CancellationToken ct)
     {
-        var startUtc = GetPhStartOfTodayUtc();
-
         return await context.Transactions
+            .AsNoTracking()
             .CountAsync(t => t.StoreId == storeId && t.TransactionDate >= startUtc, ct);
     }
 
