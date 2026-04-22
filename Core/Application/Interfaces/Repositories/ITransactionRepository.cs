@@ -15,6 +15,7 @@ public interface ITransactionRepository
     Guid storeId,
     int page,
     int pageSize,
+    DateTime? startUtc,
     CancellationToken ct);
 
     Task<List<Transaction>> GetByCustomerIdAsync(Guid customerCreditId, CancellationToken ct);

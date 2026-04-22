@@ -53,6 +53,7 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
      Guid storeId,
      int page,
      int pageSize,
+     DateTime? startUtc,
      CancellationToken ct)
     {
         var query = context.Transactions

@@ -5,6 +5,7 @@ import type {
   TopProduct,
   TransactionDetails,
 } from "@/src/types/record";
+
 export type ReportPeriod = "today" | "weekly" | "monthly";
 
 export const reportService = {
@@ -21,11 +22,12 @@ export const reportService = {
   getRecentTransactions: async (
     page: number,
     pageSize: number,
+    period?: ReportPeriod,
   ): Promise<RecentTransaction[]> => {
     const response = await apiClient.get<RecentTransaction[]>(
       "/Transactions/recent",
       {
-        params: { page, pageSize },
+        params: { page, pageSize, period },
       },
     );
     return response.data;
