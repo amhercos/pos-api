@@ -1,7 +1,8 @@
 import type {
-    DailySummary,
-    RecentTransaction,
-    TransactionDetails,
+  DailySummary,
+  RecentTransaction,
+  TopProduct,
+  TransactionDetails,
 } from "@/src/types/record";
 import { useCallback, useEffect, useState } from "react";
 import { reportService } from "../services/reportService";
@@ -9,6 +10,7 @@ import { reportService } from "../services/reportService";
 export const useTransactionHistory = () => {
   const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
   const [summary, setSummary] = useState<DailySummary | null>(null);
+  const [topProduct, setTopProduct] = useState<TopProduct | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -16,12 +18,14 @@ export const useTransactionHistory = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [historyData, summaryData] = await Promise.all([
+      const [historyData, summaryData, topSellingData] = await Promise.all([
         reportService.getRecentTransactions(page, pageSize),
         reportService.getSummary(),
+        reportService.getTopSelling(1),
       ]);
       setTransactions(historyData);
       setSummary(summaryData);
+      setTopProduct(topSellingData[0] || null);
     } catch (err) {
       console.error("Fetch History Error:", err);
     } finally {
@@ -48,6 +52,7 @@ export const useTransactionHistory = () => {
   return {
     transactions,
     summary,
+    topProduct,
     loading,
     page,
     setPage,
