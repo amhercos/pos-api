@@ -1,13 +1,15 @@
 import { cn } from "@/src/lib/utils";
 import type { Product } from "@/src/types/inventory";
-import { Calendar, Package2, Trash2 } from "lucide-react-native";
-import React, { useMemo } from "react";
 import {
-  Text,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
-} from "react-native";
+  ArrowRight,
+  Calendar,
+  ChevronsUpDown,
+  Package2,
+  Trash2
+} from "lucide-react-native";
+import React, { ReactElement, useMemo, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface InventoryTableProps {
   products: Product[];
@@ -21,245 +23,286 @@ export function InventoryTable({
   loading,
   onDelete,
   onEdit,
-}: InventoryTableProps) {
-  const { width } = useWindowDimensions();
+}: InventoryTableProps): ReactElement | null {
+  const [priceSort, setPriceSort] = useState<"none" | "asc" | "desc">("none");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  // Define breakpoints
-  const isMediumScreen = width > 650;
-  const isLargeScreen = width > 900;
-
-  const stats = useMemo(() => {
-    const today = new Date();
-    return {
-      total: products.length,
-      lowStock: products.filter(
-        (p) => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0,
-      ).length,
-      expired: products.filter(
-        (p) => p.expiryDate && new Date(p.expiryDate) < today,
-      ).length,
-    };
-  }, [products]);
+  const sortedProducts = useMemo(() => {
+    if (priceSort === "none") return products;
+    return [...products].sort((a, b) =>
+      priceSort === "asc" ? a.price - b.price : b.price - a.price,
+    );
+  }, [products, priceSort]);
 
   if (loading && products.length === 0) return null;
 
   return (
     <View className="flex-1">
-      {/* --- Status Dashboard --- */}
-      <View className="flex-row gap-3 mb-8">
-        <StatusCard
-          label="In Stock"
-          value={stats.total}
-          subLabel="Total SKU"
-          accent="bg-blue-500"
-        />
-        <StatusCard
-          label="Low Stock"
-          value={stats.lowStock}
-          subLabel="Restock Alert"
-          accent="bg-amber-500"
-        />
-        <StatusCard
-          label="Expired"
-          value={stats.expired}
-          subLabel="Check Dates"
-          accent="bg-rose-500"
-        />
-      </View>
+      <ConfirmationModal
+        visible={!!deleteTargetId}
+        title="Remove Product"
+        description="Are you sure? This will permanently delete the product from your inventory records."
+        onConfirm={() => {
+          if (deleteTargetId) onDelete(deleteTargetId);
+          setDeleteTargetId(null);
+        }}
+        onCancel={() => setDeleteTargetId(null)}
+      />
 
-      <View className="bg-white border border-slate-100 rounded-[24px] shadow-sm overflow-hidden">
-        <View className="flex-row items-center px-5 py-4 bg-slate-50/50 border-b border-slate-100">
-          <Text className="flex-1 text-[11px] font-bold uppercase tracking-[1px] text-slate-400">
-            Item
-          </Text>
+      {/* --- TABLE HEADER --- */}
+      <View className="flex-row items-center pb-4 border-b border-slate-100 px-4">
+        {/* Expanded Product Space */}
+        <Text className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+          Product Info
+        </Text>
 
-          {isLargeScreen && (
-            <Text className="flex-1 text-[11px] font-bold uppercase tracking-[1px] text-slate-400 px-2">
-              Description
+        {/* Anchored Right Columns */}
+        <View className="flex-row items-center">
+          <View className="w-[65px] items-end">
+            <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Exp
             </Text>
-          )}
-
-          {isMediumScreen && (
-            <>
-              <Text className="w-28 text-[11px] font-bold uppercase tracking-[1px] text-slate-400 px-2">
-                Category
-              </Text>
-              <Text className="w-32 text-[11px] font-bold uppercase tracking-[1px] text-slate-400 px-2">
-                Expiry
-              </Text>
-            </>
-          )}
-
-          <Text className="w-20 text-right text-[11px] font-bold uppercase tracking-[1px] text-slate-400">
-            Price
-          </Text>
-          <Text className="w-16 text-right text-[11px] font-bold uppercase tracking-[1px] text-slate-400">
-            Stock
-          </Text>
-          <View className="w-10" />
-        </View>
-
-        <View>
-          {products.length === 0 ? (
-            <View className="py-12 items-center">
-              <Package2 size={32} color="#e2e8f0" />
-              <Text className="text-slate-400 text-xs font-medium mt-2">
-                No products found
-              </Text>
-            </View>
-          ) : (
-            products.map((product, index) => {
-              const isLast = index === products.length - 1;
-              const isLow =
-                product.stockQuantity <= product.lowStockThreshold &&
-                product.stockQuantity > 0;
-              const isOutOfStock = product.stockQuantity === 0;
-              const isExpired =
-                product.expiryDate && new Date(product.expiryDate) < new Date();
-
-              return (
-                <TouchableOpacity
-                  key={product.id}
-                  onPress={() => onEdit(product)}
-                  activeOpacity={0.6}
-                  className={cn(
-                    "flex-row items-center px-5 py-3.5",
-                    !isLast && "border-b border-slate-50",
-                  )}
-                >
-                  <View className="flex-1">
-                    <Text
-                      className="text-[14px] font-semibold text-slate-900"
-                      numberOfLines={1}
-                    >
-                      {product.name}
-                    </Text>
-                    {!isMediumScreen && (
-                      <Text
-                        className="text-[11px] text-slate-400 font-medium italic"
-                        numberOfLines={1}
-                      >
-                        {product.categoryName || "No Category"}
-                      </Text>
-                    )}
-                  </View>
-
-                  {isLargeScreen && (
-                    <View className="flex-1 px-2">
-                      <Text
-                        className="text-[12px] text-slate-500"
-                        numberOfLines={1}
-                      >
-                        {product.description || "—"}
-                      </Text>
-                    </View>
-                  )}
-
-                  {isMediumScreen && (
-                    <View className="w-28 px-2">
-                      <View className="bg-indigo-50 self-start px-2 py-0.5 rounded-md">
-                        <Text
-                          className="text-[9px] font-bold text-indigo-600 uppercase"
-                          numberOfLines={1}
-                        >
-                          {product.categoryName || "General"}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {isMediumScreen && (
-                    <View className="w-32 px-2">
-                      {product.expiryDate ? (
-                        <View className="flex-row items-center">
-                          <Calendar
-                            size={12}
-                            color={isExpired ? "#ef4444" : "#94a3b8"}
-                          />
-                          <Text
-                            className={cn(
-                              "text-[11px] font-medium ml-1.5",
-                              isExpired ? "text-rose-500" : "text-slate-500",
-                            )}
-                          >
-                            {new Date(product.expiryDate).toLocaleDateString()}
-                          </Text>
-                        </View>
-                      ) : (
-                        <Text className="text-[11px] text-slate-300 italic">
-                          No Expiry
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  <View className="w-20">
-                    <Text className="text-[13px] font-bold text-slate-900 text-right">
-                      ₱{product.price.toLocaleString()}
-                    </Text>
-                  </View>
-
-                  <View className="w-16 items-end">
-                    <View
-                      className={cn(
-                        "px-2 py-0.5 rounded-full",
-                        isOutOfStock
-                          ? "bg-slate-100"
-                          : isLow
-                            ? "bg-rose-50"
-                            : "bg-emerald-50",
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          "text-[11px] font-bold",
-                          isOutOfStock
-                            ? "text-slate-400"
-                            : isLow
-                              ? "text-rose-600"
-                              : "text-emerald-600",
-                        )}
-                      >
-                        {product.stockQuantity}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    className="w-10 items-end py-2"
-                    onPress={() => onDelete(product.id)}
-                  >
-                    <Trash2 size={15} color="#cbd5e1" />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })
-          )}
+          </View>
+          <TouchableOpacity
+            onPress={() =>
+              setPriceSort((curr) => (curr === "asc" ? "desc" : "asc"))
+            }
+            className="w-[85px] flex-row items-center justify-end gap-1"
+          >
+            <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Price
+            </Text>
+            <ChevronsUpDown size={8} color="#cbd5e1" />
+          </TouchableOpacity>
+          <View className="w-[50px] items-end">
+            <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Qty
+            </Text>
+          </View>
+          <View className="w-8" />
         </View>
       </View>
+
+      {/* --- TABLE ROWS --- */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {sortedProducts.map((product) => {
+          const isLow = product.stockQuantity <= product.lowStockThreshold;
+          const isExpired =
+            product.expiryDate && new Date(product.expiryDate) < new Date();
+
+          return (
+            <TouchableOpacity
+              key={product.id}
+              onPress={() => onEdit(product)}
+              className="flex-row items-center py-6 border-b border-slate-50 px-4"
+            >
+              {/* Product Info (Takes all remaining space) */}
+              <View className="flex-1 pr-6">
+                <Text
+                  className="text-[15px] font-bold text-slate-900 leading-tight"
+                  numberOfLines={1}
+                >
+                  {product.name}
+                </Text>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                  {product.categoryName ?? "General"}
+                </Text>
+              </View>
+
+              {/* Data metrics pushed to the right */}
+              <View className="flex-row items-center">
+                <View className="w-[65px] items-end">
+                  <Text
+                    className={cn(
+                      "text-[11px] font-bold",
+                      isExpired ? "text-rose-500" : "text-slate-400",
+                    )}
+                  >
+                    {product.expiryDate
+                      ? new Date(product.expiryDate).toLocaleDateString(
+                          undefined,
+                          { month: "short", year: "2-digit" },
+                        )
+                      : "—"}
+                  </Text>
+                </View>
+
+                <View className="w-[85px] items-end">
+                  <Text className="text-[14px] font-black text-slate-900">
+                    ₱{Math.round(product.price).toLocaleString()}
+                  </Text>
+                </View>
+
+                <View className="w-[50px] items-end">
+                  <Text
+                    className={cn(
+                      "text-[15px] font-black",
+                      isLow ? "text-amber-500" : "text-emerald-600",
+                    )}
+                  >
+                    {product.stockQuantity}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  className="w-8 items-end"
+                  onPress={() => setDeleteTargetId(product.id)}
+                >
+                  <Trash2 size={14} color="#e2e8f0" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
-function StatusCard({
-  label,
-  value,
-  subLabel,
-  accent,
+{
+  /* --- REDESIGNED CARD VIEW --- */
+}
+export function ProductCard({
+  product,
+  onEdit,
+  onDelete,
 }: {
-  label: string;
-  value: number;
-  subLabel: string;
-  accent: string;
-}) {
+  product: Product;
+  onEdit: (p: Product) => void;
+  onDelete: (id: string) => void;
+}): ReactElement {
+  const isLow = product.stockQuantity <= product.lowStockThreshold;
+  const isExpired =
+    product.expiryDate && new Date(product.expiryDate) < new Date();
+
   return (
-    <View className="flex-1 bg-white border border-slate-100 p-4 rounded-[24px] shadow-sm relative overflow-hidden">
-      <View className={cn("absolute top-0 left-0 bottom-0 w-1", accent)} />
-      <Text className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-        {label}
-      </Text>
-      <Text className="text-2xl font-black text-slate-900 mb-0.5">{value}</Text>
-      <Text className="text-[9px] font-medium text-slate-400">{subLabel}</Text>
-    </View>
+    <TouchableOpacity
+      onPress={() => onEdit(product)}
+      activeOpacity={0.9}
+      className="bg-white rounded-[40px] p-8 mb-6 shadow-2xl shadow-slate-200 border border-slate-50"
+    >
+      {/* 1. Header: Primary Identity & Delete Action */}
+      <View className="flex-row justify-between items-start mb-6">
+        <View className="flex-1 pr-6">
+          <View className="bg-slate-100 self-start px-3 py-1 rounded-lg mb-3">
+            <Text className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              {product.categoryName ?? "General"}
+            </Text>
+          </View>
+          <Text className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            {product.name}
+          </Text>
+          <Text className="text-[11px] font-bold text-slate-300 mt-1 uppercase tracking-tighter">
+            ID: {product.id.slice(0, 12)}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => onDelete(product.id)}
+          className="bg-rose-50 w-12 h-12 items-center justify-center rounded-2xl"
+        >
+          <Trash2 size={20} color="#f43f5e" />
+        </TouchableOpacity>
+      </View>
+
+      {/* 2. Metrics: Large indicators for Stock & Expiry */}
+      <View className="flex-row gap-4 mb-8">
+        {/* Stock Status */}
+        <View
+          className={cn(
+            "flex-1 p-5 rounded-[28px] border",
+            isLow
+              ? "bg-amber-50 border-amber-100"
+              : "bg-emerald-50 border-emerald-100",
+          )}
+        >
+          <View className="flex-row items-center gap-2 mb-2">
+            <Package2 size={14} color={isLow ? "#d97706" : "#059669"} />
+            <Text
+              className={cn(
+                "text-[10px] font-black uppercase tracking-widest",
+                isLow ? "text-amber-600" : "text-emerald-600",
+              )}
+            >
+              Stock
+            </Text>
+          </View>
+          <Text
+            className={cn(
+              "text-3xl font-black",
+              isLow ? "text-amber-700" : "text-emerald-700",
+            )}
+          >
+            {product.stockQuantity}
+          </Text>
+          <Text className="text-[10px] font-bold opacity-50 mt-1">
+            Min: {product.lowStockThreshold}
+          </Text>
+        </View>
+
+        {/* Expiry Status */}
+        <View
+          className={cn(
+            "flex-1 p-5 rounded-[28px] border",
+            isExpired
+              ? "bg-rose-50 border-rose-100"
+              : "bg-slate-50 border-slate-100",
+          )}
+        >
+          <View className="flex-row items-center gap-2 mb-2">
+            <Calendar size={14} color={isExpired ? "#e11d48" : "#64748b"} />
+            <Text
+              className={cn(
+                "text-[10px] font-black uppercase tracking-widest",
+                isExpired ? "text-rose-600" : "text-slate-400",
+              )}
+            >
+              Expiry
+            </Text>
+          </View>
+          <Text
+            className={cn(
+              "text-2xl font-black",
+              isExpired ? "text-rose-700" : "text-slate-900",
+            )}
+          >
+            {product.expiryDate
+              ? new Date(product.expiryDate).toLocaleDateString(undefined, {
+                  month: "short",
+                  year: "2-digit",
+                })
+              : "—"}
+          </Text>
+          <Text
+            className={cn(
+              "text-[10px] font-bold mt-1",
+              isExpired ? "text-rose-400" : "text-slate-400",
+            )}
+          >
+            {isExpired ? "Expired" : "Fresh"}
+          </Text>
+        </View>
+      </View>
+
+      {/* 3. Footer: Price & Direct CTA */}
+      <View className="flex-row items-center justify-between pt-6 border-t border-slate-50">
+        <View>
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-1">
+            Unit Price
+          </Text>
+          <Text className="text-3xl font-black text-slate-900">
+            ₱{product.price.toLocaleString()}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => onEdit(product)}
+          className="bg-slate-900 px-8 py-4 rounded-2xl flex-row items-center gap-2"
+        >
+          <Text className="text-white font-black text-[13px] uppercase">
+            Edit
+          </Text>
+          <ArrowRight size={14} color="white" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }

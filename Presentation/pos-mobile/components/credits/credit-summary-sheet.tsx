@@ -48,7 +48,6 @@ export function CreditSummarySheet({
       presentationStyle="pageSheet"
     >
       <SafeAreaView className="flex-1 bg-white">
-        {/* Fake Sheet Header */}
         <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100">
           <Text className="text-lg font-bold text-slate-900">
             Account Summary
