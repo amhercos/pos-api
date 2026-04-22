@@ -9,10 +9,11 @@ import {
   Tag,
   User,
 } from "lucide-react-native";
-import React, { useEffect } from "react";
+import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -21,40 +22,77 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
-import { drawerNavigationRef } from "../src/utils/drawerRef";
+import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
+
+const SectionHeader = memo(({ title }: { title: string }) => (
+  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
+    {title}
+  </Text>
+));
+SectionHeader.displayName = "SectionHeader";
+
+const DrawerItem = memo(
+  ({
+    icon,
+    label,
+    onPress,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    onPress: () => void;
+  }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
+    >
+      {icon}
+      <Text className="ml-3 font-bold text-slate-700">{label}</Text>
+    </TouchableOpacity>
+  ),
+);
+DrawerItem.displayName = "DrawerItem";
 
 function CustomDrawerContent(
   props: DrawerContentComponentProps,
 ): React.JSX.Element {
   const { logout } = useAuth();
 
-  drawerNavigationRef.current = props.navigation;
+  useEffect(() => {
+    const bridge: NavigationBridge = {
+      dispatch: props.navigation.dispatch,
+      navigate: (name, params) => props.navigation.navigate(name, params),
+      closeDrawer: props.navigation.closeDrawer,
+    };
 
-  const handleLogout = async (): Promise<void> => {
+    setDrawerNavigation(bridge);
+    return () => setDrawerNavigation(null);
+  }, [props.navigation]);
+
+  const handleLogout = useCallback(async (): Promise<void> => {
     try {
       await logout();
     } catch {
-      // Unused variable 'e' removed for strict TS compliance
+      // Empty catch to handle "error is defined but never used"
     }
-  };
+  }, [logout]);
 
-  const navigateTo = (path: string): void => {
-    props.navigation.closeDrawer();
-    const screen = path.split("/").pop();
-    if (screen) {
-      props.navigation.navigate("(tabs)", { screen });
-    }
-  };
+  const navigateTo = useCallback(
+    (path: string): void => {
+      props.navigation.closeDrawer();
+      const screen = path.split("/").pop();
+      if (screen) {
+        (props.navigation as unknown as NavigationBridge).navigate("(tabs)", {
+          screen,
+        });
+      }
+    },
+    [props.navigation],
+  );
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={styles.flexOne}>
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: 40,
-          paddingTop: 60,
-          paddingHorizontal: 16,
-        }}
+        contentContainerStyle={styles.drawerScroll}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row items-center gap-3 mb-8 px-2">
@@ -108,53 +146,21 @@ function CustomDrawerContent(
   );
 }
 
-const SectionHeader = ({ title }: { title: string }): React.JSX.Element => (
-  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
-    {title}
-  </Text>
-);
-
-const DrawerItem = ({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-}): React.JSX.Element => (
-  <TouchableOpacity
-    onPress={onPress}
-    className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
-  >
-    {icon}
-    <Text className="ml-3 font-bold text-slate-700">{label}</Text>
-  </TouchableOpacity>
-);
-
 function RootLayoutNav(): React.JSX.Element {
   const { token, isLoading } = useAuth();
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
-  useEffect(() => {
-    if (token) {
-      fetch("https://bizflow-ohsr.onrender.com/api/Auth/login", {
-        method: "OPTIONS",
-      }).catch(() => {});
-    }
-  }, [token]);
-
   if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.flexOne}>
       {!token ? (
         <Slot />
       ) : (
@@ -163,19 +169,11 @@ function RootLayoutNav(): React.JSX.Element {
           screenOptions={{
             headerShown: false,
             drawerType: "front",
-            drawerStyle: {
-              width: isLargeScreen ? 300 : "80%",
-            },
+            drawerStyle: { width: isLargeScreen ? 300 : "80%" },
             overlayColor: "rgba(0, 0, 0, 0.4)",
           }}
         >
-          <Drawer.Screen
-            name="(tabs)"
-            options={{
-              drawerLabel: "Home",
-              swipeEnabled: true,
-            }}
-          />
+          <Drawer.Screen name="(tabs)" options={{ drawerLabel: "Home" }} />
         </Drawer>
       )}
     </GestureHandlerRootView>
@@ -189,3 +187,19 @@ export default function RootLayout(): React.JSX.Element {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  flexOne: { flex: 1, backgroundColor: "white" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+  },
+  drawerScroll: {
+    flexGrow: 1,
+    paddingBottom: 40,
+    paddingTop: 60,
+    paddingHorizontal: 16,
+  },
+});
