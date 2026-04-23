@@ -57,8 +57,13 @@ public class TransactionRepository(PosDbContext context, ICurrentUserService cur
      CancellationToken ct)
     {
         var query = context.Transactions
-            .AsNoTracking()
-            .Where(t => t.StoreId == storeId);
+        .AsNoTracking()
+        .Where(t => t.StoreId == storeId);
+
+        if (startUtc.HasValue)
+        {
+            query = query.Where(t => t.TransactionDate >= startUtc.Value);
+        }
 
         var totalCount = await query.CountAsync(ct);
 
