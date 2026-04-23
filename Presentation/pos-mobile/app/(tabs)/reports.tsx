@@ -90,9 +90,10 @@ const Pagination = memo(
 Pagination.displayName = "Pagination";
 
 export default function RecordsScreen(): ReactElement {
+  // Use recentTransactions directly from useReport since it's now period-aware
   const {
     summary,
-    recentTransactions, // Now using period-filtered transactions from hook
+    recentTransactions,
     loading: summaryLoading,
     period,
     setPeriod,
