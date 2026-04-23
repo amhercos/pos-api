@@ -1,21 +1,22 @@
 import {
-    ArrowUpDown,
-    CheckCircle2,
-    History,
-    ReceiptText,
-    RefreshCcw,
-    Search,
-    UserCog,
-    Wallet,
+  ArrowUpDown,
+  CheckCircle2,
+  History,
+  ReceiptText,
+  RefreshCcw,
+  Search,
+  UserCog,
+  Wallet,
 } from "lucide-react-native";
+import { Skeleton } from "moti/skeleton"; // Added Skeleton import
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -52,7 +53,7 @@ export default function CreditsPage() {
   );
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  // debounce
+
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchCredits(search, showSettled);
@@ -120,19 +121,26 @@ export default function CreditsPage() {
           />
         }
       >
-        <View className="mt-4 rounded-3xl bg-slate-900 p-6 flex-row items-center justify-between shadow-lg">
-          <View>
-            <Text className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              Total Outstanding
-            </Text>
-            <Text className="text-3xl font-bold text-white mt-1">
-              {formatPHP(totalOutstanding)}
-            </Text>
+        {/* Total Outstanding Card Skeleton */}
+        {refreshing && credits.length === 0 ? (
+          <View className="mt-4">
+            <Skeleton colorMode="light" width="100%" height={120} radius={24} />
           </View>
-          <View className="bg-rose-500/20 p-3 rounded-2xl">
-            <Wallet size={24} color="#fb7185" />
+        ) : (
+          <View className="mt-4 rounded-3xl bg-slate-900 p-6 flex-row items-center justify-between shadow-lg">
+            <View>
+              <Text className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                Total Outstanding
+              </Text>
+              <Text className="text-3xl font-bold text-white mt-1">
+                {formatPHP(totalOutstanding)}
+              </Text>
+            </View>
+            <View className="bg-rose-500/20 p-3 rounded-2xl">
+              <Wallet size={24} color="#fb7185" />
+            </View>
           </View>
-        </View>
+        )}
 
         <View className="flex-row gap-2 mt-6">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
@@ -174,68 +182,86 @@ export default function CreditsPage() {
           </TouchableOpacity>
         </View>
 
-        {processedCredits.map((c) => (
-          <View
-            key={c.id}
-            className="bg-white border border-slate-100 rounded-3xl p-4 mb-3 shadow-sm"
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <View className="flex-row items-center">
-                  <Text className="font-bold text-slate-900 text-lg">
-                    {c.customerName}
+        {/* Customer List Skeletons */}
+        {refreshing && credits.length === 0 ? (
+          <View className="gap-y-3 mt-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton
+                key={i}
+                colorMode="light"
+                width="100%"
+                height={140}
+                radius={24}
+              />
+            ))}
+          </View>
+        ) : (
+          processedCredits.map((c) => (
+            <View
+              key={c.id}
+              className="bg-white border border-slate-100 rounded-3xl p-4 mb-3 shadow-sm"
+            >
+              <View className="flex-row justify-between items-start">
+                <View className="flex-1">
+                  <View className="flex-row items-center">
+                    <Text className="font-bold text-slate-900 text-lg">
+                      {c.customerName}
+                    </Text>
+                    {c.creditAmount === 0 && (
+                      <CheckCircle2
+                        size={16}
+                        color="#10b981"
+                        style={{ marginLeft: 6 }}
+                      />
+                    )}
+                  </View>
+                  <Text className="text-slate-400 text-xs mt-1">
+                    {c.contactInfo || "No contact info"}
                   </Text>
-                  {c.creditAmount === 0 && (
-                    <CheckCircle2
-                      size={16}
-                      color="#10b981"
-                      style={{ marginLeft: 6 }}
-                    />
-                  )}
                 </View>
-                <Text className="text-slate-400 text-xs mt-1">
-                  {c.contactInfo || "No contact info"}
+                <Text
+                  className={cn(
+                    "font-black text-lg",
+                    c.creditAmount > 0 ? "text-rose-600" : "text-emerald-600",
+                  )}
+                >
+                  {c.creditAmount === 0 ? "Settled" : formatPHP(c.creditAmount)}
                 </Text>
               </View>
-              <Text
-                className={cn(
-                  "font-black text-lg",
-                  c.creditAmount > 0 ? "text-rose-600" : "text-emerald-600",
-                )}
-              >
-                {c.creditAmount === 0 ? "Settled" : formatPHP(c.creditAmount)}
-              </Text>
-            </View>
 
-            <View className="flex-row mt-4 pt-4 border-t border-slate-50 gap-2">
-              <TouchableOpacity
-                onPress={() => setEditingCredit(c)}
-                className="bg-slate-100 h-10 px-4 rounded-xl justify-center"
-              >
-                <UserCog size={18} color="#64748b" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleOpenSummary(c.id)}
-                className="flex-1 bg-slate-100 h-10 px-4 rounded-xl flex-row items-center justify-center"
-              >
-                <ReceiptText size={16} color="#64748b" />
-                <Text className="ml-2 font-bold text-slate-600 text-xs">
-                  Summary
-                </Text>
-              </TouchableOpacity>
-              {c.creditAmount > 0 && (
+              <View className="flex-row mt-4 pt-4 border-t border-slate-50 gap-2">
                 <TouchableOpacity
-                  onPress={() => setSelectedCredit(c)}
-                  className="flex-1 bg-emerald-600 h-10 px-4 rounded-xl justify-center items-center"
+                  onPress={() => setEditingCredit(c)}
+                  className="bg-slate-100 h-10 px-4 rounded-xl justify-center"
                 >
-                  <Text className="font-bold text-white text-xs">Pay Now</Text>
+                  <UserCog size={18} color="#64748b" />
                 </TouchableOpacity>
-              )}
+                <TouchableOpacity
+                  onPress={() => handleOpenSummary(c.id)}
+                  className="flex-1 bg-slate-100 h-10 px-4 rounded-xl flex-row items-center justify-center"
+                >
+                  <ReceiptText size={16} color="#64748b" />
+                  <Text className="ml-2 font-bold text-slate-600 text-xs">
+                    Summary
+                  </Text>
+                </TouchableOpacity>
+                {c.creditAmount > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSelectedCredit(c)}
+                    className="flex-1 bg-emerald-600 h-10 px-4 rounded-xl justify-center items-center"
+                  >
+                    <Text className="font-bold text-white text-xs">
+                      Pay Now
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
+          ))
+        )}
       </ScrollView>
 
+      {/* Sheets and Modals remain unchanged */}
       <CreditSummarySheet
         summary={summaryData}
         isOpen={isSummaryOpen}

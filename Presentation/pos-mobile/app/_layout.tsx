@@ -23,6 +23,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
+// Import your API client/service here to use for the ping
+// import api from "../src/services/api";
 
 const SectionHeader = memo(({ title }: { title: string }) => (
   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
@@ -72,7 +74,7 @@ function CustomDrawerContent(
     try {
       await logout();
     } catch {
-      // Empty catch to handle "error is defined but never used"
+      // Empty catch
     }
   }, [logout]);
 
@@ -150,6 +152,14 @@ function RootLayoutNav(): React.JSX.Element {
   const { token, isLoading } = useAuth();
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
+
+  //ping api /health
+  useEffect(() => {
+    if (token) {
+      fetch("https://bizflow-ohsr.onrender.com/health").catch(() => {});
+      console.log("[System] Pinging API to wake up backend...");
+    }
+  }, [token]);
 
   if (isLoading) {
     return (
