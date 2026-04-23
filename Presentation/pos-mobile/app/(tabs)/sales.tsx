@@ -15,8 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // Custom Hooks
 import { useCredits } from "@/src/hooks/use-credits";
+import { useInventory } from "@/src/hooks/use-inventory";
 import { useSale } from "@/src/hooks/use-sale";
-import { useInventory } from "@/src/hooks/user-inventory";
 import { cn } from "@/src/lib/utils";
 
 // Types
@@ -33,7 +33,7 @@ export default function NewSalePage() {
     products = [],
     loading: isLoadingProducts,
     hasMore,
-    fetchMore, // Assuming this exists in your hook based on the Web UI logic
+    fetchMore,
     refresh,
   } = useInventory();
 
