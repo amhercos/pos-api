@@ -10,6 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react-native";
+import { Skeleton } from "moti/skeleton";
 import React, {
   ReactElement,
   useCallback,
@@ -18,8 +19,8 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Alert,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -58,6 +59,7 @@ interface FilterBarProps {
   categories: Category[];
   categorySearch: string;
   setCategorySearch: (text: string) => void;
+  loading?: boolean;
 }
 
 export default function InventoryScreen(): ReactElement {
@@ -81,9 +83,13 @@ export default function InventoryScreen(): ReactElement {
   const [categorySearch, setCategorySearch] = useState<string>("");
   const [activeFilter, setActiveFilter] = useState<FilterType | string>("all");
 
-  useEffect(() => {
-    refresh(1, 50);
+  const onRefresh = useCallback(() => {
+    refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    onRefresh();
+  }, [onRefresh]);
 
   const toggleViewMode = useCallback(
     () =>
@@ -158,14 +164,21 @@ export default function InventoryScreen(): ReactElement {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      {/* Header */}
       <View className="px-5 py-4 flex-row items-center justify-between border-b border-slate-50">
         <View>
           <Text className="text-2xl font-black text-slate-900 tracking-tighter">
             Inventory
           </Text>
-          <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {filteredProducts.length} Results
-          </Text>
+          <View className="h-4 justify-center">
+            {loading && products.length === 0 ? (
+              <Skeleton colorMode="light" width={60} height={10} />
+            ) : (
+              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {filteredProducts.length} Results
+              </Text>
+            )}
+          </View>
         </View>
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
@@ -188,7 +201,17 @@ export default function InventoryScreen(): ReactElement {
         </View>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={onRefresh}
+            tintColor="#0f172a"
+          />
+        }
+      >
         <View className="px-5 py-4 bg-slate-50/30">
           <View className="flex-row items-center gap-2 mb-4">
             <View className="relative flex-1 justify-center">
@@ -216,12 +239,40 @@ export default function InventoryScreen(): ReactElement {
             categories={filteredCategories}
             categorySearch={categorySearch}
             setCategorySearch={setCategorySearch}
+            loading={loading && categories.length === 0}
           />
         </View>
 
         <View className="px-5 pt-2 pb-20">
           {loading && products.length === 0 ? (
-            <ActivityIndicator className="mt-20" color="#0f172a" />
+            <Skeleton.Group show={true}>
+              {viewMode === ViewMode.TABLE ? (
+                <View className="gap-y-4 mt-2">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton
+                      key={i}
+                      colorMode="light"
+                      width="100%"
+                      height={60}
+                      radius={16}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <View className="flex-row flex-wrap justify-between mt-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <View key={i} className="mb-4">
+                      <Skeleton
+                        colorMode="light"
+                        width={gridItemWidth}
+                        height={200}
+                        radius={32}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </Skeleton.Group>
           ) : viewMode === ViewMode.TABLE ? (
             <InventoryTable
               products={filteredProducts}
@@ -248,6 +299,7 @@ export default function InventoryScreen(): ReactElement {
         </View>
       </ScrollView>
 
+      {/* Modals */}
       <CategoryManagerModal
         isOpen={modals.cat}
         onClose={() => setModals((m) => ({ ...m, cat: false }))}
@@ -283,6 +335,7 @@ function FilterBar({
   categories,
   categorySearch,
   setCategorySearch,
+  loading,
 }: FilterBarProps): ReactElement {
   const staticFilters: FilterType[] = [
     "all",
@@ -318,44 +371,54 @@ function FilterBar({
           </TouchableOpacity>
         ))}
         <View className="w-[1px] h-4 bg-slate-200 mx-1" />
-        <View className="flex-row items-center bg-white border border-slate-200 rounded-full h-9 px-3 min-w-[120px]">
-          <TextInput
-            placeholder="Category..."
-            value={categorySearch}
-            onChangeText={setCategorySearch}
-            className="flex-1 text-[10px] font-bold p-0"
-          />
-          {categorySearch.length > 0 && (
-            <TouchableOpacity onPress={() => setCategorySearch("")}>
-              <X size={12} color="#94a3b8" />
-            </TouchableOpacity>
-          )}
-        </View>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            onPress={() => setActiveFilter(cat.id)}
-            className={cn(
-              "px-4 py-2 rounded-full border h-9 flex-row items-center gap-1.5",
-              activeFilter === cat.id
-                ? "bg-slate-900 border-slate-900"
-                : "bg-white border-slate-200",
-            )}
-          >
-            <Tag
-              size={10}
-              color={activeFilter === cat.id ? "white" : "#94a3b8"}
-            />
-            <Text
-              className={cn(
-                "text-[10px] font-black uppercase",
-                activeFilter === cat.id ? "text-white" : "text-slate-500",
+
+        {loading ? (
+          <View className="flex-row gap-2">
+            <Skeleton colorMode="light" width={100} height={36} radius={20} />
+            <Skeleton colorMode="light" width={100} height={36} radius={20} />
+          </View>
+        ) : (
+          <>
+            <View className="flex-row items-center bg-white border border-slate-200 rounded-full h-9 px-3 min-w-[120px]">
+              <TextInput
+                placeholder="Category..."
+                value={categorySearch}
+                onChangeText={setCategorySearch}
+                className="flex-1 text-[10px] font-bold p-0"
+              />
+              {categorySearch.length > 0 && (
+                <TouchableOpacity onPress={() => setCategorySearch("")}>
+                  <X size={12} color="#94a3b8" />
+                </TouchableOpacity>
               )}
-            >
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+            </View>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setActiveFilter(cat.id)}
+                className={cn(
+                  "px-4 py-2 rounded-full border h-9 flex-row items-center gap-1.5",
+                  activeFilter === cat.id
+                    ? "bg-slate-900 border-slate-900"
+                    : "bg-white border-slate-200",
+                )}
+              >
+                <Tag
+                  size={10}
+                  color={activeFilter === cat.id ? "white" : "#94a3b8"}
+                />
+                <Text
+                  className={cn(
+                    "text-[10px] font-black uppercase",
+                    activeFilter === cat.id ? "text-white" : "text-slate-500",
+                  )}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -410,7 +473,7 @@ function InventoryGridCard({
       </View>
 
       <Text
-        className="text-lg font-extrabold text-slate-800 mb-1 leading-tight h-5"
+        className="text-lg font-extrabold text-slate-800 mb-1 leading-tight"
         numberOfLines={2}
       >
         {product.name}
@@ -418,7 +481,7 @@ function InventoryGridCard({
 
       <View
         className={cn(
-          "self-start px-2.5 py-1 rounded-lg mb-4",
+          "self-start px-2.5 py-1 rounded-lg mb-4 mt-1",
           isOutOfStock
             ? "bg-rose-50"
             : isLowStock
