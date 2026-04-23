@@ -30,7 +30,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useInventory } from "@/src/hooks/user-inventory";
+import { useInventory } from "@/src/hooks/use-inventory";
 import { cn } from "@/src/lib/utils";
 import type { Category, Product } from "@/src/types/inventory";
 
