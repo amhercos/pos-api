@@ -97,6 +97,7 @@ try
     builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
+    
 
     using (var scope = app.Services.CreateScope())
     {
@@ -117,6 +118,8 @@ try
             throw;
         }
     }
+
+    app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Time = DateTime.UtcNow }));
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
