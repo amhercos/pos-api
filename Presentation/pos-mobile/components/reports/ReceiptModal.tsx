@@ -2,21 +2,15 @@ import { cn } from "@/src/lib/utils";
 import type { TransactionDetails, TransactionItem } from "@/src/types/record";
 import { format } from "date-fns";
 import {
-    Calendar,
-    CreditCard,
-    ReceiptText,
-    User,
-    X,
+  Calendar,
+  CreditCard,
+  ReceiptText,
+  User,
+  X,
 } from "lucide-react-native";
+import { Skeleton } from "moti/skeleton"; // Added for skeleton
 import React from "react";
-import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ReceiptModalProps {
@@ -67,11 +61,56 @@ export function ReceiptModal({ data, visible, onClose }: ReceiptModalProps) {
           </View>
 
           {!data ? (
-            <View className="flex-1 items-center justify-center pb-20">
-              <ActivityIndicator size="large" color="#2563eb" />
-              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">
-                Loading Receipt...
-              </Text>
+            // Subtle Skeleton Loader matching receipt structure
+            <View className="flex-1 px-8">
+              <Skeleton.Group show={true}>
+                <View className="items-center mb-8 gap-y-2">
+                  <Skeleton
+                    colorMode="light"
+                    radius="round"
+                    height={64}
+                    width={64}
+                  />
+                  <Skeleton colorMode="light" width={100} height={12} />
+                  <Skeleton colorMode="light" width={150} height={16} />
+                </View>
+
+                <View className="bg-slate-50/50 border border-slate-100 rounded-3xl p-5 mb-6 gap-y-4">
+                  <View className="flex-row justify-between">
+                    <Skeleton colorMode="light" width={80} height={12} />
+                    <Skeleton colorMode="light" width={120} height={12} />
+                  </View>
+                  <View className="flex-row justify-between">
+                    <Skeleton colorMode="light" width={80} height={12} />
+                    <Skeleton colorMode="light" width={100} height={12} />
+                  </View>
+                  <View className="flex-row justify-between">
+                    <Skeleton colorMode="light" width={80} height={12} />
+                    <Skeleton colorMode="light" width={60} height={12} />
+                  </View>
+                </View>
+
+                <Skeleton
+                  colorMode="light"
+                  width={120}
+                  height={10}
+                  radius={4}
+                />
+                <View className="mt-3 border border-slate-100 rounded-[32px] overflow-hidden mb-6">
+                  {[1, 2].map((i) => (
+                    <View
+                      key={i}
+                      className="flex-row justify-between p-5 border-b border-slate-50 bg-white"
+                    >
+                      <View className="gap-y-2">
+                        <Skeleton colorMode="light" width={120} height={14} />
+                        <Skeleton colorMode="light" width={80} height={10} />
+                      </View>
+                      <Skeleton colorMode="light" width={60} height={16} />
+                    </View>
+                  ))}
+                </View>
+              </Skeleton.Group>
             </View>
           ) : (
             <ScrollView
@@ -145,7 +184,6 @@ export function ReceiptModal({ data, visible, onClose }: ReceiptModalProps) {
                     {formatPHP(data.totalAmount)}
                   </Text>
                 </View>
-                {/* REPLACED DIV WITH VIEW */}
                 <View className="h-px bg-slate-800 w-full mb-4" />
                 <View className="flex-row justify-between items-center mb-2">
                   <Text className="text-slate-500 text-[10px] font-bold">

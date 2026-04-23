@@ -14,6 +14,8 @@ export function useInventory() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 24;
 
   const handleError = useCallback((err: unknown, defaultMsg: string) => {
     let msg = defaultMsg;
@@ -29,27 +31,49 @@ export function useInventory() {
     });
   }, []);
 
-  const refresh = useCallback(
-    async (page = 1, pageSize = 24) => {
-      setLoading(true);
-      try {
-        const [pRes, cRes] = await Promise.all([
-          InventoryService.getProducts(page, pageSize),
-          InventoryService.getCategories(),
-        ]);
-        setProducts(pRes.data.items);
-        setCategories(cRes.data);
-        setHasMore(pRes.data.items.length < pRes.data.totalCount);
-      } catch (err) {
-        handleError(err, "Failed to load inventory");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [handleError],
-  );
+  /**
+   * REFRESH: Resets to page 1 and fetches fresh data.
+   * Restores all existing Inventory Screen logic.
+   */
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pRes, cRes] = await Promise.all([
+        InventoryService.getProducts(1, PAGE_SIZE),
+        InventoryService.getCategories(),
+      ]);
+      setProducts(pRes.data.items);
+      setCategories(cRes.data);
+      setHasMore(pRes.data.items.length < pRes.data.totalCount);
+      setPage(1);
+    } catch (err) {
+      handleError(err, "Failed to load inventory");
+    } finally {
+      setLoading(false);
+    }
+  }, [handleError]);
 
-  // --- Product Actions ---
+  /**
+   * FETCH MORE: Specifically for Sales screen infinite scroll.
+   * Appends items to the existing list instead of replacing them.
+   */
+  const fetchMore = useCallback(async () => {
+    if (loading || !hasMore) return;
+
+    const nextPage = page + 1;
+    try {
+      const pRes = await InventoryService.getProducts(nextPage, PAGE_SIZE);
+      const newItems = pRes.data.items;
+
+      setProducts((prev) => [...prev, ...newItems]);
+      setPage(nextPage);
+      setHasMore(products.length + newItems.length < pRes.data.totalCount);
+    } catch (err) {
+      handleError(err, "Failed to load more items");
+    }
+  }, [loading, hasMore, page, products.length, handleError]);
+
+  // --- Product Actions (Restored for Inventory Screen) ---
 
   const addProduct = async (data: CreateProductRequest) => {
     try {
@@ -85,10 +109,11 @@ export function useInventory() {
     }
   };
 
+  // --- Category Actions (Restored for Inventory Screen) ---
+
   const addCategory = async (name: string) => {
     try {
       await InventoryService.createCategory(name);
-
       Toast.show({
         type: "success",
         text1: "Success",
@@ -119,11 +144,12 @@ export function useInventory() {
     categories,
     loading,
     hasMore,
+    refresh,
+    fetchMore,
     addProduct,
     updateProduct,
     deleteProduct,
     addCategory,
     deleteCategory,
-    refresh,
   };
 }

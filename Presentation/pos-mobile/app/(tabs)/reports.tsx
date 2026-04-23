@@ -1,4 +1,5 @@
 import { CalendarDays, Filter, RefreshCcw, Search } from "lucide-react-native";
+import { Skeleton } from "moti/skeleton"; // Added for skeletons
 import React, {
   memo,
   ReactElement,
@@ -29,34 +30,48 @@ interface AnalyticsCardProps {
   value: string;
   accent: string;
   width: DimensionValue;
-}
-
-interface PaginationProps {
-  page: number;
-  setPage: (p: number) => void;
-  hasMore: boolean;
+  loading?: boolean; // Added prop
 }
 
 const AnalyticsCard = memo(
-  ({ label, value, accent, width }: AnalyticsCardProps): ReactElement => (
+  ({
+    label,
+    value,
+    accent,
+    width,
+    loading,
+  }: AnalyticsCardProps): ReactElement => (
     <View
       style={{ width }}
       className="bg-white border border-slate-100 p-5 rounded-[28px] shadow-sm"
     >
-      <View className={`w-8 h-1.5 rounded-full mb-4 ${accent}`} />
-      <Text className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
-        {label}
-      </Text>
-      <Text className="text-lg font-black text-slate-950" numberOfLines={1}>
-        {value}
-      </Text>
+      {/* Skeleton.Group synchronizes the shimmer wave */}
+      <Skeleton.Group show={!!loading}>
+        <View className={`w-8 h-1.5 rounded-full mb-4 ${accent}`} />
+        <Text className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
+          {label}
+        </Text>
+        <Skeleton colorMode="light" width="85%" height={24} radius={8}>
+          <Text className="text-lg font-black text-slate-950" numberOfLines={1}>
+            {value}
+          </Text>
+        </Skeleton>
+      </Skeleton.Group>
     </View>
   ),
 );
 AnalyticsCard.displayName = "AnalyticsCard";
 
 const Pagination = memo(
-  ({ page, setPage, hasMore }: PaginationProps): ReactElement => (
+  ({
+    page,
+    setPage,
+    hasMore,
+  }: {
+    page: number;
+    setPage: (p: number) => void;
+    hasMore: boolean;
+  }): ReactElement => (
     <View className="flex-row items-center justify-between mt-6">
       <TouchableOpacity
         onPress={() => setPage(page - 1)}
@@ -90,7 +105,6 @@ const Pagination = memo(
 Pagination.displayName = "Pagination";
 
 export default function RecordsScreen(): ReactElement {
-  // Use recentTransactions directly from useReport since it's now period-aware
   const {
     summary,
     recentTransactions,
@@ -198,16 +212,18 @@ export default function RecordsScreen(): ReactElement {
             </View>
           </View>
 
-          {/* Stats Grid */}
+          {/* Stats Grid - Skeleton Added */}
           <View className="px-6 mb-8">
             <View className="flex-row justify-between mb-4">
               <AnalyticsCard
+                loading={summaryLoading}
                 label={`${period} Revenue`}
                 value={formatPHP(summary?.totalRevenue || 0)}
                 accent="bg-emerald-500"
                 width="48%"
               />
               <AnalyticsCard
+                loading={summaryLoading}
                 label="Volume"
                 value={(summary?.totalTransactions ?? 0).toString()}
                 accent="bg-blue-500"
@@ -215,6 +231,7 @@ export default function RecordsScreen(): ReactElement {
               />
             </View>
             <AnalyticsCard
+              loading={historyLoading}
               label="Most Popular Item"
               value={topProduct?.name || "No Data"}
               accent="bg-amber-500"
@@ -254,7 +271,7 @@ export default function RecordsScreen(): ReactElement {
             </View>
           </View>
 
-          {/* Transactions Table Area */}
+          {/* Transactions Area - Skeleton handling is passed to TransactionTable */}
           <View className="px-6 mb-24">
             <Text className="text-lg font-black text-slate-900 mb-4">
               {period.charAt(0).toUpperCase() + period.slice(1)} Transactions
@@ -264,11 +281,15 @@ export default function RecordsScreen(): ReactElement {
               loading={loading}
               onViewDetails={handleOpenReceipt}
             />
-            <Pagination
-              page={page}
-              setPage={setPage}
-              hasMore={recentTransactions.length >= pageSize}
-            />
+
+            {/* Hide pagination during load to prevent accidental clicks */}
+            {!loading && (
+              <Pagination
+                page={page}
+                setPage={setPage}
+                hasMore={recentTransactions.length >= pageSize}
+              />
+            )}
           </View>
         </ScrollView>
       </View>

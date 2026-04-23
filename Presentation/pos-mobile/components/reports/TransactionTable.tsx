@@ -1,14 +1,9 @@
 import type { RecentTransaction } from "@/src/types/record";
 import * as Clipboard from "expo-clipboard";
 import { Copy, Eye, ReceiptText } from "lucide-react-native";
+import { Skeleton } from "moti/skeleton"; // Added for skeletons
 import React, { memo, useCallback } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 
 interface TransactionTableProps {
   data: RecentTransaction[];
@@ -16,7 +11,6 @@ interface TransactionTableProps {
   onViewDetails: (id: string) => void;
 }
 
-// Sub-component for individual rows to isolate the map items
 const TransactionRow = memo(
   ({
     tx,
@@ -101,10 +95,58 @@ export const TransactionTable = memo(
       Alert.alert("Copied", "Reference ID copied to clipboard");
     }, []);
 
+    // Skeleton Loader state
     if (loading) {
       return (
-        <View className="bg-white rounded-[32px] border border-slate-100 p-24 items-center justify-center">
-          <ActivityIndicator color="#0f172a" />
+        <View className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">
+          {/* Header remains visible for structure */}
+          <View className="flex-row items-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            <Text className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Date & Time
+            </Text>
+            <Text className="w-20 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Method
+            </Text>
+            <Text className="w-24 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">
+              Amount
+            </Text>
+            <View className="w-10 ml-4" />
+          </View>
+
+          {/* Loop of 5 Skeleton Rows */}
+          <Skeleton.Group show={true}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <View
+                key={i}
+                className="flex-row items-center px-6 py-5 border-b border-slate-50"
+              >
+                <View className="flex-1 gap-y-1">
+                  <Skeleton colorMode="light" width={80} height={12} />
+                  <Skeleton colorMode="light" width={50} height={10} />
+                </View>
+                <View className="w-20 gap-y-1">
+                  <Skeleton
+                    colorMode="light"
+                    width={40}
+                    height={14}
+                    radius={4}
+                  />
+                  <Skeleton colorMode="light" width={60} height={10} />
+                </View>
+                <View className="w-24 items-end">
+                  <Skeleton colorMode="light" width={70} height={16} />
+                </View>
+                <View className="ml-4">
+                  <Skeleton
+                    colorMode="light"
+                    radius="round"
+                    height={36}
+                    width={36}
+                  />
+                </View>
+              </View>
+            ))}
+          </Skeleton.Group>
         </View>
       );
     }
