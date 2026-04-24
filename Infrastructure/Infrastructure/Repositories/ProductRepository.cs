@@ -77,5 +77,13 @@ namespace Infrastructure.Repositories
                          && p.ExpiryDate >= today)
                 .ToListAsync();
         }
+
+        public async Task<List<Product>> GetByIdsWithPromotionsAsync(IEnumerable<Guid> ids, Guid storeId, CancellationToken ct)
+        {
+            return await context.Products
+                .Include(p => p.Promotions)
+                .Where(p => ids.Contains(p.Id) && p.StoreId == storeId)
+                .ToListAsync(ct);
+        }
     }
 }

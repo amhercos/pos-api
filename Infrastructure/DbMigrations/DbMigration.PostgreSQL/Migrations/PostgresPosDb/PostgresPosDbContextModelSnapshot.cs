@@ -401,7 +401,7 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Product", "TieUpProduct")
-                        .WithMany()
+                        .WithMany("Promotions")
                         .HasForeignKey("TieUpProductId")
                         .OnDelete(DeleteBehavior.SetNull);
 
@@ -447,6 +447,11 @@ namespace DbMigration.PostgreSQL.Migrations.PostgresPosDb
             modelBuilder.Entity("Domain.Entities.CustomerCredit", b =>
                 {
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Product", b =>
+                {
+                    b.Navigation("Promotions");
                 });
 
             modelBuilder.Entity("Domain.Entities.Transaction", b =>
