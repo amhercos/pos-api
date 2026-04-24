@@ -12,6 +12,7 @@ public class CreateTransactionHandler(
     ITransactionRepository transactionRepository,
     IProductRepository productRepository,
     ICustomerCreditRepository creditRepository,
+    IPromotionEngine promotionEngine,
     IPosDbContext context,
     ICurrentUserService currentUserService) : IRequestHandler<CreateTransactionCommand, Guid>
 {
@@ -20,7 +21,7 @@ public class CreateTransactionHandler(
         var storeId = currentUserService.StoreId;
         var productIds = request.Items.Select(i => i.ProductId).Distinct().ToList();
 
-        // Batch fetch products + promotions
+        // 1. Batch fetch products + promotions
         var products = await productRepository.GetByIdsWithPromotionsAsync(productIds, storeId, ct);
         var productMap = products.ToDictionary(p => p.Id);
 
@@ -40,54 +41,63 @@ public class CreateTransactionHandler(
 
             foreach (var itemReq in request.Items)
             {
-                var product = productMap[itemReq.ProductId];
-                if (product.Stock < itemReq.Quantity) throw new Exception($"Out of stock: {product.Name}");
+                if (!productMap.TryGetValue(itemReq.ProductId, out var product))
+                    throw new Exception($"Product not found: {itemReq.ProductId}");
+
+                if (product.Stock < itemReq.Quantity)
+                    throw new Exception($"Out of stock: {product.Name}");
 
                 product.Stock -= itemReq.Quantity;
-                var unitPrice = ResolvePrice(product, itemReq.Quantity);
 
                 transaction.Items.Add(new TransactionItem
                 {
                     ProductId = product.Id,
                     Quantity = itemReq.Quantity,
-                    UnitPrice = unitPrice,
+                    UnitPrice = product.Price,
                     StoreId = storeId
                 });
             }
 
+            foreach (var item in transaction.Items)
+            {
+                var product = productMap[item.ProductId];
+                item.UnitPrice = promotionEngine.CalculateUnitPrice(
+                    product,
+                    item.Quantity,
+                    transaction.Items);
+            }
+
             transaction.TotalAmount = transaction.Items.Sum(x => x.UnitPrice * x.Quantity);
 
-            // CREDIT 
+           // credit
             if (transaction.PaymentType == PaymentType.Credit)
             {
                 var account = await ResolveCreditAccount(request, storeId, ct);
                 transaction.CustomerCreditId = account.Id;
                 account.CreditAmount += transaction.TotalAmount;
                 account.Status = CreditStatus.Active;
+                creditRepository.Update(account);
             }
             else
             {
-                if (transaction.CashReceived < transaction.TotalAmount) throw new Exception("Insufficient cash.");
+                if (transaction.CashReceived < transaction.TotalAmount)
+                    throw new Exception($"Insufficient cash. Total: {transaction.TotalAmount}, Received: {transaction.CashReceived}");
+
                 transaction.ChangeAmount = transaction.CashReceived - transaction.TotalAmount;
             }
 
+            
             transactionRepository.Add(transaction);
             await context.SaveChangesAsync(ct);
             await dbTransaction.CommitAsync(ct);
 
             return transaction.Id;
         }
-        catch { await dbTransaction.RollbackAsync(ct); throw; }
-    }
-
-    private decimal ResolvePrice(Product product, int quantity)
-    {
-        var bestPromo = product.Promotions
-            .Where(p => p.IsActive && p.Type == PromotionType.Bulk && p.PromoQuantity <= quantity)
-            .OrderByDescending(p => p.PromoQuantity)
-            .FirstOrDefault();
-
-        return bestPromo?.PromoPrice ?? product.Price;
+        catch
+        {
+            await dbTransaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     private async Task<CustomerCredit> ResolveCreditAccount(CreateTransactionCommand request, Guid storeId, CancellationToken ct)
@@ -105,6 +115,7 @@ public class CreateTransactionHandler(
             Status = CreditStatus.Active,
             StoreId = storeId
         };
+
         creditRepository.Add(newAccount);
         return newAccount;
     }
