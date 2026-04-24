@@ -1,4 +1,6 @@
 ﻿using Application.Behaviors;
+using Application.Interfaces;
+using Application.Services;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -20,6 +22,9 @@ namespace Application
                 cfg.RegisterServicesFromAssembly(assembly);
                 cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             });
+
+
+            services.AddScoped<IPromotionEngine, PromotionEngine>();
 
             return services;
         }
