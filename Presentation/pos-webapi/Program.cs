@@ -119,7 +119,7 @@ try
         }
     }
 
-    app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Time = DateTime.UtcNow }));
+    app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { Status = "Healthy", Time = DateTime.UtcNow }));
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();

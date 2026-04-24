@@ -7,6 +7,7 @@ namespace Domain.Entities.Enums
     public enum PromotionType
     {
         Bulk = 1,
-        Bundle = 2
+        Bundle = 2,
+        Discount = 3
     }
 }
