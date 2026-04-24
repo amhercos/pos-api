@@ -18,89 +18,57 @@ public class CreateTransactionHandler(
     public async Task<Guid> Handle(CreateTransactionCommand request, CancellationToken ct)
     {
         var storeId = currentUserService.StoreId;
-        var userId = currentUserService.UserId ?? Guid.Empty;
+        var productIds = request.Items.Select(i => i.ProductId).Distinct().ToList();
+
+        // Batch fetch products + promotions
+        var products = await productRepository.GetByIdsWithPromotionsAsync(productIds, storeId, ct);
+        var productMap = products.ToDictionary(p => p.Id);
 
         using var dbTransaction = await context.Database.BeginTransactionAsync(ct);
-
         try
         {
             var transaction = new Transaction
             {
                 Id = Guid.NewGuid(),
                 StoreId = storeId,
-                UserId = userId,
+                UserId = currentUserService.UserId ?? Guid.Empty,
                 TransactionDate = DateTime.UtcNow,
-                TotalAmount = request.TotalAmount,
                 PaymentType = request.PaymentType,
                 CashReceived = request.CashReceived,
-                ChangeAmount = request.ChangeAmount,
-                CustomerCreditId = request.CustomerCreditId,
                 Items = new List<TransactionItem>()
             };
 
-            // Credit Management
-            if (transaction.PaymentType == PaymentType.Credit)
+            foreach (var itemReq in request.Items)
             {
-                CustomerCredit? creditAccount = null;
+                var product = productMap[itemReq.ProductId];
+                if (product.Stock < itemReq.Quantity) throw new Exception($"Out of stock: {product.Name}");
 
-                if (request.CustomerCreditId.HasValue)
-                {
-                    creditAccount = await creditRepository.GetByIdAsync(request.CustomerCreditId.Value, ct);
-                }
-                else if (!string.IsNullOrWhiteSpace(request.NewCustomerName))
-                {
-                    creditAccount = new CustomerCredit
-                    {
-                        Id = Guid.NewGuid(),
-                        CustomerName = request.NewCustomerName,
-                        ContactInfo = request.NewCustomerContact,
-                        CreditAmount = 0,
-                        Status = CreditStatus.Active,
-                        StoreId = storeId
-                    };
-                    creditRepository.Add(creditAccount);
-                }
-
-                if (creditAccount == null) throw new Exception("Credit account required.");
-
-                creditAccount.CreditAmount += transaction.TotalAmount;
-                creditAccount.Status = CreditStatus.Active;
-                transaction.CustomerCreditId = creditAccount.Id;
-
-                //creditRepository.Update(creditAccount);
-            }
-            else // Cash Validation
-            {
-                if (request.CashReceived < transaction.TotalAmount)
-                    throw new Exception("Insufficient cash.");
-
-                transaction.ChangeAmount = request.CashReceived - transaction.TotalAmount;
-            }
-
-
-            foreach (var item in request.Items)
-            {
-                var product = await productRepository.GetByIdAsync(item.ProductId, ct);
-
-                if (product == null)
-                    throw new Exception($"Product not found: {item.ProductId}");
-
-                if (product.Stock < item.Quantity)
-                {
-                    throw new Exception($"Insufficient stock for {product.Name}. Available: {product.Stock}");
-                }
-
-                product.Stock -= item.Quantity;
+                product.Stock -= itemReq.Quantity;
+                var unitPrice = ResolvePrice(product, itemReq.Quantity);
 
                 transaction.Items.Add(new TransactionItem
                 {
-                    Id = Guid.NewGuid(),
-                    TransactionId = transaction.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
+                    ProductId = product.Id,
+                    Quantity = itemReq.Quantity,
+                    UnitPrice = unitPrice,
                     StoreId = storeId
                 });
+            }
+
+            transaction.TotalAmount = transaction.Items.Sum(x => x.UnitPrice * x.Quantity);
+
+            // CREDIT 
+            if (transaction.PaymentType == PaymentType.Credit)
+            {
+                var account = await ResolveCreditAccount(request, storeId, ct);
+                transaction.CustomerCreditId = account.Id;
+                account.CreditAmount += transaction.TotalAmount;
+                account.Status = CreditStatus.Active;
+            }
+            else
+            {
+                if (transaction.CashReceived < transaction.TotalAmount) throw new Exception("Insufficient cash.");
+                transaction.ChangeAmount = transaction.CashReceived - transaction.TotalAmount;
             }
 
             transactionRepository.Add(transaction);
@@ -109,10 +77,35 @@ public class CreateTransactionHandler(
 
             return transaction.Id;
         }
-        catch (Exception)
+        catch { await dbTransaction.RollbackAsync(ct); throw; }
+    }
+
+    private decimal ResolvePrice(Product product, int quantity)
+    {
+        var bestPromo = product.Promotions
+            .Where(p => p.IsActive && p.Type == PromotionType.Bulk && p.PromoQuantity <= quantity)
+            .OrderByDescending(p => p.PromoQuantity)
+            .FirstOrDefault();
+
+        return bestPromo?.PromoPrice ?? product.Price;
+    }
+
+    private async Task<CustomerCredit> ResolveCreditAccount(CreateTransactionCommand request, Guid storeId, CancellationToken ct)
+    {
+        if (request.CustomerCreditId.HasValue)
+            return await creditRepository.GetByIdAsync(request.CustomerCreditId.Value, ct)
+                   ?? throw new Exception("Credit account not found.");
+
+        var newAccount = new CustomerCredit
         {
-            await dbTransaction.RollbackAsync(ct);
-            throw;
-        }
+            Id = Guid.NewGuid(),
+            CustomerName = request.NewCustomerName!,
+            ContactInfo = request.NewCustomerContact,
+            CreditAmount = 0,
+            Status = CreditStatus.Active,
+            StoreId = storeId
+        };
+        creditRepository.Add(newAccount);
+        return newAccount;
     }
 }
