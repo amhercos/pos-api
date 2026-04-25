@@ -1,18 +1,20 @@
-import { Check, Search, X } from "lucide-react-native";
+import { Check, Layers, Package, Search, Tag, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Product } from "../../src/types/inventory";
 import {
-    CreatePromotionRequest,
-    PromotionType,
+  CreatePromotionRequest,
+  PromotionType,
 } from "../../src/types/promotion";
 
 interface Props {
@@ -22,55 +24,64 @@ interface Props {
   products: Product[];
 }
 
+interface ToggleItemProps {
+  label: string;
+  val: PromotionType;
+  icon: React.ElementType;
+}
+
 export function AddPromotionsModal({
   isVisible,
   onClose,
   onSave,
   products,
 }: Props) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState<string>("");
   const [type, setType] = useState<PromotionType>(PromotionType.Bulk);
 
-  // Selection States
   const [mainProduct, setMainProduct] = useState<Product | null>(null);
   const [tieUpProduct, setTieUpProduct] = useState<Product | null>(null);
   const [showProductPicker, setShowProductPicker] = useState<
     "main" | "tieup" | null
   >(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Input States
-  const [promoPrice, setPromoPrice] = useState("");
-  const [promoQuantity, setPromoQuantity] = useState("");
-  const [tieUpQuantity, setTieUpQuantity] = useState("");
+  const [promoPrice, setPromoPrice] = useState<string>("");
+  const [promoQuantity, setPromoQuantity] = useState<string>("");
+  const [tieUpQuantity, setTieUpQuantity] = useState<string>("1");
 
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSave = async () => {
-    if (!name || !mainProduct) {
+    if (!name || !mainProduct || !promoPrice) {
       Alert.alert(
-        "Missing Info",
-        "Please provide a name and select a product.",
+        "Required Fields",
+        "Please name the promo, select a product, and set a price.",
       );
       return;
     }
 
+    // Strict mapping of local state to the API Request type
     const command: CreatePromotionRequest = {
       name,
       type,
       mainProductId: mainProduct.id,
-      promoPrice: promoPrice ? parseFloat(promoPrice) : undefined,
-      promoQuantity: promoQuantity ? parseInt(promoQuantity) : undefined,
-      tieUpProductId: tieUpProduct?.id,
-      tieUpQuantity: tieUpQuantity ? parseInt(tieUpQuantity) : undefined,
+      promoPrice: parseFloat(promoPrice),
+      // Only include these if the type demands it
+      promoQuantity:
+        type === PromotionType.Bulk ? parseInt(promoQuantity) || 1 : 1,
+      tieUpProductId:
+        type === PromotionType.Bundle ? tieUpProduct?.id : undefined,
+      tieUpQuantity:
+        type === PromotionType.Bundle
+          ? parseInt(tieUpQuantity) || 1
+          : undefined,
     };
 
     const success = await onSave(command);
-    if (success) {
-      resetAndClose();
-    }
+    if (success) resetAndClose();
   };
 
   const resetAndClose = () => {
@@ -79,200 +90,232 @@ export function AddPromotionsModal({
     setTieUpProduct(null);
     setPromoPrice("");
     setPromoQuantity("");
-    setTieUpQuantity("");
+    setTieUpQuantity("1");
     onClose();
+  };
+
+  const TypeToggle = ({ label, val, icon: Icon }: ToggleItemProps) => {
+    const isActive = type === val;
+    return (
+      <TouchableOpacity
+        onPress={() => setType(val)}
+        className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${
+          isActive ? "bg-white shadow-sm" : "bg-transparent"
+        }`}
+      >
+        <Icon size={14} color={isActive ? "#2563eb" : "#94a3b8"} />
+        <Text
+          className={`ml-2 text-[10px] font-bold uppercase ${
+            isActive ? "text-blue-600" : "text-slate-400"
+          }`}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
     <Modal visible={isVisible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-3xl h-[92%] p-6">
-          <View className="flex-row justify-between items-center mb-6">
-            <Text className="text-xl font-bold text-gray-900">
-              Configure Promo
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <X color="#6b7280" size={24} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1 bg-slate-900/60 justify-end"
+      >
+        <View className="bg-white rounded-t-[40px] h-[92%] p-8">
+          <View className="flex-row justify-between items-center mb-8">
+            <View>
+              <Text className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">
+                Promotion Engine
+              </Text>
+              <Text className="text-2xl font-bold text-slate-900">
+                New Promotion
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              className="bg-slate-100 p-2 rounded-full"
+            >
+              <X color="#64748b" size={20} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Promo Name */}
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
-              Internal Name
-            </Text>
-            <TextInput
-              className="bg-gray-100 p-4 rounded-xl mb-4 text-gray-900"
-              placeholder="e.g. Buy 3 Coke for 100"
-              value={name}
-              onChangeText={setName}
-            />
-
-            {/* Type Toggle */}
-            <View className="flex-row mb-6 bg-gray-100 p-1 rounded-xl">
-              {[
-                { label: "Bulk", val: PromotionType.Bulk },
-                { label: "Bundle", val: PromotionType.Bundle },
-                { label: "Discount", val: PromotionType.Discount },
-              ].map((t) => (
-                <TouchableOpacity
-                  key={t.val}
-                  onPress={() => setType(t.val)}
-                  className={`flex-1 py-2 rounded-lg ${type === t.val ? "bg-white shadow-sm" : ""}`}
-                >
-                  <Text
-                    className={`text-center font-bold ${type === t.val ? "text-blue-600" : "text-gray-500"}`}
-                  >
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+            <View className="flex-row mb-8 bg-slate-100 p-1.5 rounded-2xl">
+              <TypeToggle label="Bulk" val={PromotionType.Bulk} icon={Layers} />
+              <TypeToggle
+                label="Bundle"
+                val={PromotionType.Bundle}
+                icon={Package}
+              />
+              <TypeToggle
+                label="Discount"
+                val={PromotionType.Discount}
+                icon={Tag}
+              />
             </View>
 
-            {/* Product Selectors */}
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
-              Main Product
-            </Text>
-            <TouchableOpacity
-              onPress={() => setShowProductPicker("main")}
-              className="bg-gray-100 p-4 rounded-xl mb-4 flex-row justify-between items-center"
-            >
-              <Text className={mainProduct ? "text-gray-900" : "text-gray-400"}>
-                {mainProduct ? mainProduct.name : "Tap to select product..."}
-              </Text>
-              <Search size={18} color="#9ca3af" />
-            </TouchableOpacity>
+            <View className="gap-6">
+              <View>
+                <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                  Internal Name
+                </Text>
+                <TextInput
+                  className="bg-slate-50 p-4 rounded-2xl font-bold text-slate-900"
+                  placeholder="e.g. Buy 2 Get 1 Free"
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
 
-            {/* Logic Fields */}
-            {type === PromotionType.Bulk && (
-              <View className="flex-row gap-4 mb-4">
-                <View className="flex-1">
-                  <Text className="text-sm font-semibold text-gray-700 mb-2">
-                    Qty needed
+              <View>
+                <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                  Primary Product
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowProductPicker("main")}
+                  className="bg-slate-50 p-5 rounded-2xl flex-row justify-between items-center"
+                >
+                  <Text
+                    className={`font-bold ${mainProduct ? "text-slate-900" : "text-slate-300"}`}
+                  >
+                    {mainProduct ? mainProduct.name : "Select a product..."}
                   </Text>
-                  <TextInput
-                    className="bg-gray-100 p-4 rounded-xl"
-                    keyboardType="numeric"
-                    value={promoQuantity}
-                    onChangeText={setPromoQuantity}
-                    placeholder="e.g. 3"
+                  <Search
+                    size={18}
+                    color={mainProduct ? "#0f172a" : "#cbd5e1"}
                   />
-                </View>
+                </TouchableOpacity>
+              </View>
+
+              <View className="flex-row gap-4">
+                {type === PromotionType.Bulk && (
+                  <View className="flex-1">
+                    <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                      Qty Needed
+                    </Text>
+                    <TextInput
+                      className="bg-slate-50 p-4 rounded-2xl font-bold text-slate-900"
+                      keyboardType="numeric"
+                      value={promoQuantity}
+                      onChangeText={setPromoQuantity}
+                      placeholder="0"
+                    />
+                  </View>
+                )}
+
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-gray-700 mb-2">
-                    Total Price
+                  <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                    {type === PromotionType.Bulk ? "Bulk Price" : "Promo Price"}
                   </Text>
                   <TextInput
-                    className="bg-gray-100 p-4 rounded-xl"
+                    className="bg-slate-50 p-4 rounded-2xl font-bold text-blue-600"
                     keyboardType="numeric"
                     value={promoPrice}
                     onChangeText={setPromoPrice}
-                    placeholder="₱"
+                    placeholder="₱ 0.00"
                   />
                 </View>
               </View>
-            )}
 
-            {type === PromotionType.Bundle && (
-              <View className="mb-4">
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
-                  Tie-up Product
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowProductPicker("tieup")}
-                  className="bg-gray-100 p-4 rounded-xl mb-4 flex-row justify-between items-center"
-                >
-                  <Text
-                    className={tieUpProduct ? "text-gray-900" : "text-gray-400"}
-                  >
-                    {tieUpProduct
-                      ? tieUpProduct.name
-                      : "Tap to select tie-up..."}
+              {type === PromotionType.Bundle && (
+                <View className="bg-blue-50/50 p-6 rounded-[32px] border border-blue-100">
+                  <Text className="text-[10px] font-bold uppercase text-blue-500 mb-4 tracking-widest">
+                    Bundle Configuration
                   </Text>
-                  <Search size={18} color="#9ca3af" />
-                </TouchableOpacity>
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
-                  Bundle Price
-                </Text>
-                <TextInput
-                  className="bg-gray-100 p-4 rounded-xl"
-                  keyboardType="numeric"
-                  value={promoPrice}
-                  onChangeText={setPromoPrice}
-                  placeholder="₱"
-                />
-              </View>
-            )}
 
-            {type === PromotionType.Discount && (
-              <View className="mb-4">
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
-                  Static Price
-                </Text>
-                <TextInput
-                  className="bg-gray-100 p-4 rounded-xl"
-                  keyboardType="numeric"
-                  value={promoPrice}
-                  onChangeText={setPromoPrice}
-                  placeholder="₱"
-                />
-              </View>
-            )}
-
-            <TouchableOpacity
-              onPress={handleSave}
-              className="bg-blue-600 p-4 rounded-2xl mt-4 shadow-lg shadow-blue-200"
-            >
-              <Text className="text-white text-center font-bold text-lg">
-                Create Promotion
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
-
-      {/* Internal Product Picker Modal */}
-      <Modal visible={!!showProductPicker} animationType="fade" transparent>
-        <View className="flex-1 bg-black/40 p-6 justify-center">
-          <View className="bg-white rounded-3xl h-[70%] p-4">
-            <TextInput
-              placeholder="Search products..."
-              className="bg-gray-100 p-3 rounded-xl mb-4"
-              onChangeText={setSearchQuery}
-            />
-            <ScrollView>
-              {filteredProducts.map((p) => (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => {
-                    if (showProductPicker === "main") setMainProduct(p);
-                    else setTieUpProduct(p);
-                    setShowProductPicker(null);
-                    setSearchQuery("");
-                  }}
-                  className="p-4 border-b border-gray-50 flex-row justify-between items-center"
-                >
-                  <View>
-                    <Text className="font-bold text-gray-800">{p.name}</Text>
-                    <Text className="text-gray-500 text-xs">
-                      Current Price: ₱{p.price}
+                  <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                    Tie-up Product
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setShowProductPicker("tieup")}
+                    className="bg-white p-5 rounded-2xl flex-row justify-between items-center shadow-sm mb-4"
+                  >
+                    <Text
+                      className={`font-bold ${tieUpProduct ? "text-slate-900" : "text-slate-300"}`}
+                    >
+                      {tieUpProduct
+                        ? tieUpProduct.name
+                        : "Select second product..."}
                     </Text>
-                  </View>
-                  {(mainProduct?.id === p.id || tieUpProduct?.id === p.id) && (
-                    <Check size={16} color="#2563eb" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              onPress={() => setShowProductPicker(null)}
-              className="mt-4 p-3"
-            >
-              <Text className="text-center text-red-500 font-bold">Cancel</Text>
-            </TouchableOpacity>
-          </View>
+                    <Package
+                      size={18}
+                      color={tieUpProduct ? "#2563eb" : "#cbd5e1"}
+                    />
+                  </TouchableOpacity>
+
+                  <Text className="text-[10px] font-bold uppercase text-slate-400 mb-2 ml-1">
+                    Tie-up Quantity
+                  </Text>
+                  <TextInput
+                    className="bg-white p-4 rounded-2xl font-bold text-slate-900 shadow-sm"
+                    keyboardType="numeric"
+                    value={tieUpQuantity}
+                    onChangeText={setTieUpQuantity}
+                  />
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={handleSave}
+            className="bg-slate-900 h-16 rounded-2xl flex-row items-center justify-center mt-6"
+          >
+            <Text className="text-white font-bold uppercase text-xs tracking-widest">
+              Confirm Promotion
+            </Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+
+        <Modal visible={!!showProductPicker} animationType="fade" transparent>
+          <View className="flex-1 bg-slate-900/40 p-6 justify-center">
+            <View className="bg-white rounded-[40px] h-[70%] p-6 shadow-2xl">
+              <View className="flex-row items-center bg-slate-100 px-4 rounded-2xl mb-4">
+                <Search size={16} color="#94a3b8" />
+                <TextInput
+                  placeholder="Search products..."
+                  className="flex-1 p-4 font-bold text-slate-900"
+                  onChangeText={setSearchQuery}
+                  value={searchQuery}
+                />
+              </View>
+              <ScrollView>
+                {filteredProducts.map((p) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => {
+                      if (showProductPicker === "main") setMainProduct(p);
+                      else setTieUpProduct(p);
+                      setShowProductPicker(null);
+                      setSearchQuery("");
+                    }}
+                    className="py-4 border-b border-slate-50 flex-row justify-between items-center"
+                  >
+                    <View>
+                      <Text className="font-bold text-slate-800">{p.name}</Text>
+                      <Text className="text-slate-400 text-[10px]">
+                        Stock: {p.stockQuantity} | ₱{p.price}
+                      </Text>
+                    </View>
+                    {(mainProduct?.id === p.id ||
+                      tieUpProduct?.id === p.id) && (
+                      <Check size={16} color="#2563eb" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TouchableOpacity
+                onPress={() => setShowProductPicker(null)}
+                className="mt-4 py-2"
+              >
+                <Text className="text-center text-slate-400 font-bold uppercase text-[10px]">
+                  Close Picker
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

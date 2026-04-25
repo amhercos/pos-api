@@ -6,7 +6,7 @@ import {
     Loader2,
     Minus,
     Plus,
-    ShoppingCart,
+    Trash2,
     UserPlus,
     Users,
     X,
@@ -19,7 +19,6 @@ import {
     ScrollView,
     Text,
     TextInput,
-    TextStyle,
     TouchableOpacity,
     View,
 } from "react-native";
@@ -39,10 +38,11 @@ interface TransactionContentProps {
   activePayment: PaymentType;
   setActivePayment: (p: PaymentType) => void;
   cashReceived: number;
-  setCashReceived: (n: number) => void;
+  setCashReceived: React.Dispatch<React.SetStateAction<number>>;
   isSubmitting: boolean;
   handleCheckout: () => void;
   updateQuantity: (id: string, q: number) => void;
+  removeItem: (id: string) => void;
   clearBasket: () => void;
   credits: CustomerCredit[];
   selectedCreditId: string;
@@ -57,16 +57,6 @@ interface TransactionContentProps {
   setShowVoidConfirm: (b: boolean) => void;
 }
 
-const inputStyle: TextStyle = {
-  backgroundColor: "#f8fafc",
-  padding: 16,
-  borderRadius: 16,
-  fontWeight: "bold",
-  color: "#0f172a",
-  borderWidth: 1,
-  borderColor: "#e2e8f0",
-};
-
 export const TransactionContent: React.FC<TransactionContentProps> = ({
   isTablet,
   onClose,
@@ -78,6 +68,7 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
   isSubmitting,
   handleCheckout,
   updateQuantity,
+  removeItem,
   clearBasket,
   credits = [],
   selectedCreditId,
@@ -92,15 +83,23 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
   setShowVoidConfirm,
 }) => {
   const currentTotal = useMemo(() => {
-    return roundTo(
-      basket.reduce((sum, item) => sum + calculateLineTotal(item, basket), 0),
-    );
-  }, [basket]);
+    const total = basket.reduce((sum, item) => {
+      if (activePayment === PaymentType.Credit) {
+        return sum + item.unitPrice * item.quantity;
+      }
+      return sum + calculateLineTotal(item, basket);
+    }, 0);
+    return roundTo(total);
+  }, [basket, activePayment]);
 
   const changeValue = useMemo(
     () => roundTo(Math.max(0, cashReceived - currentTotal)),
     [cashReceived, currentTotal],
   );
+
+  const addQuickCash = (val: number) => {
+    setCashReceived((prev) => prev + val);
+  };
 
   const PaymentButton = ({
     type,
@@ -116,17 +115,15 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
       <TouchableOpacity
         onPress={() => setActivePayment(type)}
         className={cn(
-          "flex-1 flex-row items-center justify-center py-4 rounded-2xl gap-2 border",
-          isActive
-            ? "bg-slate-900 border-slate-900 shadow-sm"
-            : "bg-white border-slate-100",
+          "flex-1 flex-row items-center justify-center py-4 rounded-2xl gap-3",
+          isActive ? "bg-slate-900 shadow-lg shadow-slate-400" : "bg-slate-50",
         )}
       >
-        <Icon size={18} color={isActive ? "white" : "#94a3b8"} />
+        <Icon size={18} color={isActive ? "white" : "#64748b"} />
         <Text
           className={cn(
-            "text-xs font-black uppercase tracking-tight",
-            isActive ? "text-white" : "text-slate-400",
+            "text-[10px] font-black uppercase tracking-[1px]",
+            isActive ? "text-white" : "text-slate-500",
           )}
         >
           {label}
@@ -140,13 +137,13 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-white"
     >
-      <View className="flex-row items-center justify-between px-6 py-6 border-b border-slate-50 bg-white">
+      <View className="flex-row items-center justify-between px-6 py-5">
         <View>
           <Text className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-            Current Order
+            Checkout
           </Text>
           <Text className="text-xl font-black text-slate-900">
-            {basket.length} ITEMS
+            {basket.length} {basket.length === 1 ? "Item" : "Items"}
           </Text>
         </View>
         {!isTablet && (
@@ -160,56 +157,59 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
       </View>
 
       <ScrollView
-        className="flex-1 px-6"
+        className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 24 }}
       >
-        {basket.length === 0 ? (
-          <View className="items-center justify-center py-20 opacity-10">
-            <ShoppingCart size={64} color="#000" />
-            <Text className="font-black uppercase mt-4 text-xs">
-              Empty Basket
-            </Text>
-          </View>
-        ) : (
-          basket.map((item) => (
+        {/* Basket List */}
+        <View className="mb-6">
+          {basket.map((item) => (
             <View
               key={item.productId}
-              className="flex-row items-center p-4 rounded-[28px] mb-3 bg-slate-50 border border-slate-100"
+              className="flex-row items-center py-4 border-b border-slate-50"
             >
-              <View className="flex-1 pr-4">
-                <Text
-                  numberOfLines={1}
-                  className="text-[11px] font-black uppercase text-slate-900"
-                >
+              <View className="flex-1">
+                <Text className="text-sm font-bold text-slate-800 uppercase tracking-tight">
                   {item.name}
                 </Text>
-                <Text className="text-[10px] font-bold text-emerald-600 mt-1">
-                  {formatPHP(calculateLineTotal(item, basket))}
+                <Text className="text-[11px] font-black text-emerald-600 mt-0.5">
+                  {activePayment === PaymentType.Credit
+                    ? formatPHP(item.unitPrice * item.quantity)
+                    : formatPHP(calculateLineTotal(item, basket))}
                 </Text>
               </View>
-              <View className="flex-row items-center bg-white rounded-2xl p-1 border border-slate-100">
+
+              <View className="flex-row items-center bg-slate-50 rounded-xl px-1 py-1">
                 <TouchableOpacity
-                  onPress={() => updateQuantity(item.productId, -1)}
-                  className="p-2 bg-slate-50 rounded-xl"
+                  onPress={() =>
+                    item.quantity > 1
+                      ? updateQuantity(item.productId, -1)
+                      : removeItem(item.productId)
+                  }
+                  className="p-1.5"
                 >
-                  <Minus size={12} color="#0f172a" />
+                  {item.quantity > 1 ? (
+                    <Minus size={12} color="#475569" />
+                  ) : (
+                    <Trash2 size={12} color="#ef4444" />
+                  )}
                 </TouchableOpacity>
-                <Text className="font-black text-sm w-8 text-center text-slate-900">
+                <Text className="font-black text-xs w-6 text-center text-slate-900">
                   {item.quantity}
                 </Text>
                 <TouchableOpacity
                   onPress={() => updateQuantity(item.productId, 1)}
-                  className="p-2 bg-slate-50 rounded-xl"
+                  className="p-1.5"
                 >
-                  <Plus size={12} color="#0f172a" />
+                  <Plus size={12} color="#475569" />
                 </TouchableOpacity>
               </View>
             </View>
-          ))
-        )}
+          ))}
+        </View>
 
-        <View className="flex-row gap-3 mt-4 mb-6">
+        {/* Payment Methods */}
+        <View className="flex-row gap-3 mb-8">
           <PaymentButton type={PaymentType.Cash} icon={Banknote} label="Cash" />
           <PaymentButton
             type={PaymentType.Credit}
@@ -219,223 +219,226 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
         </View>
 
         {activePayment === PaymentType.Cash ? (
-          <View>
-            <Text className="text-[10px] font-black uppercase text-slate-400 mb-3 ml-1">
+          <View className="mb-8">
+            <Text className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">
               Quick Cash
             </Text>
-            <View className="flex-row flex-wrap justify-between gap-2 mb-6">
+            <View className="flex-row flex-wrap gap-2">
               {COMMON_DENOMINATIONS.map((val) => (
                 <TouchableOpacity
                   key={val}
-                  onPress={() => setCashReceived(val)}
-                  className="bg-slate-50 border border-slate-100 h-10 rounded-xl flex-1 min-w-[30%] items-center justify-center"
+                  onPress={() => addQuickCash(val)}
+                  className="bg-white shadow-sm border border-slate-100 h-12 rounded-xl flex-1 min-w-[28%] items-center justify-center active:bg-slate-50"
                 >
-                  <Text className="font-black text-slate-600 text-[11px]">
-                    ₱{val}
+                  <Text className="font-black text-slate-700 text-xs">
+                    +₱{val}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         ) : (
-          <View>
-            <View className="flex-row items-center gap-2 mb-4 ml-1">
-              <Users size={16} color="#0f172a" />
-              <Text className="text-[10px] font-black uppercase text-slate-900">
-                Account Selection
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setIsNewCustomer(!isNewCustomer)}
-              className={cn(
-                "flex-row items-center justify-between p-4 rounded-2xl border mb-4",
-                isNewCustomer
-                  ? "bg-emerald-50 border-emerald-200"
-                  : "bg-white border-slate-100 shadow-sm",
-              )}
-            >
-              <View className="flex-row items-center gap-3">
-                <UserPlus
-                  size={20}
-                  color={isNewCustomer ? "#10b981" : "#64748b"}
+          /* CREDIT SECTION */
+          <View className="mb-8">
+            <View className="flex-row gap-2 mb-6">
+              <TouchableOpacity
+                onPress={() => setIsNewCustomer(false)}
+                className={cn(
+                  "flex-1 py-3 rounded-xl flex-row items-center justify-center gap-2",
+                  !isNewCustomer
+                    ? "bg-slate-100"
+                    : "bg-white border border-slate-50",
+                )}
+              >
+                <Users
+                  size={14}
+                  color={!isNewCustomer ? "#0f172a" : "#94a3b8"}
                 />
                 <Text
                   className={cn(
-                    "text-xs font-black uppercase",
-                    isNewCustomer ? "text-emerald-700" : "text-slate-600",
+                    "text-[10px] font-black uppercase",
+                    !isNewCustomer ? "text-slate-900" : "text-slate-400",
                   )}
                 >
-                  New Customer
+                  Existing
                 </Text>
-              </View>
-              <View
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setIsNewCustomer(true)}
                 className={cn(
-                  "w-5 h-5 rounded-full border-2 items-center justify-center",
+                  "flex-1 py-3 rounded-xl flex-row items-center justify-center gap-2",
                   isNewCustomer
-                    ? "border-emerald-500 bg-emerald-500"
-                    : "border-slate-300",
+                    ? "bg-slate-100"
+                    : "bg-white border border-slate-50",
                 )}
               >
-                {isNewCustomer && (
-                  <View className="w-2 h-2 bg-white rounded-full" />
-                )}
-              </View>
-            </TouchableOpacity>
+                <UserPlus
+                  size={14}
+                  color={isNewCustomer ? "#0f172a" : "#94a3b8"}
+                />
+                <Text
+                  className={cn(
+                    "text-[10px] font-black uppercase",
+                    isNewCustomer ? "text-slate-900" : "text-slate-400",
+                  )}
+                >
+                  New
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {isNewCustomer ? (
               <View className="gap-3">
                 <TextInput
-                  placeholder="Full Name"
-                  style={inputStyle}
+                  placeholder="Customer Full Name"
+                  className="bg-slate-50 p-4 rounded-2xl font-bold text-slate-900"
                   value={newCustomerName}
                   onChangeText={setNewCustomerName}
                 />
                 <TextInput
-                  placeholder="Contact Info"
-                  keyboardType="default"
-                  style={inputStyle}
+                  placeholder="Contact Number (Optional)"
+                  keyboardType="phone-pad"
+                  className="bg-slate-50 p-4 rounded-2xl font-bold text-slate-900"
                   value={newCustomerContact}
                   onChangeText={setNewCustomerContact}
                 />
               </View>
             ) : (
               <View className="gap-2">
-                {credits.map((credit) => (
-                  <TouchableOpacity
-                    key={credit.id}
-                    onPress={() => setSelectedCreditId(credit.id)}
-                    className={cn(
-                      "p-4 rounded-2xl border flex-row justify-between items-center",
-                      selectedCreditId === credit.id
-                        ? "bg-slate-900 border-slate-900"
-                        : "bg-white border-slate-100",
-                    )}
-                  >
-                    <View>
+                <Text className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 mb-1">
+                  Select Account
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="flex-row"
+                >
+                  {credits.map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      onPress={() => setSelectedCreditId(c.id)}
+                      className={cn(
+                        "mr-2 px-5 py-4 rounded-2xl border min-w-[120px]",
+                        selectedCreditId === c.id
+                          ? "bg-slate-900 border-slate-900"
+                          : "bg-white border-slate-100",
+                      )}
+                    >
                       <Text
                         className={cn(
-                          "font-black text-[11px] uppercase",
-                          selectedCreditId === credit.id
+                          "font-black text-xs",
+                          selectedCreditId === c.id
                             ? "text-white"
-                            : "text-slate-900",
+                            : "text-slate-800",
                         )}
                       >
-                        {credit.customerName}
+                        {c.customerName}
                       </Text>
                       <Text
                         className={cn(
-                          "text-[9px] font-bold mt-0.5",
-                          selectedCreditId === credit.id
+                          "text-[9px] font-bold mt-1",
+                          selectedCreditId === c.id
                             ? "text-slate-400"
-                            : "text-slate-500",
+                            : "text-slate-400",
                         )}
                       >
-                        DEBT: {formatPHP(credit.creditAmount)}
+                        Balance: {formatPHP(c.creditAmount)}
                       </Text>
-                    </View>
-                    {selectedCreditId === credit.id && (
-                      <View className="bg-emerald-500 w-2.5 h-2.5 rounded-full" />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
         )}
       </ScrollView>
 
-      <View className="bg-white border-t border-slate-100 p-6 pb-8 shadow-2xl">
-        <View className="gap-3 mb-6">
-          <View className="flex-row justify-between items-center">
-            <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest">
-              Sub-Total
+      {/* Footer / Summary */}
+      <View className="p-6 pb-10 bg-white border-t border-slate-50">
+        <View className="flex-row justify-between items-end mb-6">
+          <View>
+            <Text className="text-[10px] font-black uppercase text-slate-400 tracking-[1px]">
+              Total Due
             </Text>
-            <Text className="text-slate-900 font-black text-xl">
+            <Text className="text-3xl font-black text-slate-900">
               {formatPHP(currentTotal)}
             </Text>
           </View>
 
           {activePayment === PaymentType.Cash && (
-            <>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest">
-                  Received
-                </Text>
-                <TextInput
-                  keyboardType="numeric"
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "900",
-                    color: "#10b981",
-                    textAlign: "right",
-                    width: 120,
-                  }}
-                  value={cashReceived.toString()}
-                  onChangeText={(v) => setCashReceived(Number(v) || 0)}
-                />
-              </View>
-              <View className="flex-row justify-between items-center pt-3 border-t border-slate-50">
-                <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest">
-                  Change
-                </Text>
-                <Text className="text-slate-900 font-black text-xl">
-                  {formatPHP(changeValue)}
-                </Text>
-              </View>
-            </>
+            <View className="items-end">
+              <Text className="text-[10px] font-black uppercase text-slate-400 tracking-[1px]">
+                Change
+              </Text>
+              <Text className="text-xl font-black text-emerald-600">
+                {formatPHP(changeValue)}
+              </Text>
+            </View>
           )}
         </View>
+
+        {activePayment === PaymentType.Cash && (
+          <View className="bg-slate-50 rounded-2xl p-4 flex-row items-center justify-between mb-4">
+            <Text className="text-xs font-bold text-slate-500">
+              Amount Received
+            </Text>
+            <View className="flex-row items-center">
+              <Text className="text-lg font-black text-slate-900 mr-2">₱</Text>
+              <TextInput
+                keyboardType="numeric"
+                placeholder="0"
+                value={cashReceived === 0 ? "" : cashReceived.toString()}
+                onChangeText={(v) => setCashReceived(Number(v) || 0)}
+                className="text-lg font-black text-slate-900 w-24 text-right"
+              />
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity
           onPress={handleCheckout}
           disabled={isSubmitting || basket.length === 0}
           className={cn(
-            "h-16 rounded-3xl flex-row items-center justify-center gap-3",
+            "h-16 rounded-2xl flex-row items-center justify-center gap-3",
             basket.length === 0
               ? "bg-slate-100"
-              : "bg-slate-900 shadow-lg shadow-slate-300",
+              : "bg-slate-900 shadow-xl shadow-slate-300",
           )}
         >
           {isSubmitting ? (
-            <Loader2 size={24} color="white" />
+            <Loader2 size={20} color="white" className="animate-spin" />
           ) : (
             <>
-              <Text className="text-white font-black uppercase text-sm tracking-widest">
-                Complete Order
+              <Text className="text-white font-black uppercase text-xs tracking-widest">
+                {activePayment === PaymentType.Credit
+                  ? "Charge to Credit"
+                  : "Complete Sale"}
               </Text>
-              <ArrowRight size={20} color="white" />
+              <ArrowRight size={18} color="white" />
             </>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setShowVoidConfirm(true)}
-          disabled={basket.length === 0}
-          className="mt-4 py-2 items-center"
+          className="mt-4 self-center"
         >
-          <Text
-            className={cn(
-              "text-[10px] font-black uppercase tracking-widest",
-              basket.length === 0 ? "text-slate-200" : "text-slate-400",
-            )}
-          >
+          <Text className="text-[9px] font-black uppercase text-slate-300 tracking-[2px]">
             Void Transaction
           </Text>
         </TouchableOpacity>
       </View>
 
+      {/* Confirmation Modal Logic (Keep the existing one) */}
       {showVoidConfirm && (
-        <View className="absolute inset-0 bg-slate-900/95 items-center justify-center p-8 z-[100]">
-          <View className="bg-white rounded-[40px] p-10 w-full items-center">
-            <View className="bg-rose-50 p-6 rounded-full mb-6">
-              <AlertTriangle size={40} color="#f43f5e" />
-            </View>
-            <Text className="text-xl font-black uppercase mb-2 text-slate-900">
-              Clear Basket?
+        <View className="absolute inset-0 bg-slate-900/90 items-center justify-center p-8 z-[100]">
+          <View className="bg-white rounded-[40px] p-8 w-full items-center shadow-2xl">
+            <AlertTriangle size={40} color="#f43f5e" />
+            <Text className="text-xl font-black text-slate-900 mt-4 mb-2">
+              Void Transaction?
             </Text>
-            <Text className="text-slate-500 text-center text-xs font-bold leading-5 mb-8">
-              This will remove all items and reset the current sale progress.
+            <Text className="text-slate-400 text-center text-xs mb-8">
+              This will clear the current basket.
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -443,15 +446,15 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
                 setShowVoidConfirm(false);
                 if (!isTablet) onClose();
               }}
-              className="bg-rose-500 w-full py-5 rounded-3xl mb-4"
+              className="bg-rose-500 w-full py-4 rounded-2xl mb-3"
             >
-              <Text className="text-white font-black text-center uppercase tracking-widest">
-                Yes, Clear All
+              <Text className="text-white font-black text-center uppercase tracking-widest text-xs">
+                Confirm Void
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowVoidConfirm(false)}>
-              <Text className="text-slate-400 font-black uppercase text-xs tracking-tighter">
-                Go Back
+              <Text className="text-slate-400 font-black uppercase text-[10px] tracking-widest">
+                Cancel
               </Text>
             </TouchableOpacity>
           </View>

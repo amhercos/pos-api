@@ -1,4 +1,3 @@
-// src/types/promotion.ts
 export enum PromotionType {
   Bulk = 1,
   Bundle = 2,

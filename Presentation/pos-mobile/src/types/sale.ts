@@ -1,19 +1,11 @@
-import { Promotion } from "./promotion";
+import type { Promotion } from "./promotion";
+
+export type { Promotion };
 
 export enum PaymentType {
   Cash = 1,
   Credit = 2,
 }
-
-// export interface Promotion {
-//   id: string;
-//   type: number;
-//   promoQuantity?: number;
-//   promoPrice?: number;
-//   tieUpProductId?: string;
-//   tieUpQuantity?: number;
-//   isActive: boolean;
-// }
 
 export interface BasketItem {
   productId: string;
