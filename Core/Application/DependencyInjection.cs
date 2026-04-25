@@ -1,6 +1,8 @@
 ﻿using Application.Behaviors;
 using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Services;
+using Application.Services.Pricing;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -24,6 +26,9 @@ namespace Application
             });
 
 
+            services.AddScoped<IPricingStrategy, BulkPricingStrategy>();
+            services.AddScoped<IPricingStrategy, DiscountPricingStrategy>();
+            services.AddScoped<IPricingStrategy, BundlePricingStrategy>();
             services.AddScoped<IPromotionEngine, PromotionEngine>();
 
             return services;
