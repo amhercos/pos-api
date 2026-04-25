@@ -1,14 +1,7 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { Slot } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import {
-  BarChart3,
-  LogOut,
-  Settings,
-  Store,
-  Tag,
-  User,
-} from "lucide-react-native";
+import { BarChart3, LogOut, Settings, Store, User } from "lucide-react-native";
 import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -23,8 +16,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
-// Import your API client/service here to use for the ping
-// import api from "../src/services/api";
 
 const SectionHeader = memo(({ title }: { title: string }) => (
   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
@@ -73,9 +64,7 @@ function CustomDrawerContent(
   const handleLogout = useCallback(async (): Promise<void> => {
     try {
       await logout();
-    } catch {
-      // Empty catch
-    }
+    } catch {}
   }, [logout]);
 
   const navigateTo = useCallback(
@@ -112,11 +101,6 @@ function CustomDrawerContent(
             icon={<BarChart3 size={20} color="#64748b" />}
             label="Analytics"
             onPress={() => navigateTo("/(tabs)/reports")}
-          />
-          <DrawerItem
-            icon={<Tag size={20} color="#64748b" />}
-            label="Special Pricing"
-            onPress={() => navigateTo("/(tabs)/pricing")}
           />
         </View>
 

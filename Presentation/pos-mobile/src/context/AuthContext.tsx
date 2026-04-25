@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import React, {
   createContext,
@@ -8,6 +9,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { apiClient } from "../api/client";
 import { User } from "../types/user";
 
 interface AuthState {
@@ -23,21 +25,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const wakeUpServer = async (): Promise<void> => {
-  const HEALTH_URL = "https://bizflow-ohsr.onrender.com/health";
-  try {
-    const response = await fetch(HEALTH_URL, { method: "GET" });
-    if (!response.ok) {
-      console.warn(
-        `[Render] Server health check returned status: ${response.status}`,
-      );
-    }
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.log(`[Render] Wake-up ping initiated: ${message}`);
-  }
-};
-
 export function AuthProvider({
   children,
 }: {
@@ -49,10 +36,19 @@ export function AuthProvider({
     isLoading: true,
   });
 
+  const logout = async (): Promise<void> => {
+    try {
+      await Promise.all([
+        SecureStore.deleteItemAsync("token"),
+        AsyncStorage.removeItem("bizflow_user"),
+      ]);
+    } finally {
+      setState({ token: null, user: null, isLoading: false });
+    }
+  };
+
   useEffect(() => {
     const bootstrapAsync = async (): Promise<void> => {
-      void wakeUpServer();
-
       try {
         const [token, userJson] = await Promise.all([
           SecureStore.getItemAsync("token"),
@@ -60,6 +56,19 @@ export function AuthProvider({
         ]);
 
         const user = userJson ? (JSON.parse(userJson) as User) : null;
+
+        if (token) {
+          try {
+            await apiClient.get("/Auth/me");
+          } catch (error: unknown) {
+            if (isAxiosError(error) && error.response?.status === 401) {
+              console.log("Session expired. Logging out.");
+              await logout();
+              return;
+            }
+          }
+        }
+
         setState({ token, user, isLoading: false });
       } catch (error: unknown) {
         console.error("[AuthContext] Bootstrap failed", error);
@@ -78,20 +87,9 @@ export function AuthProvider({
       ]);
       setState({ token, user, isLoading: false });
     } catch (error: unknown) {
-      throw new Error(
-        `Auth persistence failed: ${error instanceof Error ? error.message : "Unknown"}`,
-      );
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    try {
-      await Promise.all([
-        SecureStore.deleteItemAsync("token"),
-        AsyncStorage.removeItem("bizflow_user"),
-      ]);
-    } finally {
-      setState({ token: null, user: null, isLoading: false });
+      const message =
+        error instanceof Error ? error.message : "Persistence error";
+      throw new Error(`Auth persistence failed: ${message}`);
     }
   };
 

@@ -1,7 +1,19 @@
+import { Promotion } from "./promotion";
+
 export enum PaymentType {
   Cash = 1,
   Credit = 2,
 }
+
+// export interface Promotion {
+//   id: string;
+//   type: number;
+//   promoQuantity?: number;
+//   promoPrice?: number;
+//   tieUpProductId?: string;
+//   tieUpQuantity?: number;
+//   isActive: boolean;
+// }
 
 export interface BasketItem {
   productId: string;
@@ -9,6 +21,7 @@ export interface BasketItem {
   quantity: number;
   unitPrice: number;
   stock: number;
+  promotions?: Promotion[];
 }
 
 export interface Product {
@@ -17,6 +30,7 @@ export interface Product {
   price: number;
   stock: number;
   categoryName: string;
+  promotions?: Promotion[];
 }
 
 export interface CreateTransactionCommand {
@@ -48,4 +62,12 @@ export interface ApiError {
       Message?: string;
     };
   };
+}
+
+export interface CheckoutParams {
+  paymentType: PaymentType;
+  cashReceived?: number;
+  customerCreditId?: string;
+  newCustomerName?: string;
+  newCustomerContact?: string;
 }
