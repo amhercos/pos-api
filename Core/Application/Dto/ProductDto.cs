@@ -13,7 +13,7 @@ namespace Application.Dto
     string CategoryName,
     DateOnly? ExpiryDate,
     Guid? CategoryId,
-    List<PromotionDto>? Promotions
+    List<PromotionDto>? Promotions = null
         );
 
     public record PromotionDto(
