@@ -1,5 +1,5 @@
 import { apiClient } from "@/src/api/client";
-import { roundTo } from "@/src/lib/math"; // Essential for Senior precision
+import { roundTo } from "@/src/lib/math";
 import { calculateLineTotal } from "@/src/lib/pricing";
 import {
   PaymentType,
@@ -11,28 +11,27 @@ import {
   type TransactionResponse,
 } from "@/src/types/sale";
 import { isAxiosError, type AxiosError } from "axios";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 
-/**
- * Senior-level hook for managing POS sale state and operations.
- * Implements strict precision rounding and optimized state transitions.
- */
 export function useSale() {
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  /**
-   * Memoized total calculation with high precision.
-   * Uses roundTo to ensure the UI sum perfectly matches the DB sum.
-   */
-  const total = useMemo((): number => {
-    const rawTotal = basket.reduce(
-      (acc, item) => acc + calculateLineTotal(item, basket),
-      0,
-    );
-    return roundTo(rawTotal);
-  }, [basket]);
+  const calculateTotal = useCallback(
+    (paymentType: PaymentType): number => {
+      const rawTotal = basket.reduce((acc, item) => {
+        if (paymentType === PaymentType.Credit) {
+          // Credit transactions usually ignore promos (SRP pricing)
+          return acc + item.unitPrice * item.quantity;
+        }
+        return acc + calculateLineTotal(item, basket);
+      }, 0);
+
+      return roundTo(rawTotal);
+    },
+    [basket],
+  );
 
   const addToBasket = useCallback((product: Product): void => {
     setBasket((prev) => {
@@ -65,7 +64,7 @@ export function useSale() {
     });
   }, []);
 
-  const removeFromBasket = useCallback((productId: string): void => {
+  const removeItem = useCallback((productId: string): void => {
     setBasket((prev) => prev.filter((item) => item.productId !== productId));
   }, []);
 
@@ -76,9 +75,11 @@ export function useSale() {
           if (item.productId !== productId) return item;
 
           const nextQty = item.quantity + delta;
-
-          // Guard against negative quantities or exceeding stock
-          if (nextQty <= 0 || nextQty > item.stock) return item;
+          if (nextQty > item.stock) {
+            Alert.alert("Stock Limit", `Cannot exceed ${item.stock} units.`);
+            return item;
+          }
+          if (nextQty <= 0) return item;
 
           return { ...item, quantity: nextQty };
         }),
@@ -89,25 +90,19 @@ export function useSale() {
 
   const clearBasket = useCallback((): void => setBasket([]), []);
 
-  /**
-   * Finalizes the transaction.
-   * Maps current state to a CreateTransactionCommand with strict precision.
-   */
   const checkout = async (params: CheckoutParams): Promise<boolean> => {
     if (basket.length === 0) return false;
 
-    // Ensure total is captured at the moment of checkout
-    const capturedTotal = total;
+    const capturedTotal = calculateTotal(params.paymentType);
     const capturedCash = params.cashReceived ?? 0;
 
-    // Strict validation for cash payments
     if (
       params.paymentType === PaymentType.Cash &&
       capturedCash < capturedTotal
     ) {
       Alert.alert(
         "Invalid Payment",
-        "Cash received is less than the total amount.",
+        `Cash received (${formatPHP(capturedCash)}) is less than the total (${formatPHP(capturedTotal)}).`,
       );
       return false;
     }
@@ -117,11 +112,18 @@ export function useSale() {
     try {
       const command: CreateTransactionCommand = {
         items: basket.map((item) => {
+          if (params.paymentType === PaymentType.Credit) {
+            return {
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            };
+          }
+
           const lineTotal = calculateLineTotal(item, basket);
           return {
             productId: item.productId,
             quantity: item.quantity,
-            // Calculate effective unit price rounded to 2 decimals to match backend logic
             unitPrice: roundTo(lineTotal / item.quantity, 2),
           };
         }),
@@ -155,9 +157,9 @@ export function useSale() {
 
   return {
     basket,
-    total,
+    calculateTotal,
     addToBasket,
-    removeFromBasket,
+    removeItem,
     updateQuantity,
     clearBasket,
     checkout,
@@ -165,20 +167,17 @@ export function useSale() {
   };
 }
 
-/**
- * Standardized API error surfacing.
- * Handles Axios errors and extracts meaningful messages from the API.
- */
+function formatPHP(amount: number): string {
+  return `₱${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+}
+
 function handleApiError(err: unknown): void {
   let message = "An error occurred while processing the sale.";
 
   if (isAxiosError(err)) {
     const axiosError = err as AxiosError<ApiError>;
-
-    // Check for specific backend messages or fallback to Axios default
     message = axiosError.response?.data?.message ?? axiosError.message;
 
-    // Log the error for internal tracking (Senior Practice)
     if (__DEV__) {
       console.error(
         "[Checkout API Error]:",

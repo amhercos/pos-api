@@ -15,7 +15,7 @@ interface TransactionModalProps {
   isSubmitting: boolean;
   handleCheckout: () => void;
   updateQuantity: (id: string, q: number) => void;
-  removeFromBasket: (id: string) => void;
+  removeItem: (id: string) => void; // Changed from removeFromBasket to removeItem
   clearBasket: () => void;
   credits: CustomerCredit[];
   selectedCreditId: string;

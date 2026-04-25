@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCredits } from "@/src/hooks/use-credits";
 import { useInventory } from "@/src/hooks/use-inventory";
 import { useSale } from "@/src/hooks/use-sale";
+import { formatPHP } from "@/src/lib/math";
 import { cn } from "@/src/lib/utils";
 
 // Types
@@ -42,9 +43,9 @@ export default function NewSalePage() {
   const { credits } = useCredits();
   const {
     basket,
-    total,
+    calculateTotal,
     addToBasket,
-    removeFromBasket,
+    removeItem, // Correctly pulled from useSale
     updateQuantity,
     clearBasket,
     checkout,
@@ -67,6 +68,13 @@ export default function NewSalePage() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerContact, setNewCustomerContact] = useState("");
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
+
+  /**
+   * DYNAMIC TOTAL CALCULATION
+   */
+  const currentTotal = useMemo(() => {
+    return calculateTotal(activePayment);
+  }, [activePayment, calculateTotal, basket]); // Added basket to ensure total updates when items change
 
   const columnWidth = isTablet ? (width - 380 - 80) / 3 : (width - 48) / 2;
 
@@ -94,6 +102,7 @@ export default function NewSalePage() {
       setSelectedCreditId("");
       setNewCustomerName("");
       setNewCustomerContact("");
+      setIsNewCustomer(false);
     }
   };
 
@@ -116,6 +125,7 @@ export default function NewSalePage() {
     });
   }, [products, search, selectedCategory]);
 
+  // Combined Props for consistency between Tablet Sidebar and Mobile Modal
   const sharedProps = {
     basket,
     activePayment,
@@ -125,8 +135,9 @@ export default function NewSalePage() {
     isSubmitting,
     handleCheckout,
     updateQuantity,
+    removeItem, // Correctly passed
     clearBasket,
-    credits,
+    credits: credits || [],
     selectedCreditId,
     setSelectedCreditId,
     isNewCustomer,
@@ -135,7 +146,6 @@ export default function NewSalePage() {
     setNewCustomerName,
     newCustomerContact,
     setNewCustomerContact,
-    removeFromBasket,
     showVoidConfirm,
     setShowVoidConfirm,
     onClose: () => setIsModalOpen(false),
@@ -181,7 +191,7 @@ export default function NewSalePage() {
       </Text>
       <View className="mt-3 bg-slate-50 rounded-xl py-2 px-3">
         <Text className="font-black text-slate-900 text-center">
-          ₱{p.price.toLocaleString()}
+          {formatPHP(p.price)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -203,7 +213,6 @@ export default function NewSalePage() {
                   className="flex-1 ml-2 text-slate-900 font-bold"
                 />
               </View>
-              {/* Category Search Input */}
               <View className="w-28 flex-row items-center bg-slate-50 rounded-2xl px-3 h-12 border border-slate-100">
                 <Filter size={14} color="#cbd5e1" />
                 <TextInput
@@ -219,7 +228,7 @@ export default function NewSalePage() {
               horizontal
               showsHorizontalScrollIndicator={false}
               data={categories}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => `cat-${item}`}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => setSelectedCategory(item)}
@@ -248,7 +257,7 @@ export default function NewSalePage() {
             renderItem={renderProduct}
             keyExtractor={(item) => item.id}
             numColumns={isTablet ? 3 : 2}
-            key={isTablet ? "tablet-grid" : "mobile-grid"}
+            key={isTablet ? "tablet-grid" : "mobile-grid"} // Re-mounts list when columns change
             columnWrapperStyle={{
               justifyContent: "space-between",
               paddingHorizontal: 20,
@@ -301,6 +310,7 @@ export default function NewSalePage() {
             }
           />
 
+          {/* MOBILE ACTION BAR */}
           {!isTablet && basket.length > 0 && (
             <View className="absolute bottom-8 left-5 right-5">
               <TouchableOpacity
@@ -312,12 +322,19 @@ export default function NewSalePage() {
                     <ShoppingCart size={20} color="white" />
                   </View>
                   <Text className="text-white font-black text-xs uppercase tracking-tighter">
-                    {basket.length} Items Selected
+                    {basket.length} {basket.length === 1 ? "Item" : "Items"}
                   </Text>
                 </View>
-                <View className="bg-emerald-500 px-4 py-2 rounded-2xl">
+                <View
+                  className={cn(
+                    "px-4 py-2 rounded-2xl",
+                    activePayment === PaymentType.Credit
+                      ? "bg-slate-700"
+                      : "bg-emerald-500",
+                  )}
+                >
                   <Text className="text-white font-black text-sm">
-                    ₱{total.toLocaleString()}
+                    {formatPHP(currentTotal)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -336,6 +353,7 @@ export default function NewSalePage() {
         )}
       </View>
 
+      {/* MOBILE TRANSACTION MODAL */}
       {!isTablet && <TransactionModal {...sharedProps} isOpen={isModalOpen} />}
     </SafeAreaView>
   );
