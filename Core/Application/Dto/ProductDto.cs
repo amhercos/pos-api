@@ -1,4 +1,6 @@
 ﻿
+using Domain.Entities.Enums;
+
 namespace Application.Dto
 {
     public record ProductDto(
@@ -10,5 +12,17 @@ namespace Application.Dto
     int LowStockThreshold,
     string CategoryName,
     DateOnly? ExpiryDate,
-    Guid? CategoryId);
+    Guid? CategoryId,
+    List<PromotionDto>? Promotions
+        );
+
+    public record PromotionDto(
+    Guid Id,
+    PromotionType PromotionType,
+    int? PromoQuantity,
+    decimal? PromoPrice,
+    Guid? TieUpProductId,
+    int? TieUpQuantity,
+    bool IsActive
+ );
 }
