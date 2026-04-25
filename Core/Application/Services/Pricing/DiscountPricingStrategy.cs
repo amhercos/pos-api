@@ -1,0 +1,17 @@
+﻿using Application.Interfaces.Repositories;
+using Domain.Entities;
+using Domain.Entities.Enums;
+
+
+namespace Application.Services.Pricing
+{
+    public class DiscountPricingStrategy : IPricingStrategy
+    {
+        public PromotionType Type => PromotionType.Discount;
+
+        public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
+        {
+            return (promo.PromoPrice ?? product.Price) * quantity;
+        }
+    }
+}

@@ -1,40 +1,30 @@
-﻿using Domain.Entities;
+﻿using Application.Interfaces;
+using Application.Interfaces.Repositories;
+using Domain.Entities;
 using Domain.Entities.Enums;
-using Application.Interfaces;
 
 namespace Application.Services
 {
     public class PromotionEngine : IPromotionEngine
     {
-        public decimal CalculateUnitPrice(Product product, int quantity, IEnumerable<TransactionItem> basket)
+        private readonly Dictionary<PromotionType, IPricingStrategy> _strategyMap;
+
+        public PromotionEngine(IEnumerable<IPricingStrategy> strategies)
         {
-            var activePromo = product.Promotions
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.Type)
-                .FirstOrDefault();
+            _strategyMap = strategies.ToDictionary(s => s.Type);
+        }
 
-            if (activePromo == null) return product.Price;
-
-            return activePromo.Type switch
+        public decimal CalculateLineTotal(Product product, int quantity, IEnumerable<TransactionItem> basket)
+        {
+            var activePromo = product.Promotions.FirstOrDefault(p => p.IsActive);
+            if (activePromo == null || !_strategyMap.TryGetValue(activePromo.Type, out var strategy))
             {
-                PromotionType.Discount => activePromo.PromoPrice ?? product.Price,
-                PromotionType.Bulk => ApplyBulkPricing(activePromo, quantity, product.Price),
-                PromotionType.Bundle => ApplyBundlePricing(activePromo, basket, product.Price),
-                _ => product.Price
-            };
-        }
+                return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
+            }
 
-        private decimal ApplyBulkPricing(Promotion promo, int qty, decimal originalPrice)
-        {
-            if (qty >= (promo.PromoQuantity ?? 0))
-                return (promo.PromoPrice ?? 0) / (promo.PromoQuantity ?? 1);
-            return originalPrice;
-        }
+            var total = strategy.CalculateLineTotal(product, activePromo, quantity, basket);
 
-        private decimal ApplyBundlePricing(Promotion promo, IEnumerable<TransactionItem> basket, decimal originalPrice)
-        {
-            bool hasTieUp = basket.Any(i => i.ProductId == promo.TieUpProductId && i.Quantity >= (promo.TieUpQuantity ?? 1));
-            return hasTieUp ? (promo.PromoPrice ?? originalPrice) : originalPrice;
+            return Math.Round(total, 2, MidpointRounding.AwayFromZero);
         }
     }
 }
