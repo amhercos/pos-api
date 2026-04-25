@@ -1,3 +1,4 @@
+import { Promotion } from "./sale";
 export interface Category {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ export interface Product {
   categoryName: string | null;
   categoryId: string | null;
   expiryDate: string | null;
+  promotions?: Promotion[];
 }
 
 export interface CreateProductRequest {

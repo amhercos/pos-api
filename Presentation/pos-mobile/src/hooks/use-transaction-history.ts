@@ -1,8 +1,8 @@
 import type {
-  DailySummary,
-  RecentTransaction,
-  TopProduct,
-  TransactionDetails,
+    DailySummary,
+    RecentTransaction,
+    TopProduct,
+    TransactionDetails,
 } from "@/src/types/record";
 import { useCallback, useEffect, useState } from "react";
 import { reportService } from "../services/reportService";

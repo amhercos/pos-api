@@ -106,7 +106,7 @@ public class CreateTransactionHandler(
 
     private async Task<CustomerCredit> ResolveCreditAccount(CreateTransactionCommand request, Guid storeId, CancellationToken ct)
     {
-        if (request.CustomerCreditId.HasValue)
+        if (request.CustomerCreditId.HasValue && request.CustomerCreditId.Value != Guid.Empty)
         {
             return await creditRepository.GetByIdAsync(request.CustomerCreditId.Value, ct)
                    ?? throw new Exception("Customer credit account not found.");
@@ -121,13 +121,16 @@ public class CreateTransactionHandler(
         {
             Id = Guid.NewGuid(),
             CustomerName = request.NewCustomerName,
-            ContactInfo = request.NewCustomerContact,
+            ContactInfo = request.NewCustomerContact ?? "",
             CreditAmount = 0,
             Status = CreditStatus.Active,
             StoreId = storeId
         };
 
+       
         creditRepository.Add(newAccount);
+        await context.SaveChangesAsync(ct);
+
         return newAccount;
     }
 }
