@@ -7,6 +7,6 @@ namespace Application.Interfaces
 {
     public interface IPromotionEngine
     {
-        decimal CalculateUnitPrice(Product product, int quantity, IEnumerable<TransactionItem> basket);
+        decimal CalculateLineTotal(Product product, int quantity, IEnumerable<TransactionItem> basket);
     }
 }

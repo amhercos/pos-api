@@ -1,5 +1,5 @@
 ﻿using Application.Interfaces.Repositories;
-using Domain.Entities.Enums;
+using Domain.Entities;
 using MediatR;
 
 namespace Application.Features.Promotions.Queries;
@@ -16,13 +16,14 @@ public class GetCalculatedPriceHandler(
         var promo = await promotionRepo.GetByProductIdAsync(request.ProductId, ct);
 
         if (product == null) return 0;
-        if (promo == null || !promo.IsActive) return product.Price * request.Quantity;
 
-        // Find the matching strategy
+        if (promo == null || !promo.IsActive)
+            return product.Price * request.Quantity;
+
         var strategy = strategies.FirstOrDefault(s => s.Type == promo.Type);
 
         return strategy != null
-            ? strategy.Calculate(product, promo, request.Quantity)
+            ? strategy.CalculateLineTotal(product, promo, request.Quantity, Enumerable.Empty<TransactionItem>())
             : product.Price * request.Quantity;
     }
 }
