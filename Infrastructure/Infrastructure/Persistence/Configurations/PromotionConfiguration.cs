@@ -28,9 +28,9 @@ namespace Infrastructure.Persistence.Configurations
 
             // -> Main Product (required)
             builder.HasOne(p => p.MainProduct)
-                .WithMany()
-                .HasForeignKey(p => p.MainProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+             .WithMany(p => p.Promotions)
+             .HasForeignKey(p => p.MainProductId)
+             .OnDelete(DeleteBehavior.Restrict);
 
             // -> Tie-up Product (optional)
             builder.HasOne(p => p.TieUpProduct)
