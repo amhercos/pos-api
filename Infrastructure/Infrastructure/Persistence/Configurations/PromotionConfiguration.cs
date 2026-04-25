@@ -34,7 +34,7 @@ namespace Infrastructure.Persistence.Configurations
 
             // -> Tie-up Product (optional)
             builder.HasOne(p => p.TieUpProduct)
-                .WithMany(p => p.Promotions)
+                .WithMany()
                 .HasForeignKey(p => p.TieUpProductId)
                 .OnDelete(DeleteBehavior.SetNull);
 
