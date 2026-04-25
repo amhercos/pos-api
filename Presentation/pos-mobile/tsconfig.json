@@ -3,16 +3,23 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
-    "**/*.ts",
+    "src/**/*.ts",
+    "app/**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/.expo",
+    "**/bin",
+    "**/obj",
+    "**/Presentation/pos-api/bin",
+    "dist"
   ]
 }

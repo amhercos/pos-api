@@ -40,6 +40,7 @@ export default function NewSalePage() {
   const { credits } = useCredits();
   const {
     basket,
+    total, // This is now calculated including promos from useSale
     addToBasket,
     removeFromBasket,
     updateQuantity,
@@ -64,16 +65,10 @@ export default function NewSalePage() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerContact, setNewCustomerContact] = useState("");
 
-  const total = useMemo(
-    () => basket.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0),
-    [basket],
-  );
-
   const onRefresh = useCallback(() => {
     refresh();
   }, [refresh]);
 
-  // Use hasMore to gate the fetchMore call
   const handleLoadMore = useCallback(() => {
     if (hasMore && !isLoadingProducts && fetchMore) {
       fetchMore();
@@ -101,22 +96,15 @@ export default function NewSalePage() {
 
   const columnWidth = (width - 48) / 2;
 
+  // CLEANED UP CHECKOUT HANDLER
   const handleCheckout = async () => {
     const success = await checkout({
-      items: basket.map((item) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
       paymentType: activePayment,
-      totalAmount: total,
       cashReceived: activePayment === PaymentType.Cash ? cashReceived : 0,
-      changeAmount:
-        activePayment === PaymentType.Cash
-          ? Math.max(0, cashReceived - total)
-          : 0,
       customerCreditId:
-        activePayment === PaymentType.Credit ? selectedCreditId : undefined,
+        activePayment === PaymentType.Credit && !isNewCustomer
+          ? selectedCreditId
+          : undefined,
       newCustomerName: isNewCustomer ? newCustomerName : undefined,
       newCustomerContact: isNewCustomer ? newCustomerContact : undefined,
     });
@@ -125,10 +113,11 @@ export default function NewSalePage() {
       setIsModalOpen(false);
       setCashReceived(0);
       setSelectedCreditId("");
+      setNewCustomerName("");
+      setNewCustomerContact("");
     }
   };
 
-  // Strictly typed render item
   const renderProduct: ListRenderItem<InventoryProduct> = ({ item: p }) => (
     <TouchableOpacity
       disabled={p.stockQuantity <= 0}
@@ -139,6 +128,7 @@ export default function NewSalePage() {
           price: p.price,
           stock: p.stockQuantity,
           categoryName: p.categoryName || "Uncategorized",
+          promotions: p.promotions,
         } as SaleProduct)
       }
       style={{ width: columnWidth }}
@@ -176,6 +166,7 @@ export default function NewSalePage() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      {/* SEARCH & CATEGORIES */}
       <View className="px-5 py-4 border-b border-slate-50">
         <View className="flex-row items-center gap-2 mb-4">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
@@ -224,6 +215,7 @@ export default function NewSalePage() {
         />
       </View>
 
+      {/* PRODUCT GRID */}
       <FlatList
         data={filteredProducts}
         renderItem={renderProduct}
@@ -281,6 +273,7 @@ export default function NewSalePage() {
         }
       />
 
+      {/* FLOATING CART BUTTON */}
       {basket.length > 0 && (
         <View className="absolute bottom-8 left-5 right-5">
           <TouchableOpacity
@@ -309,7 +302,6 @@ export default function NewSalePage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         basket={basket}
-        total={total}
         activePayment={activePayment}
         setActivePayment={setActivePayment}
         cashReceived={cashReceived}

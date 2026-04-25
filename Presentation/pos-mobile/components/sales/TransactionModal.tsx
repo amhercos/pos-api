@@ -1,30 +1,37 @@
+import { formatPHP, roundTo } from "@/src/lib/math";
+import {
+  calculateEffectiveUnitPrice,
+  calculateLineTotal,
+} from "@/src/lib/pricing";
 import { cn } from "@/src/lib/utils";
 import { type CustomerCredit } from "@/src/types/credit";
 import { PaymentType, type BasketItem } from "@/src/types/sale";
 import {
-    AlertTriangle,
-    ArrowRight,
-    Banknote,
-    CreditCard,
-    Loader2,
-    Minus,
-    Plus,
-    ShoppingCart,
-    X,
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  CreditCard,
+  Loader2,
+  Minus,
+  Plus,
+  ShoppingCart,
+  UserPlus,
+  Users,
+  X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-const COMMON_DENOMINATIONS = [20, 50, 100, 200, 500, 1000];
+const COMMON_DENOMINATIONS: number[] = [20, 50, 100, 200, 500, 1000];
 
 interface TransactionViewProps {
   isOpen: boolean;
@@ -33,8 +40,7 @@ interface TransactionViewProps {
   activePayment: PaymentType;
   setActivePayment: (p: PaymentType) => void;
   cashReceived: number;
-  setCashReceived: (n: number | ((prev: number) => number)) => void;
-  total: number;
+  setCashReceived: React.Dispatch<React.SetStateAction<number>>;
   isSubmitting: boolean;
   handleCheckout: () => void;
   updateQuantity: (id: string, q: number) => void;
@@ -51,11 +57,21 @@ interface TransactionViewProps {
   setNewCustomerContact: (s: string) => void;
 }
 
-export const TransactionModal = (props: TransactionViewProps) => {
-  const [showVoidConfirm, setShowVoidConfirm] = useState(false);
-  const change = Math.max(0, props.cashReceived - props.total);
+export const TransactionModal: React.FC<TransactionViewProps> = (props) => {
+  const [showVoidConfirm, setShowVoidConfirm] = useState<boolean>(false);
 
-  const handleVoidAll = () => {
+  // Precision-rounded total for the entire basket
+  const currentTotal = useMemo<number>(() => {
+    const rawTotal = props.basket.reduce((sum, item) => {
+      return sum + calculateLineTotal(item, props.basket);
+    }, 0);
+    return roundTo(rawTotal);
+  }, [props.basket]);
+
+  // Calculate change with high precision
+  const change = roundTo(Math.max(0, props.cashReceived - currentTotal));
+
+  const handleVoidAll = (): void => {
     props.clearBasket();
     setShowVoidConfirm(false);
     props.onClose();
@@ -99,7 +115,6 @@ export const TransactionModal = (props: TransactionViewProps) => {
           </View>
         </View>
 
-        {/* BASKET LIST */}
         <ScrollView className="flex-1 px-6 pt-4">
           {props.basket.length === 0 ? (
             <View className="items-center justify-center py-20 opacity-20">
@@ -109,65 +124,202 @@ export const TransactionModal = (props: TransactionViewProps) => {
               </Text>
             </View>
           ) : (
-            props.basket.map((item, idx) => (
-              <View
-                key={item.productId}
-                className={cn(
-                  "flex-row items-center p-4 rounded-3xl mb-3 border",
-                  idx === 0
-                    ? "bg-slate-900 border-slate-900"
-                    : "bg-slate-50 border-slate-100",
-                )}
-              >
-                <View className="flex-1">
-                  <Text
-                    className={cn(
-                      "text-[12px] font-black uppercase",
-                      idx === 0 ? "text-white" : "text-slate-900",
-                    )}
-                  >
-                    {item.name}
-                  </Text>
-                  <Text
-                    className={cn(
-                      "text-[10px] font-bold mt-1",
-                      idx === 0 ? "text-slate-400" : "text-slate-500",
-                    )}
-                  >
-                    ₱{item.unitPrice.toLocaleString()}
-                  </Text>
-                </View>
+            props.basket.map((item, idx) => {
+              const lineTotal = calculateLineTotal(item, props.basket);
+              const effectivePrice = calculateEffectiveUnitPrice(
+                item,
+                props.basket,
+              );
+              // Use a small epsilon to avoid float precision issues in the UI
+              const isPromoApplied = item.unitPrice - effectivePrice > 0.01;
 
-                <View className="flex-row items-center bg-white/10 rounded-2xl p-1 gap-3">
-                  <TouchableOpacity
-                    onPress={() => props.updateQuantity(item.productId, -1)}
-                    className="p-1 bg-white rounded-xl shadow-sm"
-                  >
-                    <Minus size={14} color="#0f172a" />
-                  </TouchableOpacity>
-                  <Text
+              return (
+                <View
+                  key={item.productId}
+                  className={cn(
+                    "flex-row items-center p-4 rounded-3xl mb-3 border",
+                    idx === 0
+                      ? "bg-slate-900 border-slate-900"
+                      : "bg-slate-50 border-slate-100",
+                    isPromoApplied &&
+                      (idx === 0
+                        ? "border-emerald-400"
+                        : "border-emerald-200 bg-emerald-50/50"),
+                  )}
+                >
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <Text
+                        className={cn(
+                          "text-[12px] font-black uppercase",
+                          idx === 0 ? "text-white" : "text-slate-900",
+                        )}
+                      >
+                        {item.name}
+                      </Text>
+                      {isPromoApplied && (
+                        <View className="bg-emerald-500 px-2 py-0.5 rounded-full">
+                          <Text className="text-[8px] font-black text-white uppercase">
+                            Promo
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className="flex-row items-center gap-2 mt-1">
+                      <Text
+                        className={cn(
+                          "text-[10px] font-bold",
+                          idx === 0 ? "text-emerald-400" : "text-emerald-600",
+                        )}
+                      >
+                        {formatPHP(lineTotal)}
+                      </Text>
+                      {isPromoApplied && (
+                        <Text className="text-[10px] font-bold line-through text-slate-400">
+                          {formatPHP(item.unitPrice * item.quantity)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View
                     className={cn(
-                      "font-black text-sm w-4 text-center",
-                      idx === 0 ? "text-white" : "text-slate-900",
+                      "flex-row items-center rounded-2xl p-1 gap-3",
+                      idx === 0 ? "bg-white/10" : "bg-slate-200/50",
                     )}
                   >
-                    {item.quantity}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => props.updateQuantity(item.productId, 1)}
-                    className="p-1 bg-white rounded-xl shadow-sm"
-                  >
-                    <Plus size={14} color="#0f172a" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => props.updateQuantity(item.productId, -1)}
+                      className="p-1 bg-white rounded-xl shadow-sm"
+                    >
+                      <Minus size={14} color="#0f172a" />
+                    </TouchableOpacity>
+                    <Text
+                      className={cn(
+                        "font-black text-sm w-4 text-center",
+                        idx === 0 ? "text-white" : "text-slate-900",
+                      )}
+                    >
+                      {item.quantity}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => props.updateQuantity(item.productId, 1)}
+                      className="p-1 bg-white rounded-xl shadow-sm"
+                    >
+                      <Plus size={14} color="#0f172a" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
+              );
+            })
+          )}
+
+          {/* ... [CREDIT SECTION REMAINS SAME] ... */}
+          {props.activePayment === PaymentType.Credit && (
+            <View className="mt-4 mb-8">
+              <View className="flex-row bg-slate-100 p-1 rounded-2xl mb-4">
+                <TouchableOpacity
+                  onPress={() => props.setIsNewCustomer(false)}
+                  className={cn(
+                    "flex-1 flex-row items-center justify-center py-2 rounded-xl gap-2",
+                    !props.isNewCustomer ? "bg-white shadow-sm" : "",
+                  )}
+                >
+                  <Users
+                    size={14}
+                    color={!props.isNewCustomer ? "#0f172a" : "#94a3b8"}
+                  />
+                  <Text
+                    className={cn(
+                      "text-[10px] font-black uppercase",
+                      !props.isNewCustomer
+                        ? "text-slate-900"
+                        : "text-slate-400",
+                    )}
+                  >
+                    Existing
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => props.setIsNewCustomer(true)}
+                  className={cn(
+                    "flex-1 flex-row items-center justify-center py-2 rounded-xl gap-2",
+                    props.isNewCustomer ? "bg-white shadow-sm" : "",
+                  )}
+                >
+                  <UserPlus
+                    size={14}
+                    color={props.isNewCustomer ? "#0f172a" : "#94a3b8"}
+                  />
+                  <Text
+                    className={cn(
+                      "text-[10px] font-black uppercase",
+                      props.isNewCustomer ? "text-slate-900" : "text-slate-400",
+                    )}
+                  >
+                    New
+                  </Text>
+                </TouchableOpacity>
               </View>
-            ))
+
+              {props.isNewCustomer ? (
+                <View className="gap-3">
+                  <TextInput
+                    className="bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-slate-900"
+                    placeholder="CUSTOMER NAME"
+                    value={props.newCustomerName}
+                    onChangeText={props.setNewCustomerName}
+                  />
+                  <TextInput
+                    className="bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-slate-900"
+                    placeholder="CONTACT NUMBER"
+                    keyboardType="phone-pad"
+                    value={props.newCustomerContact}
+                    onChangeText={props.setNewCustomerContact}
+                  />
+                </View>
+              ) : (
+                <View className="bg-slate-50 rounded-3xl p-2 border border-slate-100">
+                  {props.credits.map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      onPress={() => props.setSelectedCreditId(c.id)}
+                      className={cn(
+                        "p-4 rounded-2xl mb-1 flex-row justify-between items-center",
+                        props.selectedCreditId === c.id ? "bg-slate-900" : "",
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          "font-black text-[10px] uppercase",
+                          props.selectedCreditId === c.id
+                            ? "text-white"
+                            : "text-slate-900",
+                        )}
+                      >
+                        {c.customerName}
+                      </Text>
+                      <Text
+                        className={cn(
+                          "font-bold text-[10px]",
+                          props.selectedCreditId === c.id
+                            ? "text-slate-400"
+                            : "text-slate-500",
+                        )}
+                      >
+                        {formatPHP(c.creditAmount)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           )}
         </ScrollView>
 
-        {/* FOOTER / PAYMENT */}
+        {/* PAYMENT SUMMARY */}
         <View className="bg-white border-t border-slate-100 p-6 pb-10 shadow-2xl">
-          {/* PAYMENT TYPE SWITCHER */}
+          {/* Payment Toggle */}
           <View className="flex-row bg-slate-100 p-1.5 rounded-2xl mb-6">
             <TouchableOpacity
               onPress={() => props.setActivePayment(PaymentType.Cash)}
@@ -227,7 +379,7 @@ export const TransactionModal = (props: TransactionViewProps) => {
             </TouchableOpacity>
           </View>
 
-          {/* CASH INPUT AREA */}
+          {/* Cash Input / Denominations */}
           {props.activePayment === PaymentType.Cash && (
             <View className="mb-6">
               <ScrollView
@@ -239,7 +391,9 @@ export const TransactionModal = (props: TransactionViewProps) => {
                   <TouchableOpacity
                     key={amt}
                     onPress={() =>
-                      props.setCashReceived((prev) => (prev || 0) + amt)
+                      props.setCashReceived((prev) =>
+                        roundTo((prev || 0) + amt),
+                      )
                     }
                     className="bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl mr-2"
                   >
@@ -249,7 +403,7 @@ export const TransactionModal = (props: TransactionViewProps) => {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              <View className="relative bg-slate-50 rounded-3xl p-4 flex-row items-center justify-between border border-slate-100">
+              <View className="bg-slate-50 rounded-3xl p-4 flex-row items-center justify-between border border-slate-100">
                 <Text className="text-xl font-black text-slate-300">₱</Text>
                 <TextInput
                   keyboardType="numeric"
@@ -262,20 +416,18 @@ export const TransactionModal = (props: TransactionViewProps) => {
                   onChangeText={(v) =>
                     props.setCashReceived(v === "" ? 0 : Number(v))
                   }
-                  placeholder="0"
                 />
               </View>
             </View>
           )}
 
-          {/* TOTAL & SUBMIT */}
           <View className="flex-row items-end justify-between mb-6 px-1">
             <View>
               <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Grand Total
               </Text>
               <Text className="text-4xl font-black text-slate-900">
-                ₱{props.total.toLocaleString()}
+                {formatPHP(currentTotal)}
               </Text>
             </View>
             {props.activePayment === PaymentType.Cash && change > 0 && (
@@ -284,7 +436,7 @@ export const TransactionModal = (props: TransactionViewProps) => {
                   Change Due
                 </Text>
                 <Text className="text-lg font-black text-emerald-600">
-                  ₱{change.toLocaleString()}
+                  {formatPHP(change)}
                 </Text>
               </View>
             )}
@@ -295,12 +447,15 @@ export const TransactionModal = (props: TransactionViewProps) => {
               props.isSubmitting ||
               props.basket.length === 0 ||
               (props.activePayment === PaymentType.Cash &&
-                props.cashReceived < props.total)
+                roundTo(props.cashReceived) < currentTotal)
             }
             onPress={props.handleCheckout}
             className={cn(
               "h-16 rounded-3xl flex-row items-center justify-between px-8 shadow-xl",
-              props.isSubmitting || props.basket.length === 0
+              props.isSubmitting ||
+                props.basket.length === 0 ||
+                (props.activePayment === PaymentType.Cash &&
+                  roundTo(props.cashReceived) < currentTotal)
                 ? "bg-slate-200"
                 : "bg-slate-900",
             )}
@@ -322,10 +477,10 @@ export const TransactionModal = (props: TransactionViewProps) => {
           </TouchableOpacity>
         </View>
 
-        {/* VOID CONFIRMATION MODAL */}
+        {/* VOID MODAL REMAINS SAME */}
         <Modal visible={showVoidConfirm} transparent animationType="fade">
           <View className="flex-1 bg-black/60 items-center justify-center p-6">
-            <View className="bg-white w-full rounded-[3rem] p-8 items-center">
+            <View className="bg-white w-full rounded-[3rem] p-8 items-center shadow-2xl">
               <View className="bg-rose-50 p-5 rounded-full mb-4">
                 <AlertTriangle size={32} color="#f43f5e" />
               </View>

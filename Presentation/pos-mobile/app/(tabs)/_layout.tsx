@@ -6,6 +6,7 @@ import {
   Package,
   Receipt,
   ShoppingCart,
+  Tag,
 } from "lucide-react-native";
 import React, { memo, useCallback, useMemo } from "react";
 import {
@@ -16,13 +17,8 @@ import {
 } from "react-native";
 import { drawerNavigationRef } from "../../src/utils/drawerRef";
 
-/**
- * Isolated Trigger Component.
- * This prevents the header from losing the navigation context.
- */
 const DrawerTrigger = memo(() => {
   const handleOpenDrawer = useCallback((): void => {
-    // Uses the global bridge to trigger the drawer without resetting the tab stack
     drawerNavigationRef.current?.dispatch(DrawerActions.openDrawer());
   }, []);
 
@@ -53,7 +49,6 @@ export default function TabLayout(): React.JSX.Element {
         height: Platform.OS === "ios" ? 110 : 70,
       },
       headerTitleStyle: styles.headerTitle,
-      // Reference the component directly to maintain a stable render path
       headerLeft: () => <DrawerTrigger />,
       tabBarActiveTintColor: "#2563eb",
       tabBarInactiveTintColor: "#94a3b8",
@@ -85,19 +80,27 @@ export default function TabLayout(): React.JSX.Element {
         }}
       />
       <Tabs.Screen
+        name="inventory"
+        options={{
+          title: "Inventory",
+          tabBarLabel: "Stocks",
+          tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="sales"
         options={{
           title: "Point of Sale",
-          tabBarLabel: "Sale",
+          tabBarLabel: "New Sale",
           tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="inventory"
+        name="promotions"
         options={{
-          title: "Inventory",
-          tabBarLabel: "Stock",
-          tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+          title: "Promotions",
+          tabBarLabel: "Promos",
+          tabBarIcon: ({ color }) => <Tag size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -124,3 +127,5 @@ const styles = StyleSheet.create({
   headerTitle: { fontWeight: "800", fontSize: 18, color: "#0f172a" },
   tabLabel: { fontWeight: "600", fontSize: 11 },
 });
+
+TabLayout.displayName = "TabLayout";
