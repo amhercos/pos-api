@@ -9,7 +9,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { apiClient } from "../api/client";
+import { apiClient, pingHealthCheck } from "../api/client";
 import { User } from "../types/user";
 
 interface AuthState {
@@ -57,12 +57,15 @@ export function AuthProvider({
 
         const user = userJson ? (JSON.parse(userJson) as User) : null;
 
+        // Wake up Render instance before proceeding
+        await pingHealthCheck();
+
         if (token) {
           try {
             await apiClient.get("/Auth/me");
           } catch (error: unknown) {
             if (isAxiosError(error) && error.response?.status === 401) {
-              console.log("Session expired. Logging out.");
+              console.log("[AuthContext] Session expired. Logging out.");
               await logout();
               return;
             }

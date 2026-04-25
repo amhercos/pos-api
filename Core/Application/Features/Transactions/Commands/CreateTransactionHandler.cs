@@ -58,11 +58,21 @@ public class CreateTransactionHandler(
                 });
             }
 
+            // --- PROMOTION LOGIC UPDATE ---
             foreach (var item in transaction.Items)
             {
                 var product = productMap[item.ProductId];
-                var lineTotal = promotionEngine.CalculateLineTotal(product, item.Quantity, transaction.Items);
-                item.UnitPrice = Math.Round(lineTotal / item.Quantity, 2, MidpointRounding.AwayFromZero);
+
+                if (request.PaymentType != PaymentType.Credit)
+                {
+                    var lineTotal = promotionEngine.CalculateLineTotal(product, item.Quantity, transaction.Items);
+                    item.UnitPrice = Math.Round(lineTotal / item.Quantity, 2, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+
+                    item.UnitPrice = product.Price;
+                }
             }
 
             transaction.TotalAmount = transaction.Items.Sum(x => x.Quantity * x.UnitPrice);
@@ -127,8 +137,8 @@ public class CreateTransactionHandler(
             StoreId = storeId
         };
 
-       
         creditRepository.Add(newAccount);
+
         await context.SaveChangesAsync(ct);
 
         return newAccount;
