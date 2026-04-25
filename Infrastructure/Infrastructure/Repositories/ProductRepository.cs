@@ -15,6 +15,7 @@ namespace Infrastructure.Repositories
         {
             var query = context.Products
                 .Include(p => p.Category)
+                .Include(p => p.Promotions)
                 .AsNoTracking()
                 .Where(p => !p.IsDeleted);
 

@@ -1,9 +1,11 @@
 ﻿using Application.Dto;
 using Application.Interfaces.Repositories;
+using Domain.Entities.Enums;
 using MediatR;
 using System.Linq;
 
 namespace Application.Features.Products.Queries;
+
 public class GetProductsHandler(IProductRepository productRepository)
     : IRequestHandler<GetProductQuery, PagedResponse<ProductDto>>
 {
@@ -20,7 +22,17 @@ public class GetProductsHandler(IProductRepository productRepository)
             p.LowStockThreshold,
             p.Category?.CategoryName ?? "No Category",
             p.ExpiryDate,
-            p.CategoryId
+            p.CategoryId,
+         
+            p.Promotions?.Select(promo => new PromotionDto(
+                promo.Id,
+                (PromotionType)promo.Type,
+                promo.PromoQuantity,
+                promo.PromoPrice,
+                promo.TieUpProductId,
+                promo.TieUpQuantity,
+                promo.IsActive
+            )).ToList()
         ));
 
         return new PagedResponse<ProductDto>(dtos, totalCount);
