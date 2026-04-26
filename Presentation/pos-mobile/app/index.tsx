@@ -89,7 +89,7 @@ const ModernInput = ({
 };
 
 export default function LoginScreen(): ReactElement {
-  const { authenticate } = useAuth();
+  const { authenticate, isLoading: authLoading } = useAuth();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -167,11 +167,11 @@ export default function LoginScreen(): ReactElement {
                 onPress={() => {
                   void handleLogin();
                 }}
-                disabled={isLoading}
+                disabled={isLoading || authLoading}
                 activeOpacity={0.85}
                 className="bg-slate-950 h-16 rounded-[24px] justify-center items-center mt-6 shadow-2xl shadow-blue-200"
               >
-                {isLoading ? (
+                {isLoading || authLoading ? (
                   <ActivityIndicator color="white" />
                 ) : (
                   <Text className="text-white font-black text-xl tracking-tight">
