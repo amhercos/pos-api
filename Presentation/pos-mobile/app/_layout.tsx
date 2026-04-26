@@ -1,5 +1,5 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { Slot } from "expo-router";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { BarChart3, LogOut, Settings, Store, User } from "lucide-react-native";
 import React, { memo, useCallback, useEffect } from "react";
@@ -49,6 +49,7 @@ function CustomDrawerContent(
   props: DrawerContentComponentProps,
 ): React.JSX.Element {
   const { logout } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const bridge: NavigationBridge = {
@@ -64,20 +65,17 @@ function CustomDrawerContent(
   const handleLogout = useCallback(async (): Promise<void> => {
     try {
       await logout();
-    } catch {}
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   }, [logout]);
 
   const navigateTo = useCallback(
     (path: string): void => {
       props.navigation.closeDrawer();
-      const screen = path.split("/").pop();
-      if (screen) {
-        (props.navigation as unknown as NavigationBridge).navigate("(tabs)", {
-          screen,
-        });
-      }
+      router.push(path);
     },
-    [props.navigation],
+    [props.navigation, router],
   );
 
   return (
@@ -100,7 +98,7 @@ function CustomDrawerContent(
           <DrawerItem
             icon={<BarChart3 size={20} color="#64748b" />}
             label="Analytics"
-            onPress={() => navigateTo("/(tabs)/reports")}
+            onPress={() => navigateTo("/reports")}
           />
         </View>
 
@@ -135,15 +133,21 @@ function CustomDrawerContent(
 function RootLayoutNav(): React.JSX.Element {
   const { token, isLoading } = useAuth();
   const { width } = useWindowDimensions();
+  const segments = useSegments();
+  const router = useRouter();
   const isLargeScreen = width >= 768;
 
-  //ping api /health
   useEffect(() => {
-    if (token) {
-      fetch("https://bizflow-ohsr.onrender.com/health").catch(() => {});
-      console.log("[System] Pinging API to wake up backend...");
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === "(tabs)";
+
+    if (token && !inAuthGroup) {
+      router.replace("/(tabs)/dashboard");
+    } else if (!token && inAuthGroup) {
+      router.replace("/");
     }
-  }, [token]);
+  }, [token, isLoading, segments, router]);
 
   if (isLoading) {
     return (
@@ -167,7 +171,10 @@ function RootLayoutNav(): React.JSX.Element {
             overlayColor: "rgba(0, 0, 0, 0.4)",
           }}
         >
-          <Drawer.Screen name="(tabs)" options={{ drawerLabel: "Home" }} />
+          <Drawer.Screen
+            name="(tabs)"
+            options={{ drawerLabel: "Home", title: "Dashboard" }}
+          />
         </Drawer>
       )}
     </GestureHandlerRootView>

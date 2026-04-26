@@ -57,22 +57,18 @@ export function AuthProvider({
 
         const user = userJson ? (JSON.parse(userJson) as User) : null;
 
-        // Wake up Render instance before proceeding
-        await pingHealthCheck();
+        setState({ token, user, isLoading: false });
 
         if (token) {
-          try {
-            await apiClient.get("/Auth/me");
-          } catch (error: unknown) {
+          void pingHealthCheck();
+
+          apiClient.get("/Auth/me").catch(async (error: unknown) => {
             if (isAxiosError(error) && error.response?.status === 401) {
               console.log("[AuthContext] Session expired. Logging out.");
               await logout();
-              return;
             }
-          }
+          });
         }
-
-        setState({ token, user, isLoading: false });
       } catch (error: unknown) {
         console.error("[AuthContext] Bootstrap failed", error);
         setState((prev) => ({ ...prev, isLoading: false }));
@@ -105,8 +101,6 @@ export function AuthProvider({
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
