@@ -1,13 +1,8 @@
 import { authService } from "@/src/services/authService";
 import { isAxiosError } from "axios";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { Eye, EyeOff, Lock, LucideIcon, Mail } from "lucide-react-native";
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  type ReactElement,
-} from "react";
+import React, { useCallback, useState, type ReactElement } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -94,18 +89,11 @@ const ModernInput = ({
 };
 
 export default function LoginScreen(): ReactElement {
-  const { authenticate, token, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const { authenticate, isLoading: authLoading } = useAuth();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (token && !authLoading) {
-      router.replace("/(tabs)/dashboard");
-    }
-  }, [token, authLoading, router]);
 
   const handleLogin = useCallback(async (): Promise<void> => {
     if (!username.trim() || !password.trim()) {
@@ -120,8 +108,6 @@ export default function LoginScreen(): ReactElement {
         fullName: result.fullName,
         role: result.role,
       });
-
-      router.replace("/(tabs)/dashboard");
     } catch (error: unknown) {
       setIsLoading(false);
       const message = isAxiosError(error)
@@ -129,7 +115,7 @@ export default function LoginScreen(): ReactElement {
         : "A system error occurred.";
       Alert.alert("Access Denied", message);
     }
-  }, [username, password, authenticate, router]);
+  }, [username, password, authenticate]);
 
   return (
     <KeyboardAvoidingView
@@ -181,11 +167,11 @@ export default function LoginScreen(): ReactElement {
                 onPress={() => {
                   void handleLogin();
                 }}
-                disabled={isLoading}
+                disabled={isLoading || authLoading}
                 activeOpacity={0.85}
                 className="bg-slate-950 h-16 rounded-[24px] justify-center items-center mt-6 shadow-2xl shadow-blue-200"
               >
-                {isLoading ? (
+                {isLoading || authLoading ? (
                   <ActivityIndicator color="white" />
                 ) : (
                   <Text className="text-white font-black text-xl tracking-tight">
