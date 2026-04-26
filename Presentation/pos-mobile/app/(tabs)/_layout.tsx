@@ -68,7 +68,11 @@ export default function TabLayout(): React.JSX.Element {
   );
 
   return (
-    <Tabs screenOptions={screenOptions}>
+    <Tabs
+      // This is the critical fix for the 'REPLACE' error
+      initialRouteName="dashboard"
+      screenOptions={screenOptions}
+    >
       <Tabs.Screen
         name="dashboard"
         options={{
