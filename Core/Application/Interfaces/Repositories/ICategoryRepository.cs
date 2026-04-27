@@ -11,5 +11,6 @@ namespace Application.Interfaces.Repositories
         Task<Category?> GetByIdAsync(Guid id, CancellationToken ct);
         void Add(Category category);
         void Remove(Category category);
+        void Update(Category category);
     }
 }
