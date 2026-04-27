@@ -11,7 +11,8 @@ namespace Infrastructure.Repositories
     public class CategoryRepository(PosDbContext context) : ICategoryRepository
     {
         public void Add(Category category) => context.Categories.Add(category);
-       
+        public void Update (Category category) => context.Categories.Update(category);
+
 
         public async Task<IEnumerable<Category>> GetAllAsync(CancellationToken ct)
         {
