@@ -38,4 +38,17 @@ public class CategoriesController(IMediator mediator) : ControllerBase
 
         return NoContent();
     }
+
+
+    [HttpPut("{id}/name")]
+    [Authorize(Roles = "StoreOwner")]
+    public async Task<IActionResult> UpdateName(Guid id, [FromBody] UpdateCategoryNameRequest request)
+    {
+        var command = new UpdateCategoryNameCommand(id, request.NewCategoryName);
+
+        var result = await mediator.Send(command);
+        return result ? Ok() : NotFound();
+    }
+
+
 }
