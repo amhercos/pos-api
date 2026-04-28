@@ -99,18 +99,18 @@ export function CategoryManagerModal({
                 showsVerticalScrollIndicator={false}
                 style={{ maxHeight: 300 }}
               >
-                <View className="gap-y-2">
+                <View className="overflow-hidden rounded-[24px] border border-slate-200/70 divide-y divide-slate-200/70">
                   {categories.map((c) => (
                     <View
                       key={c.id}
-                      className="flex-row items-center justify-between bg-slate-50/50 p-3 rounded-2xl border border-slate-100"
+                      className="flex-row items-center justify-between px-4 py-4 bg-white"
                     >
-                      <Text className="text-sm font-bold text-slate-700">
+                      <Text className="text-sm font-semibold text-slate-700 text-center">
                         {c.name}
                       </Text>
                       <TouchableOpacity
                         onPress={() => onDelete(c.id)}
-                        className="p-2 bg-white rounded-lg shadow-sm"
+                        className="p-2 rounded-lg"
                       >
                         <Trash2 size={14} color="#ef4444" />
                       </TouchableOpacity>

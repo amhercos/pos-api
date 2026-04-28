@@ -20,7 +20,8 @@ namespace Application.Features.Categories.Queries
 
             return categories.Select(c => new CategoryDto(
             c.Id,
-            c.CategoryName));
+            c.CategoryName,
+            c.Products?.Count() ?? 0));
         }
     }
 }
