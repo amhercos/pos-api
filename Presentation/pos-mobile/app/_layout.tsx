@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
@@ -185,6 +186,7 @@ export default function RootLayout(): React.JSX.Element {
   return (
     <AuthProvider>
       <RootLayoutNav />
+      <Toast />
     </AuthProvider>
   );
 }
