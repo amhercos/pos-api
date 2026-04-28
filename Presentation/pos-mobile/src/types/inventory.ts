@@ -2,6 +2,11 @@ import { Promotion } from "./sale";
 export interface Category {
   id: string;
   name: string;
+  productCount: number;
+}
+
+export interface UpdateCategoryNameRequest {
+  newCategoryName: string;
 }
 
 export interface Product {

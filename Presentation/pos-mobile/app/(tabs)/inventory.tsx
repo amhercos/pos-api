@@ -1,32 +1,32 @@
 import {
-  Calendar,
-  Edit3,
-  FolderPlus,
-  LayoutGrid,
-  List as ListIcon,
-  Plus,
-  Search,
-  Tag,
-  Trash2,
-  X,
+    Calendar,
+    Edit3,
+    FolderPlus,
+    LayoutGrid,
+    List as ListIcon,
+    Plus,
+    Search,
+    Tag,
+    Trash2,
+    X,
 } from "lucide-react-native";
 import { Skeleton } from "moti/skeleton";
 import React, {
-  ReactElement,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
+    ReactElement,
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
 } from "react";
 import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -72,6 +72,7 @@ export default function InventoryScreen(): ReactElement {
     addProduct,
     deleteProduct,
     updateProduct,
+    updateCategoryName,
     addCategory,
     deleteCategory,
   } = useInventory();
@@ -305,6 +306,7 @@ export default function InventoryScreen(): ReactElement {
         onClose={() => setModals((m) => ({ ...m, cat: false }))}
         categories={categories}
         onAdd={addCategory}
+        onRename={updateCategoryName}
         onDelete={deleteCategory}
       />
       <AddProductModal

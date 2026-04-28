@@ -15,5 +15,7 @@ namespace Application.Interfaces.Repositories
         Task<List<CustomerCredit>> SearchByNameAsync(Guid storeId, string name, CancellationToken ct);
         Task<List<CreditPayment>> GetPaymentHistoryAsync(Guid customerCreditId, CancellationToken ct);
         Task<decimal> GetCalculatedBalanceAsync(Guid customerId, CancellationToken ct);
+        Task<decimal> GetTotalCollectedAsync(Guid storeId, DateTime? startDate, CancellationToken ct);
+        Task<decimal> GetTotalActiveDebtsAsync(Guid storeId, CancellationToken ct);
     }
 }
