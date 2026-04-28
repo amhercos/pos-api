@@ -31,32 +31,20 @@ export function CategoryManagerModal({
   onDelete,
 }: CategoryManagerProps) {
   const [categoryNameInput, setCategoryNameInput] = useState("");
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
-    null,
-  );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [loadingAction, setLoadingAction] = useState<"add" | "rename" | null>(
     null,
   );
 
   const selectedCategory = categories.find(
-    (category) => category.id === editingCategoryId,
+    (category) => category.id === editingId,
   );
 
   const handlePrimaryAction = async () => {
     const trimmedName = categoryNameInput.trim();
     if (!trimmedName) return;
-
-    if (editingCategoryId) {
-      setLoadingAction("rename");
-      try {
-        await onRename(editingCategoryId, trimmedName);
-        setEditingCategoryId(null);
-        setCategoryNameInput("");
-      } finally {
-        setLoadingAction(null);
-      }
-      return;
-    }
 
     setLoadingAction("add");
     try {
@@ -67,20 +55,39 @@ export function CategoryManagerModal({
     }
   };
 
+  const handleSaveRename = async () => {
+    if (!isEditing || !editingId) return;
+
+    const trimmedName = editingName.trim();
+    if (!trimmedName) return;
+
+    setLoadingAction("rename");
+    try {
+      await onRename(editingId, trimmedName);
+      setIsEditing(false);
+      setEditingId(null);
+      setEditingName("");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const startRename = (category: Category) => {
-    setEditingCategoryId(category.id);
-    setCategoryNameInput(category.name);
+    setIsEditing(true);
+    setEditingId(category.id);
+    setEditingName(category.name);
   };
 
   const cancelRename = () => {
-    setEditingCategoryId(null);
-    setCategoryNameInput("");
+    setIsEditing(false);
+    setEditingId(null);
+    setEditingName("");
   };
 
-  const isPrimaryButtonDisabled =
-    !categoryNameInput.trim() ||
-    (!!editingCategoryId &&
-      selectedCategory?.name === categoryNameInput.trim());
+  const isPrimaryButtonDisabled = !categoryNameInput.trim();
+  const isRenameSaveDisabled =
+    !editingName.trim() ||
+    (!!editingId && selectedCategory?.name === editingName.trim());
 
   return (
     <Modal
@@ -115,9 +122,7 @@ export function CategoryManagerModal({
             <View className="px-6 py-2">
               <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-2xl p-2">
                 <TextInput
-                  placeholder={
-                    editingCategoryId ? "Rename category..." : "New category..."
-                  }
+                  placeholder={"New category..."}
                   className="flex-1 px-3 text-sm font-bold h-10"
                   value={categoryNameInput}
                   onChangeText={setCategoryNameInput}
@@ -134,21 +139,9 @@ export function CategoryManagerModal({
                   {loadingAction === "add" || loadingAction === "rename" ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text className="text-white text-xs font-bold">
-                      {editingCategoryId ? "Save" : "Add"}
-                    </Text>
+                    <Text className="text-white text-xs font-bold">Add</Text>
                   )}
                 </TouchableOpacity>
-                {editingCategoryId ? (
-                  <TouchableOpacity
-                    onPress={cancelRename}
-                    className="ml-2 px-4 py-2 rounded-xl border border-slate-200"
-                  >
-                    <Text className="text-slate-600 text-xs font-bold">
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
               </View>
             </View>
 
@@ -161,30 +154,66 @@ export function CategoryManagerModal({
                   {categories.map((c) => (
                     <View
                       key={c.id}
-                      className="flex-row items-center justify-between px-4 py-4 bg-white"
+                      className="flex-row items-center justify-between gap-3 px-4 py-3"
                     >
-                      <View>
-                        <Text className="text-sm font-semibold text-slate-700">
-                          {c.name}
-                          <Text className="text-slate-400 font-normal">
-                            {` (${c.productCount})`}
-                          </Text>
-                        </Text>
-                      </View>
-                      <View className="flex-row items-center gap-2">
-                        <TouchableOpacity
-                          onPress={() => startRename(c)}
-                          className="p-2 rounded-xl bg-slate-100/80"
-                        >
-                          <Edit3 size={16} color="#475569" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => onDelete(c.id)}
-                          className="p-2 rounded-lg"
-                        >
-                          <Trash2 size={14} color="#ef4444" />
-                        </TouchableOpacity>
-                      </View>
+                      {editingId === c.id ? (
+                        <View className="flex-1 flex-row items-center gap-3">
+                          <TextInput
+                            autoFocus={true}
+                            className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                            value={editingName}
+                            onChangeText={setEditingName}
+                          />
+                          <TouchableOpacity
+                            onPress={handleSaveRename}
+                            disabled={
+                              isRenameSaveDisabled || loadingAction === "rename"
+                            }
+                            className="rounded-2xl bg-slate-900 px-3 py-2"
+                          >
+                            {loadingAction === "rename" ? (
+                              <ActivityIndicator size="small" color="white" />
+                            ) : (
+                              <Text className="text-white text-xs font-bold">
+                                Save
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={cancelRename}
+                            className="rounded-2xl border border-slate-200 px-3 py-2"
+                          >
+                            <Text className="text-slate-600 text-xs font-bold">
+                              Cancel
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <View className="flex-1 flex-row items-center justify-between gap-3">
+                          <View className="flex-1 flex-row items-center gap-6">
+                            <Text className="text-base font-semibold text-slate-900">
+                              {c.name}
+                            </Text>
+                            <Text className="text-sm font-medium text-slate-700">
+                              {c.productCount} items
+                            </Text>
+                          </View>
+                          <View className="flex-row items-center gap-3">
+                            <TouchableOpacity
+                              onPress={() => startRename(c)}
+                              className="p-3 rounded-2xl bg-slate-100/90"
+                            >
+                              <Edit3 size={18} color="#475569" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => onDelete(c.id)}
+                              className="p-3 rounded-2xl bg-white shadow-sm"
+                            >
+                              <Trash2 size={16} color="#ef4444" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
                     </View>
                   ))}
                 </View>

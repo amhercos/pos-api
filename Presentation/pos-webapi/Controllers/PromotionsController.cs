@@ -1,12 +1,14 @@
 ﻿using Application.Features.Promotions.Commands;
 using Application.Features.Promotions.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "StoreOwner")]
 public class PromotionsController : ControllerBase
 {
     private readonly IMediator _mediator;

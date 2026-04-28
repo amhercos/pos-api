@@ -74,5 +74,28 @@ namespace Infrastructure.Repositories
 
             return totalPurchased - totalPaid;
         }
+
+        public async Task<decimal> GetTotalCollectedAsync(Guid storeId, DateTime? startDate, CancellationToken ct)
+        {
+            var query = context.CreditPayments
+                .AsNoTracking()
+                .Where(p => p.StoreId == storeId);
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(p => p.PaymentDate >= startDate.Value);
+            }
+
+            return await query.Select(p => p.AmountPaid).SumAsync(ct);
+        }
+
+        public async Task<decimal> GetTotalActiveDebtsAsync(Guid storeId, CancellationToken ct)
+        {
+            return await context.CustomerCredits
+                .AsNoTracking()
+                .Where(c => c.StoreId == storeId)
+                .Select(c => c.CreditAmount)
+                .SumAsync(ct);
+        }
     }
 }
