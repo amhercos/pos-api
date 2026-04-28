@@ -1,11 +1,12 @@
 import { apiClient } from "../api/client";
 import type {
-    Category,
-    CreateProductRequest,
-    PagedResponse,
-    Product,
-    UpdateProductRequest,
+  Category,
+  CreateProductRequest,
+  PagedResponse,
+  Product,
+  UpdateProductRequest,
 } from "../types/inventory";
+import { showToast } from "../utils/toast";
 
 export const InventoryService = {
   getProducts: (page: number, pageSize: number) =>
@@ -15,13 +16,26 @@ export const InventoryService = {
 
   getCategories: () => apiClient.get<Category[]>("/Categories"),
 
-  createProduct: (data: CreateProductRequest) =>
-    apiClient.post("/Product", data),
+  createProduct: async (data: CreateProductRequest) => {
+    try {
+      await apiClient.post("/Product", data);
+      showToast.success("Product added successfully");
+    } catch {}
+  },
 
-  updateProduct: (id: string, data: UpdateProductRequest) =>
-    apiClient.put(`/Product/${id}`, { ...data, id }),
+  updateProduct: async (id: string, data: UpdateProductRequest) => {
+    try {
+      await apiClient.put(`/Product/${id}`, { ...data, id });
+      showToast.success("Product updated successfully");
+    } catch {}
+  },
 
-  deleteProduct: (id: string) => apiClient.delete(`/Product/${id}`),
+  deleteProduct: async (id: string) => {
+    try {
+      await apiClient.delete(`/Product/${id}`);
+      showToast.success("Product deleted successfully");
+    } catch {}
+  },
 
   createCategory: (name: string) =>
     apiClient.post("/Categories", { CategoryName: name }),

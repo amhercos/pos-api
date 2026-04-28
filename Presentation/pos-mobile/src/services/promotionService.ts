@@ -1,9 +1,10 @@
 import { apiClient } from "../api/client";
 import {
-    CreatePromotionRequest,
-    Promotion,
-    UpdatePromotionRequest,
+  CreatePromotionRequest,
+  Promotion,
+  UpdatePromotionRequest,
 } from "../types/promotion";
+import { showToast } from "../utils/toast";
 
 export const PromotionService = {
   getAll: async () => {
@@ -11,7 +12,6 @@ export const PromotionService = {
     return response.data;
   },
 
-  // Matches your [HttpGet("calculate")]
   getCalculatedPrice: async (productId: string, quantity: number) => {
     const response = await apiClient.get<number>("/Promotions/calculate", {
       params: { productId, quantity },
@@ -20,13 +20,22 @@ export const PromotionService = {
   },
 
   create: async (command: CreatePromotionRequest) => {
-    const response = await apiClient.post<string>("/Promotions", command);
-    return response.data;
+    try {
+      const response = await apiClient.post<string>("/Promotions", command);
+      showToast.success("Promotion created successfully");
+      return response.data;
+    } catch {}
   },
 
   update: async (command: UpdatePromotionRequest) => {
-    const response = await apiClient.put(`/Promotions/${command.id}`, command);
-    return response.data;
+    try {
+      const response = await apiClient.put(
+        `/Promotions/${command.id}`,
+        command,
+      );
+      showToast.success("Status Updated");
+      return response.data;
+    } catch {}
   },
 
   delete: async (id: string) => {
