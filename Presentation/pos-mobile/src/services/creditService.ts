@@ -1,5 +1,6 @@
 import { apiClient } from "../api/client";
 import type {
+  CreditStats,
   CustomerCredit,
   CustomerCreditSummary,
   RecordCreditPaymentCommand,
@@ -39,5 +40,12 @@ export const creditService = {
       await apiClient.put(`CustomerCredits/${command.id}`, command);
       showToast.success("Credit Limit Updated");
     } catch {}
+  },
+
+  getCreditStats: async (period: string): Promise<CreditStats> => {
+    const response = await apiClient.get<CreditStats>(
+      `CustomerCredits/stats?period=${encodeURIComponent(period)}`,
+    );
+    return response.data;
   },
 } as const;
