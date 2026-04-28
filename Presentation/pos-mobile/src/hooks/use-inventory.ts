@@ -135,6 +135,15 @@ export function useInventory() {
     }
   };
 
+  const updateCategoryName = async (id: string, name: string) => {
+    try {
+      await InventoryService.updateCategoryName(id, name);
+      refresh();
+    } catch (err) {
+      handleError(err, "Failed to update category");
+    }
+  };
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -151,5 +160,6 @@ export function useInventory() {
     deleteProduct,
     addCategory,
     deleteCategory,
+    updateCategoryName,
   };
 }

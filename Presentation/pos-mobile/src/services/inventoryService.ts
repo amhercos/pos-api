@@ -37,6 +37,18 @@ export const InventoryService = {
     } catch {}
   },
 
+  updateCategoryName: async (id: string, name: string) => {
+    try {
+      await apiClient.put(`/Categories/${id}/name`, {
+        newCategoryName: name,
+      });
+      showToast.success(
+        "Category Updated",
+        "The name has been changed successfully.",
+      );
+    } catch {}
+  },
+
   createCategory: (name: string) =>
     apiClient.post("/Categories", { CategoryName: name }),
 

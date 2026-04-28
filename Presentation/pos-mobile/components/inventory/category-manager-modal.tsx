@@ -1,5 +1,5 @@
 import type { Category } from "@/src/types/inventory";
-import { FolderTree, Trash2, X } from "lucide-react-native";
+import { Edit3, FolderTree, Trash2, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +18,7 @@ interface CategoryManagerProps {
   onClose: () => void;
   categories: Category[];
   onAdd: (name: string) => Promise<void>;
+  onRename: (id: string, name: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
@@ -26,21 +27,60 @@ export function CategoryManagerModal({
   onClose,
   categories,
   onAdd,
+  onRename,
   onDelete,
 }: CategoryManagerProps) {
-  const [newCategory, setNewCategory] = useState("");
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [categoryNameInput, setCategoryNameInput] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+    null,
+  );
+  const [loadingAction, setLoadingAction] = useState<"add" | "rename" | null>(
+    null,
+  );
 
-  const handleAdd = async () => {
-    if (!newCategory.trim()) return;
+  const selectedCategory = categories.find(
+    (category) => category.id === editingCategoryId,
+  );
+
+  const handlePrimaryAction = async () => {
+    const trimmedName = categoryNameInput.trim();
+    if (!trimmedName) return;
+
+    if (editingCategoryId) {
+      setLoadingAction("rename");
+      try {
+        await onRename(editingCategoryId, trimmedName);
+        setEditingCategoryId(null);
+        setCategoryNameInput("");
+      } finally {
+        setLoadingAction(null);
+      }
+      return;
+    }
+
     setLoadingAction("add");
     try {
-      await onAdd(newCategory.trim());
-      setNewCategory("");
+      await onAdd(trimmedName);
+      setCategoryNameInput("");
     } finally {
       setLoadingAction(null);
     }
   };
+
+  const startRename = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setCategoryNameInput(category.name);
+  };
+
+  const cancelRename = () => {
+    setEditingCategoryId(null);
+    setCategoryNameInput("");
+  };
+
+  const isPrimaryButtonDisabled =
+    !categoryNameInput.trim() ||
+    (!!editingCategoryId &&
+      selectedCategory?.name === categoryNameInput.trim());
 
   return (
     <Modal
@@ -75,22 +115,40 @@ export function CategoryManagerModal({
             <View className="px-6 py-2">
               <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-2xl p-2">
                 <TextInput
-                  placeholder="New category..."
+                  placeholder={
+                    editingCategoryId ? "Rename category..." : "New category..."
+                  }
                   className="flex-1 px-3 text-sm font-bold h-10"
-                  value={newCategory}
-                  onChangeText={setNewCategory}
+                  value={categoryNameInput}
+                  onChangeText={setCategoryNameInput}
                 />
                 <TouchableOpacity
-                  onPress={handleAdd}
-                  disabled={loadingAction === "add" || !newCategory.trim()}
+                  onPress={handlePrimaryAction}
+                  disabled={
+                    isPrimaryButtonDisabled ||
+                    loadingAction === "add" ||
+                    loadingAction === "rename"
+                  }
                   className="bg-slate-900 px-4 py-2 rounded-xl"
                 >
-                  {loadingAction === "add" ? (
+                  {loadingAction === "add" || loadingAction === "rename" ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text className="text-white text-xs font-bold">Add</Text>
+                    <Text className="text-white text-xs font-bold">
+                      {editingCategoryId ? "Save" : "Add"}
+                    </Text>
                   )}
                 </TouchableOpacity>
+                {editingCategoryId ? (
+                  <TouchableOpacity
+                    onPress={cancelRename}
+                    className="ml-2 px-4 py-2 rounded-xl border border-slate-200"
+                  >
+                    <Text className="text-slate-600 text-xs font-bold">
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
 
@@ -105,15 +163,28 @@ export function CategoryManagerModal({
                       key={c.id}
                       className="flex-row items-center justify-between px-4 py-4 bg-white"
                     >
-                      <Text className="text-sm font-semibold text-slate-700 text-center">
-                        {c.name}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => onDelete(c.id)}
-                        className="p-2 rounded-lg"
-                      >
-                        <Trash2 size={14} color="#ef4444" />
-                      </TouchableOpacity>
+                      <View>
+                        <Text className="text-sm font-semibold text-slate-700">
+                          {c.name}
+                          <Text className="text-slate-400 font-normal">
+                            {` (${c.productCount})`}
+                          </Text>
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-2">
+                        <TouchableOpacity
+                          onPress={() => startRename(c)}
+                          className="p-2 rounded-xl bg-slate-100/80"
+                        >
+                          <Edit3 size={16} color="#475569" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => onDelete(c.id)}
+                          className="p-2 rounded-lg"
+                        >
+                          <Trash2 size={14} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ))}
                 </View>
