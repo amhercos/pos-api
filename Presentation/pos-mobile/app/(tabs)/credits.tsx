@@ -5,10 +5,11 @@ import {
   ReceiptText,
   RefreshCcw,
   Search,
+  TrendingUp,
   UserCog,
   Wallet,
 } from "lucide-react-native";
-import { Skeleton } from "moti/skeleton"; // Added Skeleton import
+import { Skeleton } from "moti/skeleton";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   RefreshControl,
@@ -36,11 +37,28 @@ export default function CreditsPage() {
     recordPayment,
     updateCredit,
     getSummary,
+    getCreditStats,
   } = useCredits();
 
   const [search, setSearch] = useState("");
   const [showSettled, setShowSettled] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>("desc");
+
+  // Stats period and stats state
+  const PERIODS = React.useMemo(
+    () => [
+      { label: "Today", value: "today" },
+      { label: "Week", value: "week" },
+      { label: "Month", value: "month" },
+      { label: "Year", value: "year" },
+    ],
+    [],
+  );
+  const [selectedPeriod, setSelectedPeriod] = useState("today");
+  const [creditStats, setCreditStats] = useState<
+    import("@/src/types/credit").CreditStats | null
+  >(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const [selectedCredit, setSelectedCredit] = useState<CustomerCredit | null>(
     null,
@@ -60,6 +78,57 @@ export default function CreditsPage() {
     }, 300);
     return () => clearTimeout(handler);
   }, [search, showSettled, fetchCredits]);
+
+  // Fetch credit stats when selectedPeriod changes
+  useEffect(() => {
+    let active = true;
+    setStatsLoading(true);
+    getCreditStats(selectedPeriod).then((stats) => {
+      if (active) setCreditStats(stats);
+      setStatsLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [selectedPeriod, getCreditStats]);
+
+  const handlePeriodChange = (period: string) => {
+    requestAnimationFrame(() => {
+      setSelectedPeriod(period);
+    });
+  };
+
+  const MemoizedPeriodPills = useMemo(
+    () => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-row gap-2 mt-6 mb-2"
+      >
+        {PERIODS.map((p) => (
+          <TouchableOpacity
+            key={p.value}
+            onPress={() => handlePeriodChange(p.value)}
+            className={cn(
+              "px-4 h-9 rounded-full justify-center items-center",
+              selectedPeriod === p.value ? "bg-slate-900" : "bg-slate-100",
+            )}
+            activeOpacity={0.85}
+          >
+            <Text
+              className={cn(
+                "text-xs font-bold",
+                selectedPeriod === p.value ? "text-white" : "text-slate-900",
+              )}
+            >
+              {p.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    ),
+    [selectedPeriod, PERIODS],
+  );
 
   const handleOpenSummary = async (id: string) => {
     setIsSummaryOpen(true);
@@ -112,6 +181,69 @@ export default function CreditsPage() {
         </TouchableOpacity>
       </View>
 
+      {/* Stats Row */}
+      <View className="px-4 mt-4">
+        {MemoizedPeriodPills}
+        <View className="flex-row gap-3 mt-2">
+          {/* Collected Card */}
+          <View className="flex-1 bg-white rounded-3xl shadow-sm p-5 flex-row items-center min-h-[90px]">
+            <View className="bg-emerald-50 rounded-full p-3 mr-3">
+              <TrendingUp size={22} color="#059669" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xs text-slate-400 font-bold tracking-tight">
+                Collected
+              </Text>
+              {statsLoading ? (
+                <Skeleton
+                  colorMode="light"
+                  width={80}
+                  height={24}
+                  radius={12}
+                />
+              ) : (
+                Boolean(creditStats) && (
+                  <Text className="text-xl font-black tracking-tighter text-slate-900 mt-1">
+                    ₱
+                    {creditStats?.totalCollected?.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </Text>
+                )
+              )}
+            </View>
+          </View>
+          {/* Debt Left Card */}
+          <View className="flex-1 bg-white rounded-3xl shadow-sm p-5 flex-row items-center min-h-[90px]">
+            <View className="bg-slate-50 rounded-full p-3 mr-3">
+              <Wallet size={22} color="#334155" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xs text-slate-400 font-bold tracking-tight">
+                Debt Left
+              </Text>
+              {statsLoading ? (
+                <Skeleton
+                  colorMode="light"
+                  width={80}
+                  height={24}
+                  radius={12}
+                />
+              ) : (
+                Boolean(creditStats) && (
+                  <Text className="text-xl font-black tracking-tighter text-slate-900 mt-1">
+                    ₱
+                    {creditStats?.totalActiveDebts?.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </Text>
+                )
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
         className="flex-1 px-4"
         refreshControl={
@@ -121,7 +253,7 @@ export default function CreditsPage() {
           />
         }
       >
-        {/* Total Outstanding Card Skeleton */}
+        {/* Total Outstanding Card Skeleton
         {refreshing && credits.length === 0 ? (
           <View className="mt-4">
             <Skeleton colorMode="light" width="100%" height={120} radius={24} />
@@ -139,8 +271,8 @@ export default function CreditsPage() {
             <View className="bg-rose-500/20 p-3 rounded-2xl">
               <Wallet size={24} color="#fb7185" />
             </View>
-          </View>
-        )}
+          </View> */}
+        {/* )} */}
 
         <View className="flex-row gap-2 mt-6">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">

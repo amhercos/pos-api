@@ -4,6 +4,7 @@ import { Alert } from "react-native";
 import { creditService } from "../services/creditService";
 import type {
     ApiErrorResponse,
+    CreditStats,
     CustomerCredit,
     CustomerCreditSummary,
     UpdateCustomerCreditCommand,
@@ -48,6 +49,18 @@ export function useCredits() {
         return await creditService.getSummary(id);
       } catch {
         Alert.alert("Access Error", "Failed to retrieve the account summary.");
+        return null;
+      }
+    },
+    [],
+  );
+
+  const getCreditStats = useCallback(
+    async (period: string): Promise<CreditStats | null> => {
+      try {
+        return await creditService.getCreditStats(period);
+      } catch {
+        Alert.alert("Stats Error", "Unable to load credit statistics.");
         return null;
       }
     },
@@ -108,6 +121,7 @@ export function useCredits() {
     refreshing,
     fetchCredits,
     getSummary,
+    getCreditStats,
     recordPayment,
     updateCredit,
   } as const;
