@@ -1,10 +1,11 @@
 import { apiClient } from "../api/client";
 import type {
-    CustomerCredit,
-    CustomerCreditSummary,
-    RecordCreditPaymentCommand,
-    UpdateCustomerCreditCommand,
+  CustomerCredit,
+  CustomerCreditSummary,
+  RecordCreditPaymentCommand,
+  UpdateCustomerCreditCommand,
 } from "../types/credit";
+import { showToast } from "../utils/toast";
 
 export const creditService = {
   getCredits: async (
@@ -27,10 +28,16 @@ export const creditService = {
   },
 
   recordPayment: async (command: RecordCreditPaymentCommand): Promise<void> => {
-    await apiClient.post("CustomerCredits/pay", command);
+    try {
+      await apiClient.post("CustomerCredits/pay", command);
+      showToast.success("Payment Applied");
+    } catch {}
   },
 
   updateCredit: async (command: UpdateCustomerCreditCommand): Promise<void> => {
-    await apiClient.put(`CustomerCredits/${command.id}`, command);
+    try {
+      await apiClient.put(`CustomerCredits/${command.id}`, command);
+      showToast.success("Credit Limit Updated");
+    } catch {}
   },
 } as const;

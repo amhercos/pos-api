@@ -17,6 +17,7 @@ import Toast from "react-native-toast-message";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
+import { showToast } from "../src/utils/toast";
 
 const SectionHeader = memo(({ title }: { title: string }) => (
   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
@@ -66,6 +67,7 @@ function CustomDrawerContent(
   const handleLogout = useCallback(async (): Promise<void> => {
     try {
       await logout();
+      showToast.success("Logged out successfully");
     } catch (error) {
       console.error("Logout failed", error);
     }
