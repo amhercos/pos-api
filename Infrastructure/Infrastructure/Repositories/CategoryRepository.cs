@@ -17,6 +17,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<Category>> GetAllAsync(CancellationToken ct)
         {
             return await context.Categories
+            .Include(c => c.Products)
             .AsNoTracking()
             .OrderBy(c => c.CategoryName)
             .ToListAsync(ct);
