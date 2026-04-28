@@ -37,6 +37,12 @@ export interface CustomerCreditSummary {
   paymentHistory: PaymentHistory[];
 }
 
+export interface CreditStats {
+  totalCollected: number;
+  totalActiveDebts: number;
+  totalOutstanding: number;
+}
+
 export interface RecordCreditPaymentCommand {
   customerCreditId: string;
   amountPaid: number;
