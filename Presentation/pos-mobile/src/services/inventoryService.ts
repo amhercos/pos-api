@@ -4,6 +4,7 @@ import type {
   CreateProductRequest,
   PagedResponse,
   Product,
+  UpdateCategoryNameRequest,
   UpdateProductRequest,
 } from "../types/inventory";
 import { showToast } from "../utils/toast";
@@ -34,6 +35,21 @@ export const InventoryService = {
     try {
       await apiClient.delete(`/Product/${id}`);
       showToast.success("Product deleted successfully");
+    } catch {}
+  },
+
+  updateCategoryName: async (id: string, name: string): Promise<void> => {
+    try {
+      const payload: UpdateCategoryNameRequest = {
+        newCategoryName: name,
+      };
+      await apiClient.put(`/Categories/${id}/name`, {
+        ...payload,
+      });
+      showToast.success(
+        "Category Updated",
+        "The name was successfully changed.",
+      );
     } catch {}
   },
 
