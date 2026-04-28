@@ -7,11 +7,17 @@ import axios, {
 } from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { showToast } from "../utils/toast";
 
 const BASE_URL = "https://bizflow-ohsr.onrender.com/api";
 const HEALTH_URL = "https://bizflow-ohsr.onrender.com/health";
 
 let isRedirecting = false;
+
+interface BackendErrorResponse {
+  message?: string;
+  errors?: Record<string, string[]>;
+}
 
 interface BizFlowRequestConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
@@ -25,9 +31,6 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-/**
- * Pings the root health check to wake up Render.
- */
 export const pingHealthCheck = async (): Promise<void> => {
   try {
     console.log("[System] Pinging root health check to wake up backend...");
@@ -36,7 +39,6 @@ export const pingHealthCheck = async (): Promise<void> => {
       _retryCount: 99,
     } as BizFlowRequestConfig);
   } catch {
-    // Removed unused 'e' variable for strict TS compliance
     console.log("[System] Health check ping finished.");
   }
 };
@@ -56,9 +58,11 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => response,
-  async (error: AxiosError): Promise<AxiosResponse | Promise<never>> => {
+  async (error: AxiosError<BackendErrorResponse>): Promise<AxiosResponse> => {
     const config = error.config as BizFlowRequestConfig | undefined;
     const status = error.response?.status;
+
+    const errorData = error.response?.data;
 
     const isNetworkError =
       error.code === "ECONNABORTED" ||
@@ -67,21 +71,31 @@ apiClient.interceptors.response.use(
 
     const MAX_RETRIES = 3;
 
+    // Network Retries
     if (isNetworkError && config && (config._retryCount ?? 0) < MAX_RETRIES) {
       config._retryCount = (config._retryCount ?? 0) + 1;
-
       const delay = (config._retryCount ?? 1) * 2000;
-      await new Promise((resolve) => setTimeout(resolve, delay));
 
+      await new Promise((resolve) => setTimeout(resolve, delay));
       console.log(
-        `[API] Connection weak. Retrying... (Attempt ${config._retryCount})`,
+        `Connection weak. Retrying... (Attempt ${config._retryCount})`,
       );
+
       return apiClient(config);
     }
 
+    const isHealthCheck = config?.url?.includes(HEALTH_URL);
+
+    // toast - Persistent Network Failures
+    if (isNetworkError && !isHealthCheck) {
+      showToast.error("Connection Error", "Check your internet connection.");
+    }
+
+    // 401 Unauthorized
     if (status === 401 && !config?.url?.toLowerCase().includes("/auth/")) {
       if (!isRedirecting) {
         isRedirecting = true;
+        showToast.error("Session Expired", "Please sign in again.");
 
         await Promise.all([
           SecureStore.deleteItemAsync("token"),
@@ -94,10 +108,14 @@ apiClient.interceptors.response.use(
           isRedirecting = false;
         }, 1000);
       }
+      return Promise.reject(new Error("Session expired."));
+    }
 
-      return Promise.reject(
-        new Error("Session expired. Please sign in again."),
-      );
+    //  400/500 Errors with Backend Messages
+    if (status && status >= 400 && !isHealthCheck) {
+      const errorMessage =
+        errorData?.message || "An unexpected error occurred.";
+      showToast.error(`Error ${status}`, errorMessage);
     }
 
     return Promise.reject(error);
