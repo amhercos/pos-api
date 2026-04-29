@@ -41,4 +41,16 @@ export const PromotionService = {
   delete: async (id: string) => {
     await apiClient.delete(`/Promotions/${id}`);
   },
+
+  toggle: async (id: string) => {
+    try {
+      const response = await apiClient.patch<boolean>(
+        `/Promotions/${id}/toggle`,
+      );
+      showToast.success("Status updated successfully");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
