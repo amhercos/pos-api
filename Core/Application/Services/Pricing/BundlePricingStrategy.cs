@@ -13,20 +13,18 @@ namespace Application.Services.Pricing
 
         public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
         {
+            if (promo.TieUpProductId == null)
+                return product.Price * quantity;
+
             var tieUpItem = basket.FirstOrDefault(i => i.ProductId == promo.TieUpProductId);
-            int requiredTieUpQty = promo.TieUpQuantity ?? 1;
+            int tieUpAvailable = tieUpItem?.Quantity ?? 0;
 
-            if (tieUpItem != null && tieUpItem.Quantity >= requiredTieUpQty)
-            {
-                // Senior Logic: 1:1 or Ratio-based bundle application
-                int maxBundles = tieUpItem.Quantity / requiredTieUpQty;
-                int discountedQty = Math.Min(quantity, maxBundles);
-                int regularQty = quantity - discountedQty;
+            int applicableBundleCount = Math.Min(quantity, tieUpAvailable);
+            int regularPriceCount = quantity - applicableBundleCount;
 
-                return (discountedQty * (promo.PromoPrice ?? product.Price)) + (regularQty * product.Price);
-            }
+            decimal bundlePrice = promo.PromoPrice ?? product.Price;
 
-            return quantity * product.Price;
+            return (applicableBundleCount * bundlePrice) + (regularPriceCount * product.Price);
         }
     }
 }
