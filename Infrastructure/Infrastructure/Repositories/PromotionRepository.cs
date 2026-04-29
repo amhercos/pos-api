@@ -1,7 +1,9 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {
-    public class PromotionRepository(PosDbContext context) : IPromotionRepository
+    public class PromotionRepository(PosDbContext context, ICurrentUserService currentUserService) : IPromotionRepository
     {
         public void Add(Promotion promotion) => context.Promotions.Add(promotion);
 
@@ -25,6 +27,8 @@ namespace Infrastructure.Repositories
         public async Task<Promotion?> GetByIdAsync(Guid id, CancellationToken ct)
         {
             return await context.Promotions
+                .IgnoreQueryFilters()
+                .Where(p => p.StoreId == currentUserService.StoreId)
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -33,6 +37,8 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<Promotion>> GetAllAsync(CancellationToken ct)
         {
             return await context.Promotions
+                .IgnoreQueryFilters()
+                .Where(p => p.StoreId == currentUserService.StoreId)
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
                 //.Where(p => p.IsActive)
@@ -43,9 +49,11 @@ namespace Infrastructure.Repositories
         public async Task<(IEnumerable<Promotion> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct)
         {
             var query = context.Promotions
+                .IgnoreQueryFilters()
+                .Where(p => p.StoreId == currentUserService.StoreId)
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
-                .Where(p => p.IsActive)
+                //.Where(p => p.IsActive)
                 .AsNoTracking();
 
             var totalCount = await query.CountAsync(ct);
