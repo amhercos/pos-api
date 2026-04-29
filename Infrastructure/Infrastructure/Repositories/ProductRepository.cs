@@ -41,6 +41,7 @@ namespace Infrastructure.Repositories
         public async Task<Product?> GetByIdAsync(Guid id, CancellationToken ct)
         {
             return await context.Products
+                .Include(p => p.Promotions)
                 .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }

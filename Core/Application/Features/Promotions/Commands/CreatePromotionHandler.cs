@@ -8,9 +8,9 @@ namespace Application.Features.Promotions.Commands;
 public class CreatePromotionHandler(
     IPromotionRepository promotionRepo,
     IPosDbContext context,
-    ICurrentUserService currentUserService) : IRequestHandler<CreatePromotionCommand, Guid>
+    ICurrentUserService currentUserService) : IRequestHandler<CreatePromotionCommand, Unit>
 {
-    public async Task<Guid> Handle(CreatePromotionCommand request, CancellationToken ct)
+    public async Task<Unit> Handle(CreatePromotionCommand request, CancellationToken ct)
     {
         var authenticatedStoreId = currentUserService.StoreId;
 
@@ -19,24 +19,33 @@ public class CreatePromotionHandler(
             throw new UnauthorizedAccessException("Invalid Store");
         }
 
-        var promotion = new Promotion
+        foreach (var tier in request.Tiers)
         {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
-            Type = request.Type,
-            StoreId = authenticatedStoreId,
-            MainProductId = request.MainProductId,
-            PromoQuantity = request.PromoQuantity,
-            PromoPrice = request.PromoPrice,
-            TieUpProductId = request.TieUpProductId,
-            TieUpQuantity = request.TieUpQuantity,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+            var promotion = new Promotion
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Tiers.Count > 1 ? $"{request.Name} ({tier.Quantity} qty)" : request.Name,
+                Type = request.Type,
+                StoreId = authenticatedStoreId,
+                MainProductId = request.MainProductId,
 
-        promotionRepo.Add(promotion);
+                // Tier-specific data
+                PromoQuantity = tier.Quantity,
+                PromoPrice = tier.Price,
+
+                // Shared data for this command
+                TieUpProductId = request.TieUpProductId,
+                TieUpQuantity = request.TieUpQuantity,
+
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            promotionRepo.Add(promotion);
+        }
+
         await context.SaveChangesAsync(ct);
 
-        return promotion.Id;
+        return Unit.Value;
     }
 }

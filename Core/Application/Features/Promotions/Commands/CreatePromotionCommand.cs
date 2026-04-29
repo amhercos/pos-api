@@ -3,17 +3,17 @@ using MediatR;
 
 namespace Application.Features.Promotions.Commands;
 
-public record CreatePromotionCommand : IRequest<Guid>
+public record PromoTier(int Quantity, decimal Price);
+
+public record CreatePromotionCommand : IRequest<Unit>
 {
     public required string Name { get; init; }
     public PromotionType Type { get; init; }
     public Guid MainProductId { get; init; }
 
-    // Bulk Pricing
-    public int? PromoQuantity { get; init; }
-    public decimal? PromoPrice { get; init; }
+    public List<PromoTier> Tiers { get; init; } = new();
 
-    // Tie-up Logic
+    // Tie-up Logic (Optional)
     public Guid? TieUpProductId { get; init; }
     public int? TieUpQuantity { get; init; }
 }
