@@ -1,14 +1,15 @@
 using Application;
+using DbMigration.PostgreSQL;
 using Infrastructure;
 using Infrastructure.Persistence;
-using DbMigration.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using pos_webapi.Middleware;
 using Serilog;
-using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -94,7 +95,28 @@ try
 
     builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Point of Sale API",
+            Version = "v1"
+        });
+
+        c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+        {
+            Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
+            In = ParameterLocation.Header,
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer"
+        });
+
+        c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
+        });
+    });
 
     var app = builder.Build();
     
