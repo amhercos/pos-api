@@ -13,11 +13,13 @@ import {
   Platform,
   StyleSheet,
   TouchableOpacity,
+  View,
   useWindowDimensions,
 } from "react-native";
+import { TabBarCurve } from "../../components/navigation/TabBarCurve";
 import { drawerNavigationRef } from "../../src/utils/drawerRef";
 
-const DrawerTrigger = memo(() => {
+const DrawerTrigger = memo((): React.JSX.Element => {
   const handleOpenDrawer = useCallback((): void => {
     drawerNavigationRef.current?.dispatch(DrawerActions.openDrawer());
   }, []);
@@ -28,17 +30,15 @@ const DrawerTrigger = memo(() => {
       style={styles.headerButton}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Menu size={20} color="#0f172a" strokeWidth={2.5} />
+      <Menu size={20} color="#0f172a" strokeWidth={2.2} />
     </TouchableOpacity>
   );
 });
 DrawerTrigger.displayName = "DrawerTrigger";
 
 export default function TabLayout(): React.JSX.Element {
-  const { width, height } = useWindowDimensions();
-
-  const isTablet = width >= 768;
-  const isLandscape = width > height;
+  const { width } = useWindowDimensions();
+  const isTablet: boolean = width >= 768;
 
   const screenOptions = useMemo(
     () => ({
@@ -51,35 +51,30 @@ export default function TabLayout(): React.JSX.Element {
       headerTitleStyle: styles.headerTitle,
       headerLeft: () => <DrawerTrigger />,
       tabBarActiveTintColor: "#2563eb",
-      tabBarInactiveTintColor: "#94a3b8",
+      tabBarInactiveTintColor: "#0f172a", // Black font for inactive symbols
       tabBarLabelStyle: styles.tabLabel,
+      tabBarBackground: () => <TabBarCurve />, // Applied the curve design
       tabBarStyle: {
-        height: isLandscape ? 60 : 75,
-        paddingBottom: Platform.OS === "ios" ? 25 : 12,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: "#f1f5f9",
-        backgroundColor: "#ffffff",
+        height: 75,
+        paddingBottom: Platform.OS === "ios" ? 25 : 10,
+        borderTopWidth: 0,
+        backgroundColor: "transparent", // Background handled by TabBarCurve
         elevation: 0,
         paddingHorizontal: isTablet ? width * 0.15 : 0,
       },
     }),
-    [isLandscape, isTablet, width],
+    [width, isTablet],
   );
 
   return (
-    <Tabs
-      // This is the critical fix for the 'REPLACE' error
-      initialRouteName="dashboard"
-      screenOptions={screenOptions}
-    >
+    <Tabs initialRouteName="dashboard" screenOptions={screenOptions}>
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Home",
           tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => (
-            <LayoutDashboard size={22} color={color} />
+          tabBarIcon: ({ color }: { color: string }) => (
+            <LayoutDashboard size={22} color={color} strokeWidth={2.2} />
           ),
         }}
       />
@@ -88,23 +83,42 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Inventory",
           tabBarLabel: "Stocks",
-          tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Package size={22} color={color} strokeWidth={2.2} />
+          ),
         }}
       />
+
       <Tabs.Screen
         name="sales"
         options={{
           title: "Point of Sale",
-          tabBarLabel: "New Sale",
-          tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <View
+              style={[
+                styles.actionButton,
+                focused ? styles.actionActive : styles.actionInactive,
+              ]}
+            >
+              <ShoppingCart
+                size={22}
+                color={focused ? "white" : "#0f172a"}
+                strokeWidth={2.5}
+              />
+            </View>
+          ),
         }}
       />
+
       <Tabs.Screen
         name="promotions"
         options={{
           title: "Promotions",
           tabBarLabel: "Promos",
-          tabBarIcon: ({ color }) => <Tag size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Tag size={22} color={color} strokeWidth={2.2} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -112,10 +126,14 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Customer Credits",
           tabBarLabel: "Credits",
-          tabBarIcon: ({ color }) => <Receipt size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Receipt size={22} color={color} strokeWidth={2.2} />
+          ),
         }}
       />
-      <Tabs.Screen name="reports" options={{ href: null }} />
+
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="reports" options={{ title: "Reports", href: null }} />
       <Tabs.Screen name="pricing" options={{ href: null }} />
     </Tabs>
   );
@@ -125,11 +143,32 @@ const styles = StyleSheet.create({
   headerButton: {
     marginLeft: 20,
     padding: 8,
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 10,
   },
-  headerTitle: { fontWeight: "800", fontSize: 18, color: "#0f172a" },
-  tabLabel: { fontWeight: "600", fontSize: 11 },
+  headerTitle: { fontWeight: "800", fontSize: 17, color: "#0f172a" },
+  tabLabel: { fontWeight: "700", fontSize: 10 },
+  actionButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: -25, // Aligns perfectly with the curve dip
+    borderWidth: 4,
+    borderColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  actionActive: {
+    backgroundColor: "#2563eb", // Blue for active
+  },
+  actionInactive: {
+    backgroundColor: "#ffffff", // White for inactive
+  },
 });
 
 TabLayout.displayName = "TabLayout";
