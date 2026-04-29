@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { PromotionService } from "../services/promotionService";
 import {
-    CreatePromotionRequest,
-    Promotion,
-    UpdatePromotionRequest,
+  CreatePromotionRequest,
+  Promotion,
+  UpdatePromotionRequest,
 } from "../types/promotion";
 
 export function usePromotions() {
@@ -41,7 +41,6 @@ export function usePromotions() {
   ): Promise<boolean> => {
     try {
       await PromotionService.update(command);
-      // Optimistic update to UI list to keep it snappy
       setPromotions((prev) =>
         prev.map((p) =>
           p.id === command.id
@@ -84,6 +83,23 @@ export function usePromotions() {
     }
   };
 
+  const togglePromotion = async (id: string): Promise<boolean> => {
+    const previousPromotions = [...promotions];
+
+    setPromotions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)),
+    );
+
+    try {
+      await PromotionService.toggle(id);
+      return true;
+    } catch {
+      setPromotions(previousPromotions);
+      Alert.alert("Error", "Failed to toggle promotion status");
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchPromotions();
   }, [fetchPromotions]);
@@ -94,6 +110,7 @@ export function usePromotions() {
     addPromotion,
     updatePromotion,
     removePromotion,
+    togglePromotion,
     calculatePreview,
     refresh: fetchPromotions,
   };
