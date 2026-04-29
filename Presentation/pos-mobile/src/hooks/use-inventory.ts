@@ -109,8 +109,6 @@ export function useInventory() {
     }
   };
 
-  // --- Category Actions (Restored for Inventory Screen) ---
-
   const addCategory = async (name: string) => {
     try {
       await InventoryService.createCategory(name);

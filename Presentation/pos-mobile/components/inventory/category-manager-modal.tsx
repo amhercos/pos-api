@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+// Assuming this is where your ConfirmationModal is located
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 interface CategoryManagerProps {
   isOpen: boolean;
@@ -34,9 +36,15 @@ export function CategoryManagerModal({
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [loadingAction, setLoadingAction] = useState<"add" | "rename" | null>(
+  const [loadingAction, setLoadingAction] = useState<
+    "add" | "rename" | "delete" | null
+  >(null);
+
+  // New state for confirmation modal
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null,
   );
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const selectedCategory = categories.find(
     (category) => category.id === editingId,
@@ -72,6 +80,26 @@ export function CategoryManagerModal({
     }
   };
 
+  // Triggered when user clicks the Trash icon
+  const initiateDelete = (category: Category) => {
+    setCategoryToDelete(category);
+    setShowConfirmDelete(true);
+  };
+
+  // Triggered when user confirms in the ConfirmationModal
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+
+    setLoadingAction("delete");
+    try {
+      await onDelete(categoryToDelete.id);
+      setShowConfirmDelete(false);
+      setCategoryToDelete(null);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const startRename = (category: Category) => {
     setIsEditing(true);
     setEditingId(category.id);
@@ -90,138 +118,155 @@ export function CategoryManagerModal({
     (!!editingId && selectedCategory?.name === editingName.trim());
 
   return (
-    <Modal
-      visible={isOpen}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 justify-center items-center bg-black/50 px-6">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ width: "100%", maxWidth: 450 }}
-        >
-          <View className="bg-white rounded-[32px] overflow-hidden shadow-2xl">
-            <View className="px-6 pt-6 pb-4 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <View className="h-10 w-10 bg-slate-900 rounded-xl items-center justify-center">
-                  <FolderTree size={20} color="white" />
+    <>
+      <Modal
+        visible={isOpen}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={onClose}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ width: "100%", maxWidth: 450 }}
+          >
+            <View className="bg-white rounded-[32px] overflow-hidden shadow-2xl">
+              <View className="px-6 pt-6 pb-4 flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <View className="h-10 w-10 bg-slate-900 rounded-xl items-center justify-center">
+                    <FolderTree size={20} color="white" />
+                  </View>
+                  <Text className="text-lg font-black text-slate-900">
+                    Categories
+                  </Text>
                 </View>
-                <Text className="text-lg font-black text-slate-900">
-                  Categories
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={onClose}
-                className="p-2 bg-slate-100 rounded-full"
-              >
-                <X size={18} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="px-6 py-2">
-              <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-2xl p-2">
-                <TextInput
-                  placeholder={"New category..."}
-                  className="flex-1 px-3 text-sm font-bold h-10"
-                  value={categoryNameInput}
-                  onChangeText={setCategoryNameInput}
-                />
                 <TouchableOpacity
-                  onPress={handlePrimaryAction}
-                  disabled={
-                    isPrimaryButtonDisabled ||
-                    loadingAction === "add" ||
-                    loadingAction === "rename"
-                  }
-                  className="bg-slate-900 px-4 py-2 rounded-xl"
+                  onPress={onClose}
+                  className="p-2 bg-slate-100 rounded-full"
                 >
-                  {loadingAction === "add" || loadingAction === "rename" ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text className="text-white text-xs font-bold">Add</Text>
-                  )}
+                  <X size={18} color="#64748b" />
                 </TouchableOpacity>
               </View>
-            </View>
 
-            <View className="px-6 py-4 pb-8">
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 300 }}
-              >
-                <View className="overflow-hidden rounded-[24px] border border-slate-200/70 divide-y divide-slate-200/70">
-                  {categories.map((c) => (
-                    <View
-                      key={c.id}
-                      className="flex-row items-center justify-between gap-3 px-4 py-3"
-                    >
-                      {editingId === c.id ? (
-                        <View className="flex-1 flex-row items-center gap-3">
-                          <TextInput
-                            autoFocus={true}
-                            className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
-                            value={editingName}
-                            onChangeText={setEditingName}
-                          />
-                          <TouchableOpacity
-                            onPress={handleSaveRename}
-                            disabled={
-                              isRenameSaveDisabled || loadingAction === "rename"
-                            }
-                            className="rounded-2xl bg-slate-900 px-3 py-2"
-                          >
-                            {loadingAction === "rename" ? (
-                              <ActivityIndicator size="small" color="white" />
-                            ) : (
-                              <Text className="text-white text-xs font-bold">
-                                Save
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={cancelRename}
-                            className="rounded-2xl border border-slate-200 px-3 py-2"
-                          >
-                            <Text className="text-slate-600 text-xs font-bold">
-                              Cancel
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <View className="flex-1 flex-row items-center justify-between gap-3">
-                          <View className="flex-1 flex-row items-center gap-6">
-                            <Text className="text-base font-semibold text-slate-900">
-                              {c.name}
-                            </Text>
-                            <Text className="text-sm font-medium text-slate-700">
-                              {c.productCount} items
-                            </Text>
-                          </View>
-                          <View className="flex-row items-center gap-3">
-                            <TouchableOpacity
-                              onPress={() => startRename(c)}
-                              className="p-3 rounded-2xl bg-slate-100/90"
-                            >
-                              <Edit3 size={18} color="#475569" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => onDelete(c.id)}
-                              className="p-3 rounded-2xl bg-white shadow-sm"
-                            >
-                              <Trash2 size={16} color="#ef4444" />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  ))}
+              <View className="px-6 py-2">
+                <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-2xl p-2">
+                  <TextInput
+                    placeholder={"New category..."}
+                    className="flex-1 px-3 text-sm font-bold h-10"
+                    value={categoryNameInput}
+                    onChangeText={setCategoryNameInput}
+                  />
+                  <TouchableOpacity
+                    onPress={handlePrimaryAction}
+                    disabled={isPrimaryButtonDisabled || loadingAction !== null}
+                    className="bg-slate-900 px-4 py-2 rounded-xl"
+                  >
+                    {loadingAction === "add" ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text className="text-white text-xs font-bold">Add</Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
+
+              <View className="px-6 py-4 pb-8">
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  style={{ maxHeight: 300 }}
+                >
+                  <View className="overflow-hidden rounded-[24px] border border-slate-200/70 divide-y divide-slate-200/70">
+                    {categories.map((c) => (
+                      <View
+                        key={c.id}
+                        className="flex-row items-center justify-between gap-3 px-4 py-3"
+                      >
+                        {editingId === c.id ? (
+                          <View className="flex-1 flex-row items-center gap-3">
+                            <TextInput
+                              autoFocus={true}
+                              className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                              value={editingName}
+                              onChangeText={setEditingName}
+                            />
+                            <TouchableOpacity
+                              onPress={handleSaveRename}
+                              disabled={
+                                isRenameSaveDisabled ||
+                                loadingAction === "rename"
+                              }
+                              className="rounded-2xl bg-slate-900 px-3 py-2"
+                            >
+                              {loadingAction === "rename" ? (
+                                <ActivityIndicator size="small" color="white" />
+                              ) : (
+                                <Text className="text-white text-xs font-bold">
+                                  Save
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={cancelRename}
+                              className="rounded-2xl border border-slate-200 px-3 py-2"
+                            >
+                              <Text className="text-slate-600 text-xs font-bold">
+                                Cancel
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <View className="flex-1 flex-row items-center justify-between gap-3">
+                            <View className="flex-1 flex-row items-center gap-6">
+                              <Text className="text-base font-semibold text-slate-900">
+                                {c.name}
+                              </Text>
+                              <Text className="text-sm font-medium text-slate-700">
+                                {c.productCount} items
+                              </Text>
+                            </View>
+                            <View className="flex-row items-center gap-3">
+                              <TouchableOpacity
+                                onPress={() => startRename(c)}
+                                className="p-3 rounded-2xl bg-slate-100/90"
+                              >
+                                <Edit3 size={18} color="#475569" />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => initiateDelete(c)}
+                                className="p-3 rounded-2xl bg-white shadow-sm"
+                              >
+                                <Trash2 size={16} color="#ef4444" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal for Deletion */}
+      <ConfirmationModal
+        visible={showConfirmDelete}
+        title="Delete Category"
+        description={
+          categoryToDelete?.productCount && categoryToDelete.productCount > 0
+            ? `Are you sure? "${categoryToDelete?.name}" contains ${categoryToDelete.productCount} items that will be moved to "Uncategorized".`
+            : `Are you sure you want to delete the category "${categoryToDelete?.name}"?`
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => {
+          setShowConfirmDelete(false);
+          setCategoryToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   );
 }
