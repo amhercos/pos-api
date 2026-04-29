@@ -1,7 +1,7 @@
 ﻿using Domain.Entities;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Application.Interfaces.Repositories
 {
@@ -9,8 +9,8 @@ namespace Application.Interfaces.Repositories
     {
         Task AddAsync(Store store, CancellationToken ct);
         Task<bool> ExistsByNameAsync(string name, CancellationToken ct);
-        // StoreSettings
-        Task<Store?> GetStoreWithSettingsAsync(Guid storeId, CancellationToken ct);
+        Task<Store?> GetByIdAsync(Guid storeId, CancellationToken ct);
+
         Task UpdateAsync(Store store, CancellationToken ct);
     }
 }
