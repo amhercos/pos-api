@@ -1,23 +1,23 @@
 import {
-  ArrowUpDown,
-  CheckCircle2,
-  History,
-  ReceiptText,
-  RefreshCcw,
-  Search,
-  TrendingUp,
-  UserCog,
-  Wallet,
+    ArrowUpDown,
+    CheckCircle2,
+    History,
+    ReceiptText,
+    RefreshCcw,
+    Search,
+    TrendingUp,
+    UserCog,
+    Wallet,
 } from "lucide-react-native";
 import { Skeleton } from "moti/skeleton";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -150,10 +150,10 @@ export default function CreditsPage() {
     return result;
   }, [credits, sortOrder]);
 
-  const totalOutstanding = useMemo(
-    () => credits.reduce((acc, curr) => acc + curr.creditAmount, 0),
-    [credits],
-  );
+  // const totalOutstanding = useMemo(
+  //   () => credits.reduce((acc, curr) => acc + curr.creditAmount, 0),
+  //   [credits],
+  // );
 
   const formatPHP = (val: number) =>
     `₱${val.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;

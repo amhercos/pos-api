@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { drawerNavigationRef } from "../../src/utils/drawerRef";
 
-const DrawerTrigger = memo(() => {
+const DrawerTrigger = memo((): React.JSX.Element => {
   const handleOpenDrawer = useCallback((): void => {
     drawerNavigationRef.current?.dispatch(DrawerActions.openDrawer());
   }, []);
@@ -36,9 +36,8 @@ DrawerTrigger.displayName = "DrawerTrigger";
 
 export default function TabLayout(): React.JSX.Element {
   const { width, height } = useWindowDimensions();
-
-  const isTablet = width >= 768;
-  const isLandscape = width > height;
+  const isTablet: boolean = width >= 768;
+  const isLandscape: boolean = width > height;
 
   const screenOptions = useMemo(
     () => ({
@@ -68,17 +67,13 @@ export default function TabLayout(): React.JSX.Element {
   );
 
   return (
-    <Tabs
-      // This is the critical fix for the 'REPLACE' error
-      initialRouteName="dashboard"
-      screenOptions={screenOptions}
-    >
+    <Tabs initialRouteName="dashboard" screenOptions={screenOptions}>
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Home",
           tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: { color: string }) => (
             <LayoutDashboard size={22} color={color} />
           ),
         }}
@@ -88,7 +83,9 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Inventory",
           tabBarLabel: "Stocks",
-          tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Package size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -96,7 +93,9 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Point of Sale",
           tabBarLabel: "New Sale",
-          tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <ShoppingCart size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -104,7 +103,9 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Promotions",
           tabBarLabel: "Promos",
-          tabBarIcon: ({ color }) => <Tag size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Tag size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -112,9 +113,20 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Customer Credits",
           tabBarLabel: "Credits",
-          tabBarIcon: ({ color }) => <Receipt size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Receipt size={22} color={color} />
+          ),
         }}
       />
+
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          href: null,
+        }}
+      />
+
       <Tabs.Screen name="reports" options={{ href: null }} />
       <Tabs.Screen name="pricing" options={{ href: null }} />
     </Tabs>
