@@ -71,6 +71,7 @@ namespace Infrastructure.Repositories
         {
             return await context.Promotions
                 .Include(p => p.MainProduct)
+                    .ThenInclude(mp => mp.Promotions)
                 .Include(p => p.TieUpProduct)
                 .Where(p => p.MainProductId == productId && p.IsActive)
                 .FirstOrDefaultAsync(ct);

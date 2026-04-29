@@ -24,20 +24,25 @@ public class PromotionsController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> Create(CreatePromotionCommand command, CancellationToken ct)
-        => Ok(await _mediator.Send(command, ct));
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, UpdatePromotionCommand command, CancellationToken ct)
     {
-        if (id != command.Id) return BadRequest();
-        return Ok(await _mediator.Send(command, ct));
+        await _mediator.Send(command, ct);
+        return Ok();
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
-        => Ok(await _mediator.Send(new DeletePromotionCommand(id), ct));
+    [HttpPut("{mainProductId}")]
+    public async Task<IActionResult> Update(Guid mainProductId, UpdatePromotionCommand command, CancellationToken ct)
+    {
+        if (mainProductId != command.MainProductId) return BadRequest();
 
-    [HttpPatch("{id}/toggle")]
-    public async Task<IActionResult> Toggle(Guid id, CancellationToken ct)
-    => Ok(await _mediator.Send(new TogglePromotionCommand(id), ct));
+        await _mediator.Send(command, ct);
+        return Ok();
+    }
+
+    [HttpDelete("{mainProductId}")]
+    public async Task<IActionResult> Delete(Guid mainProductId, CancellationToken ct)
+        => Ok(await _mediator.Send(new DeletePromotionCommand(mainProductId), ct));
+
+    [HttpPatch("{mainProductId}/toggle")]
+    public async Task<IActionResult> Toggle(Guid mainProductId, CancellationToken ct)
+        => Ok(await _mediator.Send(new TogglePromotionCommand(mainProductId), ct));
 }

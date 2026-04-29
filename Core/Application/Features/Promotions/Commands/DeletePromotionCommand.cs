@@ -2,4 +2,4 @@
 
 namespace Application.Features.Promotions.Commands;
 
-public record DeletePromotionCommand(Guid Id) : IRequest<Unit>;
+public record DeletePromotionCommand(Guid MainProductId) : IRequest<Unit>;

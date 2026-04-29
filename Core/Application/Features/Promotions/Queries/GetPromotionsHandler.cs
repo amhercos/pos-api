@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
-using Domain.Entities;
+using Application.Features.Promotions.Commands;
 using MediatR;
+using Application.Dto;
 
 namespace Application.Features.Promotions.Queries;
 
@@ -11,15 +12,24 @@ public class GetPromotionsHandler(IPromotionRepository promotionRepo)
     {
         var promotions = await promotionRepo.GetAllAsync(ct);
 
-        return promotions.Select(p => new PromotionResponse
-        {
-            Id = p.Id,
-            Name = p.Name,
-            ProductName = p.MainProduct?.Name ?? "Unknown",
-            OriginalPrice = p.MainProduct?.Price ?? 0,
-            PromoPrice = p.PromoPrice ?? 0,
-            PromoQuantity = p.PromoQuantity,
-            IsActive = p.IsActive
-        });
+        return promotions
+            .GroupBy(p => p.MainProductId)
+            .Select(group => {
+                var first = group.First();
+                return new PromotionResponse
+                {
+                    MainProductId = group.Key,
+                    Name = first.Name,
+                    ProductName = first.MainProduct?.Name ?? "Unknown",
+                    OriginalPrice = first.MainProduct?.Price ?? 0,
+                    IsActive = group.Any(p => p.IsActive),
+                    Tiers = group
+                        .Where(p => p.PromoQuantity.HasValue)
+                        .Select(p => new PromoTier(p.PromoQuantity!.Value, p.PromoPrice ?? 0))
+                        .OrderBy(t => t.Quantity)
+                        .ToList(),
+                    TieUpProductName = first.TieUpProduct?.Name
+                };
+            });
     }
 }
