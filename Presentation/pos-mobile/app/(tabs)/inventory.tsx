@@ -1,32 +1,31 @@
 import {
-    Calendar,
-    Edit3,
-    FolderPlus,
-    LayoutGrid,
-    List as ListIcon,
-    Plus,
-    Search,
-    Tag,
-    Trash2,
-    X,
+  Calendar,
+  Edit3,
+  FolderPlus,
+  LayoutGrid,
+  List as ListIcon,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  X,
 } from "lucide-react-native";
 import { Skeleton } from "moti/skeleton";
 import React, {
-    ReactElement,
-    useCallback,
-    useEffect,
-    useMemo,
-    useState,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -34,6 +33,7 @@ import { useInventory } from "@/src/hooks/use-inventory";
 import { cn } from "@/src/lib/utils";
 import type { Category, Product } from "@/src/types/inventory";
 
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { InventoryTable } from "../../components/inventory-table";
 import { AddProductModal } from "../../components/inventory/add-product-modal";
 import { CategoryManagerModal } from "../../components/inventory/category-manager-modal";
@@ -78,7 +78,12 @@ export default function InventoryScreen(): ReactElement {
   } = useInventory();
 
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.TABLE);
-  const [modals, setModals] = useState({ add: false, edit: false, cat: false });
+  const [modals, setModals] = useState({
+    add: false,
+    edit: false,
+    cat: false,
+    delete: false,
+  });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState<string>("");
   const [categorySearch, setCategorySearch] = useState<string>("");
@@ -105,25 +110,11 @@ export default function InventoryScreen(): ReactElement {
     setModals((m) => ({ ...m, edit: true }));
   }, []);
 
-  const handleDeletePress = useCallback(
-    (id: string | null | undefined, name: string) => {
-      if (!id) return;
-
-      Alert.alert(
-        "Delete Product",
-        `Are you sure you want to delete ${name}?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => deleteProduct(id),
-          },
-        ],
-      );
-    },
-    [deleteProduct],
-  );
+  // Simplified: Accepts the whole product from the Table/Card swipe action
+  const handleDeletePress = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setModals((m) => ({ ...m, delete: true }));
+  }, []);
 
   const filteredCategories = useMemo(() => {
     const query = categorySearch.toLowerCase();
@@ -278,10 +269,7 @@ export default function InventoryScreen(): ReactElement {
             <InventoryTable
               products={filteredProducts}
               loading={loading}
-              onDelete={(id: string | null | undefined) => {
-                const prod = products.find((p) => p.id === id);
-                handleDeletePress(id, prod?.name ?? "");
-              }}
+              onDelete={handleDeletePress} // Now receives product object directly
               onEdit={handleEditPress}
             />
           ) : (
@@ -292,7 +280,7 @@ export default function InventoryScreen(): ReactElement {
                   product={p}
                   width={gridItemWidth}
                   onEdit={() => handleEditPress(p)}
-                  onDelete={() => handleDeletePress(p.id, p.name)}
+                  onDelete={() => handleDeletePress(p)}
                 />
               ))}
             </View>
@@ -327,9 +315,32 @@ export default function InventoryScreen(): ReactElement {
         onUpdate={updateProduct}
         onOpenCategoryManager={() => setModals((m) => ({ ...m, cat: true }))}
       />
+
+      {/* Single Global Confirmation Modal */}
+      <ConfirmationModal
+        visible={modals.delete}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${selectedProduct?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => {
+          setModals((m) => ({ ...m, delete: false }));
+          setSelectedProduct(null);
+        }}
+        onConfirm={async () => {
+          if (selectedProduct?.id) {
+            await deleteProduct(selectedProduct.id);
+            setModals((m) => ({ ...m, delete: false }));
+            setSelectedProduct(null);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
+
+// ... FilterBar and InventoryGridCard remain unchanged ...
+// (Kept for completeness if you need to copy-paste the whole file)
 
 function FilterBar({
   activeFilter,

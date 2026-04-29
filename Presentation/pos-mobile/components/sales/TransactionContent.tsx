@@ -1,26 +1,26 @@
 import {
-    AlertTriangle,
-    ArrowRight,
-    Banknote,
-    CreditCard,
-    Loader2,
-    Minus,
-    Plus,
-    Trash2,
-    UserPlus,
-    Users,
-    X,
-    type LucideIcon,
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  CreditCard,
+  Loader2,
+  Minus,
+  Plus,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+  type LucideIcon,
 } from "lucide-react-native";
 import React, { useMemo } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { formatPHP, roundTo } from "@/src/lib/math";
@@ -423,7 +423,7 @@ export const TransactionContent: React.FC<TransactionContentProps> = ({
           onPress={() => setShowVoidConfirm(true)}
           className="mt-4 self-center"
         >
-          <Text className="text-[9px] font-black uppercase text-slate-300 tracking-[2px]">
+          <Text className="text-[9px] font-black uppercase text-slate-600 tracking-[2px]">
             Void Transaction
           </Text>
         </TouchableOpacity>

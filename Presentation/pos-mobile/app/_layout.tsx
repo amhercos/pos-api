@@ -1,7 +1,7 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { BarChart3, LogOut, Settings, Store, User } from "lucide-react-native";
+import { BarChart3, LogOut, Settings, Store } from "lucide-react-native";
 import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -56,10 +56,10 @@ function CustomDrawerContent(
   useEffect(() => {
     const bridge: NavigationBridge = {
       dispatch: props.navigation.dispatch,
-      navigate: (name, params) => props.navigation.navigate(name, params),
+      navigate: (name: string, params?: object) =>
+        props.navigation.navigate(name, params),
       closeDrawer: props.navigation.closeDrawer,
     };
-
     setDrawerNavigation(bridge);
     return () => setDrawerNavigation(null);
   }, [props.navigation]);
@@ -67,16 +67,14 @@ function CustomDrawerContent(
   const handleLogout = useCallback(async (): Promise<void> => {
     try {
       await logout();
-      showToast.success("Logged out successfully");
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
+      showToast.success("Logged out");
+    } catch {}
   }, [logout]);
 
   const navigateTo = useCallback(
     (path: string): void => {
       props.navigation.closeDrawer();
-      router.push(path);
+      router.push(path as never);
     },
     [props.navigation, router],
   );
@@ -101,27 +99,24 @@ function CustomDrawerContent(
           <DrawerItem
             icon={<BarChart3 size={20} color="#64748b" />}
             label="Analytics"
-            onPress={() => navigateTo("/reports")}
+            onPress={() => navigateTo("/(tabs)/reports")}
           />
         </View>
 
         <SectionHeader title="Account" />
         <View className="gap-y-1">
           <DrawerItem
-            icon={<User size={20} color="#64748b" />}
-            label="Profile"
-            onPress={() => {}}
-          />
-          <DrawerItem
             icon={<Settings size={20} color="#64748b" />}
             label="Settings"
-            onPress={() => {}}
+            onPress={() => navigateTo("/(tabs)/settings")}
           />
         </View>
 
         <View className="mt-auto pt-6 border-t border-slate-100">
           <TouchableOpacity
-            onPress={() => void handleLogout()}
+            onPress={() => {
+              void handleLogout();
+            }}
             className="flex-row items-center p-4 rounded-2xl bg-rose-50 active:bg-rose-100"
           >
             <LogOut size={20} color="#e11d48" />
@@ -138,12 +133,11 @@ function RootLayoutNav(): React.JSX.Element {
   const { width } = useWindowDimensions();
   const segments = useSegments();
   const router = useRouter();
-  const isLargeScreen = width >= 768;
+  const isLargeScreen: boolean = width >= 768;
 
   useEffect(() => {
     if (isLoading) return;
-
-    const inAuthGroup = segments[0] === "(tabs)";
+    const inAuthGroup: boolean = segments[0] === "(tabs)";
 
     if (token && !inAuthGroup) {
       router.replace("/(tabs)/dashboard");
@@ -166,7 +160,9 @@ function RootLayoutNav(): React.JSX.Element {
         <Slot />
       ) : (
         <Drawer
-          drawerContent={(props) => <CustomDrawerContent {...props} />}
+          drawerContent={(props: DrawerContentComponentProps) => (
+            <CustomDrawerContent {...props} />
+          )}
           screenOptions={{
             headerShown: false,
             drawerType: "front",
