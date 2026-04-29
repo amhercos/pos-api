@@ -36,4 +36,8 @@ public class PromotionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
         => Ok(await _mediator.Send(new DeletePromotionCommand(id), ct));
+
+    [HttpPatch("{id}/toggle")]
+    public async Task<IActionResult> Toggle(Guid id, CancellationToken ct)
+    => Ok(await _mediator.Send(new TogglePromotionCommand(id), ct));
 }
