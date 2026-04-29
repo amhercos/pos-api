@@ -11,7 +11,9 @@ namespace Application.Services.Pricing
 
         public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
         {
-            return (promo.PromoPrice ?? product.Price) * quantity;
+            decimal unitPrice = promo.PromoPrice ?? product.Price;
+
+            return unitPrice * quantity;
         }
     }
 }
