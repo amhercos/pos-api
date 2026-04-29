@@ -35,7 +35,7 @@ namespace Infrastructure.Repositories
             return await context.Promotions
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
-                .Where(p => p.IsActive)
+                //.Where(p => p.IsActive)
                 .AsNoTracking()
                 .ToListAsync(ct);
         }
