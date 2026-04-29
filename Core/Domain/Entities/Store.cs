@@ -12,7 +12,7 @@ namespace Domain.Entities
         public string? ConnectionString { get; set; }
         public string Location { get; set; } = null!;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public virtual StoreSettings Settings { get; set; } = null!;
+        //public virtual StoreSettings Settings { get; set; } = null!;
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public bool IsActive { get; set; } = true;
 

@@ -48,6 +48,7 @@
                 services.AddScoped<ICustomerCreditRepository, CustomerCreditRepository>();
                 services.AddScoped<IPromotionRepository, PromotionRepository>();
                 services.AddScoped<IDashboardRepository, DashboardRepository>();
+                services.AddScoped<IStoreSettingsRepository, StoreSettingsRepository>();
 
 
             return services;
