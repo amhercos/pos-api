@@ -23,14 +23,16 @@ namespace Application.Services
                 return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
             }
 
-            var primaryType = activePromos.First().Type;
+            var bestPromo = activePromos
+                .OrderBy(p => p.Type == PromotionType.Bundle ? 0 : 1)
+                .FirstOrDefault();
 
-            if (!_strategyMap.TryGetValue(primaryType, out var strategy))
+            if (bestPromo == null || !_strategyMap.TryGetValue(bestPromo.Type, out var strategy))
             {
                 return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
             }
 
-            var total = strategy.CalculateLineTotal(product, activePromos.First(), quantity, basket);
+            var total = strategy.CalculateLineTotal(product, bestPromo, quantity, basket);
 
             return Math.Round(total, 2, MidpointRounding.AwayFromZero);
         }

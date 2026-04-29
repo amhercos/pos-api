@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Domain.Entities;
+using Domain.Entities.Enums;
 using MediatR;
 
 namespace Application.Features.Promotions.Commands;
@@ -12,40 +13,41 @@ public class CreatePromotionHandler(
 {
     public async Task<Unit> Handle(CreatePromotionCommand request, CancellationToken ct)
     {
-        var authenticatedStoreId = currentUserService.StoreId;
+        var storeId = currentUserService.StoreId;
 
-        if (authenticatedStoreId == Guid.Empty)
+        if (request.Type == PromotionType.Bulk && request.Tiers.Any())
         {
-            throw new UnauthorizedAccessException("Invalid Store");
-        }
-
-        foreach (var tier in request.Tiers)
-        {
-            var promotion = new Promotion
+            foreach (var tier in request.Tiers)
             {
-                Id = Guid.NewGuid(),
-                Name = request.Tiers.Count > 1 ? $"{request.Name} ({tier.Quantity} qty)" : request.Name,
-                Type = request.Type,
-                StoreId = authenticatedStoreId,
-                MainProductId = request.MainProductId,
-
-                // Tier-specific data
-                PromoQuantity = tier.Quantity,
-                PromoPrice = tier.Price,
-
-                // Shared data for this command
-                TieUpProductId = request.TieUpProductId,
-                TieUpQuantity = request.TieUpQuantity,
-
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            promotionRepo.Add(promotion);
+                var promo = PromotionFactory.Create(
+                    name: $"{request.Name} ({tier.Quantity} qty)",
+                    type: request.Type,
+                    storeId: storeId,
+                    mainProductId: request.MainProductId,
+                    quantity: tier.Quantity,
+                    price: tier.Price
+                );
+                promotionRepo.Add(promo);
+            }
+        }
+        else
+        {
+            // Handle Discount or Bundle
+            var firstTier = request.Tiers.FirstOrDefault();
+            var promo = PromotionFactory.Create(
+                name: request.Name,
+                type: request.Type,
+                storeId: storeId,
+                mainProductId: request.MainProductId,
+                quantity: firstTier?.Quantity ?? 1,
+                price: firstTier?.Price ?? 0,
+                tieUpId: request.TieUpProductId,
+                tieUpQty: request.TieUpQuantity
+            );
+            promotionRepo.Add(promo);
         }
 
         await context.SaveChangesAsync(ct);
-
         return Unit.Value;
     }
 }
