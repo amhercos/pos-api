@@ -13,16 +13,31 @@ namespace Application.Services.Pricing
 
         public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
         {
-            int threshold = promo.PromoQuantity ?? 1;
-            decimal promoPrice = promo.PromoPrice ?? product.Price;
+            var bulkTiers = product.Promotions
+                .Where(p => p.IsActive && p.Type == PromotionType.Bulk)
+                .OrderByDescending(p => p.PromoQuantity)
+                .ToList();
 
-            if (quantity >= threshold)
+            if (!bulkTiers.Any())
+                return quantity * product.Price;
+
+            decimal total = 0;
+            int remainingQty = quantity;
+
+            foreach (var tier in bulkTiers)
             {
-                int sets = quantity / threshold;
-                int remainder = quantity % threshold;
-                return (sets * promoPrice) + (remainder * product.Price);
+                int threshold = tier.PromoQuantity ?? 0;
+                if (threshold > 0 && remainingQty >= threshold)
+                {
+                    int sets = remainingQty / threshold;
+                    total += sets * (tier.PromoPrice ?? 0);
+                    remainingQty %= threshold;
+                }
             }
-            return quantity * product.Price;
+
+            total += remainingQty * product.Price;
+
+            return total;
         }
     }
 }

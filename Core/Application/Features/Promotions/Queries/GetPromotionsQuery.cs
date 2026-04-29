@@ -1,5 +1,5 @@
-﻿using MediatR;
-using Domain.Entities;
+﻿using Application.Dto;
+using MediatR;
 
 namespace Application.Features.Promotions.Queries;
 

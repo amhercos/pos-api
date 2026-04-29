@@ -16,13 +16,21 @@ namespace Application.Services
 
         public decimal CalculateLineTotal(Product product, int quantity, IEnumerable<TransactionItem> basket)
         {
-            var activePromo = product.Promotions.FirstOrDefault(p => p.IsActive);
-            if (activePromo == null || !_strategyMap.TryGetValue(activePromo.Type, out var strategy))
+            var activePromos = product.Promotions.Where(p => p.IsActive).ToList();
+
+            if (!activePromos.Any())
             {
                 return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
             }
 
-            var total = strategy.CalculateLineTotal(product, activePromo, quantity, basket);
+            var primaryType = activePromos.First().Type;
+
+            if (!_strategyMap.TryGetValue(primaryType, out var strategy))
+            {
+                return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
+            }
+
+            var total = strategy.CalculateLineTotal(product, activePromos.First(), quantity, basket);
 
             return Math.Round(total, 2, MidpointRounding.AwayFromZero);
         }
