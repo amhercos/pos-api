@@ -2,12 +2,11 @@
 using Application.Interfaces.Repositories;
 using Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Promotions.Commands;
 
 public class UpdatePromotionHandler(
-    IPromotionRepository promotionRepo, // Use Repo instead of Context
+    IPromotionRepository promotionRepo,
     IPosDbContext context,
     ICurrentUserService currentUserService) : IRequestHandler<UpdatePromotionCommand, Unit>
 {
@@ -19,7 +18,7 @@ public class UpdatePromotionHandler(
 
         if (existingTiers.Any())
         {
-            promotionRepo.RemoveRange(existingTiers);
+            context.Promotions.RemoveRange(existingTiers);
         }
 
         var sortedTiers = request.Tiers.OrderByDescending(t => t.Quantity);
@@ -38,6 +37,7 @@ public class UpdatePromotionHandler(
                 TieUpProductId = request.TieUpProductId,
                 TieUpQuantity = request.TieUpQuantity,
                 IsActive = request.IsActive,
+                IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
 

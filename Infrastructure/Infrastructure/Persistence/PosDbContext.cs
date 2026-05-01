@@ -91,7 +91,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
             property.SetScale(2);
         }
 
-       //global datetime converter
+        //global datetime converter
         var dateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
             v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
             v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc)
@@ -119,16 +119,6 @@ public abstract class PosDbContext : DbContext, IPosDbContext
 
         Expression finalBody = tenantExpression;
 
-        var isActiveProp = type.GetProperty("IsActive");
-        if (isActiveProp != null)
-        {
-            var isActiveExpression = Expression.Equal(
-                Expression.Property(parameter, isActiveProp),
-                Expression.Constant(true)
-            );
-            finalBody = Expression.AndAlso(finalBody, isActiveExpression);
-        }
-
         var isDeletedProp = type.GetProperty("IsDeleted");
         if (isDeletedProp != null)
         {
@@ -138,6 +128,7 @@ public abstract class PosDbContext : DbContext, IPosDbContext
             );
             finalBody = Expression.AndAlso(finalBody, isDeletedExpression);
         }
+
 
         return Expression.Lambda(finalBody, parameter);
     }
