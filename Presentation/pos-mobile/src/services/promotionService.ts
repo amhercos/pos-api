@@ -24,28 +24,37 @@ export const PromotionService = {
       const response = await apiClient.post<string>("/Promotions", command);
       showToast.success("Promotion created successfully");
       return response.data;
-    } catch {}
+    } catch (error) {
+      throw error;
+    }
   },
 
-  update: async (command: UpdatePromotionRequest) => {
+  update: async (mainProductId: string, command: UpdatePromotionRequest) => {
     try {
       const response = await apiClient.put(
-        `/Promotions/${command.id}`,
+        `/Promotions/${mainProductId}`,
         command,
       );
-      showToast.success("Status Updated");
+      showToast.success("Promotion updated successfully");
       return response.data;
-    } catch {}
+    } catch (error) {
+      throw error;
+    }
   },
 
-  delete: async (id: string) => {
-    await apiClient.delete(`/Promotions/${id}`);
+  delete: async (mainProductId: string) => {
+    try {
+      await apiClient.delete(`/Promotions/${mainProductId}`);
+      showToast.success("Promotion deleted");
+    } catch (error) {
+      throw error;
+    }
   },
 
-  toggle: async (id: string) => {
+  toggle: async (mainProductId: string) => {
     try {
       const response = await apiClient.patch<boolean>(
-        `/Promotions/${id}/toggle`,
+        `/Promotions/${mainProductId}/toggle`,
       );
       showToast.success("Status updated successfully");
       return response.data;

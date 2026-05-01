@@ -1,38 +1,39 @@
 export enum PromotionType {
-  Bulk = 1,
+  Bulk = 1, // Ensure this matches your Backend Enum (usually 0-indexed in C#)
   Bundle = 2,
   Discount = 3,
 }
 
+export interface PromoTier {
+  quantity: number;
+  price: number;
+}
+
 export interface Promotion {
-  id: string;
-  name: string;
+  mainProductId: string;
   productName: string;
-  promotionType: PromotionType;
-  originalPrice: number;
-  promoPrice: number;
-  promoQuantity?: number;
-  tieUpProductId?: string | null;
-  tieUpQuantity?: number | null;
+  name: string;
+  type: PromotionType;
   isActive: boolean;
+  tiers: PromoTier[];
+  originalPrice?: number;
+  tieUpProductId?: string | null;
+  tieUpProductName?: string | null;
 }
 
 export interface CreatePromotionRequest {
   name: string;
   type: PromotionType;
   mainProductId: string;
-  // Bulk/Discount
-  promoQuantity?: number;
-  promoPrice?: number;
-  // Tie-up (Bundle)
-  tieUpProductId?: string;
-  tieUpQuantity?: number;
+  tiers: PromoTier[];
+  tieUpProductId?: string | null;
 }
 
 export interface UpdatePromotionRequest {
-  id: string;
+  mainProductId: string;
   name: string;
-  promoQuantity?: number;
-  promoPrice?: number;
+  type: PromotionType;
+  tiers: PromoTier[];
   isActive: boolean;
+  tieUpProductId?: string | null;
 }
