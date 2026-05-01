@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Promotions.Commands;
 
 public class UpdatePromotionHandler(
+    IPromotionRepository promotionRepo, // Use Repo instead of Context
     IPosDbContext context,
     ICurrentUserService currentUserService) : IRequestHandler<UpdatePromotionCommand, Unit>
 {
@@ -14,21 +15,21 @@ public class UpdatePromotionHandler(
     {
         var storeId = currentUserService.StoreId;
 
-        var existingPromos = await context.Promotions
-            .Where(p => p.MainProductId == request.MainProductId && p.StoreId == storeId)
-            .ToListAsync(ct);
+        var existingTiers = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
 
-        if (existingPromos.Any())
+        if (existingTiers.Any())
         {
-            context.Promotions.RemoveRange(existingPromos);
+            promotionRepo.RemoveRange(existingTiers);
         }
 
-        foreach (var tier in request.Tiers)
+        var sortedTiers = request.Tiers.OrderByDescending(t => t.Quantity);
+
+        foreach (var tier in sortedTiers)
         {
             var promotion = new Promotion
             {
                 Id = Guid.NewGuid(),
-                Name = request.Tiers.Count > 1 ? $"{request.Name} ({tier.Quantity} qty)" : request.Name,
+                Name = request.Name,
                 Type = request.Type,
                 StoreId = storeId,
                 MainProductId = request.MainProductId,
@@ -40,7 +41,7 @@ public class UpdatePromotionHandler(
                 CreatedAt = DateTime.UtcNow
             };
 
-            context.Promotions.Add(promotion);
+            promotionRepo.Add(promotion);
         }
 
         await context.SaveChangesAsync(ct);

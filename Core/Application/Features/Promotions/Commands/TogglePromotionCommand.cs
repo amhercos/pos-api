@@ -5,5 +5,5 @@ using System.Text;
 
 namespace Application.Features.Promotions.Commands
 {
-    public record TogglePromotionCommand(Guid Id) : IRequest<bool>;
+    public record TogglePromotionCommand(Guid MainProductId) : IRequest<bool>;
 }

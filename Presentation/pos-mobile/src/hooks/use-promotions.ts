@@ -37,23 +37,12 @@ export function usePromotions() {
   };
 
   const updatePromotion = async (
+    mainProductId: string,
     command: UpdatePromotionRequest,
   ): Promise<boolean> => {
     try {
-      await PromotionService.update(command);
-      setPromotions((prev) =>
-        prev.map((p) =>
-          p.id === command.id
-            ? {
-                ...p,
-                name: command.name,
-                promoPrice: command.promoPrice ?? p.promoPrice,
-                promoQuantity: command.promoQuantity ?? p.promoQuantity,
-                isActive: command.isActive,
-              }
-            : p,
-        ),
-      );
+      await PromotionService.update(mainProductId, command);
+      await fetchPromotions();
       return true;
     } catch {
       Alert.alert("Error", "Failed to update promotion");
@@ -61,10 +50,12 @@ export function usePromotions() {
     }
   };
 
-  const removePromotion = async (id: string): Promise<boolean> => {
+  const removePromotion = async (mainProductId: string): Promise<boolean> => {
     try {
-      await PromotionService.delete(id);
-      setPromotions((prev) => prev.filter((p) => p.id !== id));
+      await PromotionService.delete(mainProductId);
+      setPromotions((prev) =>
+        prev.filter((p) => p.mainProductId !== mainProductId),
+      );
       return true;
     } catch {
       Alert.alert("Error", "Could not delete promotion");
@@ -83,15 +74,17 @@ export function usePromotions() {
     }
   };
 
-  const togglePromotion = async (id: string): Promise<boolean> => {
+  const togglePromotion = async (mainProductId: string): Promise<boolean> => {
     const previousPromotions = [...promotions];
 
     setPromotions((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)),
+      prev.map((p) =>
+        p.mainProductId === mainProductId ? { ...p, isActive: !p.isActive } : p,
+      ),
     );
 
     try {
-      await PromotionService.toggle(id);
+      await PromotionService.toggle(mainProductId);
       return true;
     } catch {
       setPromotions(previousPromotions);

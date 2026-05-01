@@ -10,14 +10,21 @@ public class TogglePromotionHandler(
 {
     public async Task<bool> Handle(TogglePromotionCommand request, CancellationToken ct)
     {
-        var promo = await promotionRepo.GetByIdAsync(request.Id, ct);
-        if (promo == null) throw new KeyNotFoundException("Promotion not found");
+       
+        var tiers = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
 
-        promo.IsActive = !promo.IsActive;
+        if (!tiers.Any()) throw new KeyNotFoundException("Promotion group not found");
 
-        promotionRepo.Update(promo);
+        // Toggle all of them to the opposite of the first tier's status
+        bool newStatus = !tiers.First().IsActive;
+
+        foreach (var tier in tiers)
+        {
+            tier.IsActive = newStatus;
+            promotionRepo.Update(tier);
+        }
+
         await context.SaveChangesAsync(ct);
-
-        return promo.IsActive;
+        return newStatus;
     }
 }

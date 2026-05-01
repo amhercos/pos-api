@@ -1,24 +1,18 @@
-import { Edit3, Plus, Tag, Trash2 } from "lucide-react-native";
-import { Skeleton } from "moti/skeleton";
-import React, { useState } from "react";
-import {
-    FlatList,
-    RefreshControl,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Plus } from "lucide-react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Internal Hooks & Types
+// Hooks
 import { useInventory } from "@/src/hooks/use-inventory";
 import { usePromotions } from "@/src/hooks/use-promotions";
-import { Promotion } from "../../src/types/promotion";
+import { Promotion } from "@/src/types/promotion";
 
 // Components
-import { ConfirmationModal } from "../../components/ConfirmationModal";
-import { AddPromotionsModal } from "../../components/promotions/AddPromotionsModal";
-import { EditPromotionModal } from "../../components/promotions/EditPromotionModal";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { AddPromotionsModal } from "@/components/promotions/AddPromotionsModal";
+import { EditPromotionModal } from "@/components/promotions/EditPromotionModal";
+import { PromotionTable } from "@/components/promotions/PromotionTable";
 
 export default function PromotionScreen() {
   const {
@@ -32,191 +26,102 @@ export default function PromotionScreen() {
 
   const { products } = useInventory();
 
-  // Modal Visibility States
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  // Visibility States
+  const [addVisible, setAddVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
 
-  // Selected Item States
-  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(
-    null,
-  );
+  // 1. Safe Modal Triggers using requestAnimationFrame (Same as handlePeriodChange)
+  const handleEditTrigger = useCallback((promo: Promotion) => {
+    requestAnimationFrame(() => {
+      setSelectedPromo(promo);
+      setEditVisible(true);
+    });
+  }, []);
 
-  const PromotionSkeleton = () => (
-    <View className="bg-white p-4 mb-3 rounded-2xl border border-gray-100 flex-row justify-between items-center">
-      <View className="flex-1 gap-y-2">
-        <Skeleton colorMode="light" width={100} height={12} />
-        <Skeleton colorMode="light" width={200} height={20} />
-        <Skeleton colorMode="light" width={150} height={16} />
-      </View>
-      <View className="ml-4">
-        <Skeleton colorMode="light" radius="round" width={40} height={40} />
-      </View>
-    </View>
-  );
+  const handleDeleteTrigger = useCallback((promo: Promotion) => {
+    requestAnimationFrame(() => {
+      setSelectedPromo(promo);
+      setDeleteVisible(true);
+    });
+  }, []);
 
-  const handleDeletePress = (promo: Promotion) => {
-    setSelectedPromotion(promo);
-    setDeleteModalVisible(true);
-  };
-
-  const handleEditPress = (promo: Promotion) => {
-    setSelectedPromotion(promo);
-    setEditModalVisible(true);
-  };
-
-  const confirmDelete = async () => {
-    if (selectedPromotion) {
-      await removePromotion(selectedPromotion.id);
-      setDeleteModalVisible(false);
-      setSelectedPromotion(null);
+  const onConfirmDelete = async () => {
+    if (selectedPromo) {
+      await removePromotion(selectedPromo.mainProductId);
+      setDeleteVisible(false);
+      setSelectedPromo(null);
     }
   };
 
-  const renderItem = ({ item }: { item: Promotion }) => (
-    <View
-      className={`bg-white p-4 mb-3 rounded-2xl shadow-sm border ${
-        item.isActive ? "border-gray-100" : "border-gray-200 opacity-60"
-      } flex-row justify-between items-center`}
-    >
-      <TouchableOpacity
-        onPress={() => handleEditPress(item)}
-        className="flex-1"
-      >
-        <View className="flex-row items-center gap-2 mb-1">
-          <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-tighter">
-            {item.name}
-          </Text>
-          {!item.isActive && (
-            <View className="bg-gray-200 px-2 py-0.5 rounded-full">
-              <Text className="text-[8px] font-bold text-gray-600">
-                INACTIVE
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <Text className="text-lg font-bold text-gray-800">
-          {item.productName}
-        </Text>
-
-        <View className="flex-row items-center mt-1">
-          <Text className="text-blue-600 font-bold text-base">
-            ₱{item.promoPrice}
-          </Text>
-          {item.promoQuantity && item.promoQuantity > 0 && (
-            <Text className="text-gray-500 text-sm ml-1">
-              / {item.promoQuantity} units
-            </Text>
-          )}
-          <Text className="text-gray-400 text-xs line-through ml-2">
-            ₱{item.originalPrice}
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      <View className="flex-row items-center gap-2">
-        <TouchableOpacity
-          onPress={() => handleEditPress(item)}
-          className="bg-blue-50 p-2 rounded-full active:bg-blue-100"
-        >
-          <Edit3 size={18} color="#2563eb" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => handleDeletePress(item)}
-          className="bg-red-50 p-2 rounded-full active:bg-red-100"
-        >
-          <Trash2 size={18} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
-    </View>
+  // 2. Memoize the Table to prevent unnecessary re-renders during modal state changes
+  const MemoizedTable = useMemo(
+    () => (
+      <PromotionTable
+        promotions={promotions}
+        loading={loading}
+        onRefresh={refresh}
+        onEdit={handleEditTrigger}
+        onDelete={handleDeleteTrigger}
+      />
+    ),
+    [promotions, loading, refresh, handleEditTrigger, handleDeleteTrigger],
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-1 p-4">
-        {/* Header Section */}
-        <View className="flex-row justify-between items-center mb-6 mt-2">
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-6">
+        {/* Header */}
+        <View className="flex-row justify-between items-end mb-8 mt-4">
           <View>
-            <Text className="text-2xl font-bold text-gray-900">
-              Special Pricing
+            <Text className="text-3xl font-black text-slate-900">
+              Promotions
             </Text>
-            <Text className="text-gray-500 text-sm font-medium">
-              Manage your bulk and bundle deals
+            <Text className="text-slate-500 font-medium">
+              Bulk pricing & bundle engine
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setAddModalVisible(true)}
-            className="bg-blue-600 p-3 rounded-full shadow-lg shadow-blue-400 active:bg-blue-700"
+            onPress={() => setAddVisible(true)}
+            className="bg-blue-600 w-14 h-14 rounded-2xl items-center justify-center shadow-xl shadow-blue-300 active:opacity-80"
           >
-            <Plus color="white" size={24} />
+            <Plus color="white" size={28} />
           </TouchableOpacity>
         </View>
 
-        {/* Content Section */}
-        {loading && promotions.length === 0 ? (
-          <View>
-            <PromotionSkeleton />
-            <PromotionSkeleton />
-            <PromotionSkeleton />
-            <PromotionSkeleton />
-          </View>
-        ) : (
-          <FlatList
-            data={promotions}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={refresh}
-                tintColor="#2563eb"
-              />
-            }
-            ListEmptyComponent={
-              <View className="items-center mt-20 opacity-40">
-                <Tag color="#9ca3af" size={64} strokeWidth={1.5} />
-                <Text className="text-gray-500 mt-4 font-black text-lg">
-                  No active promotions
-                </Text>
-                <Text className="text-gray-400 text-[15px] font-medium">
-                  Tap the + button to create a new deal
-                </Text>
-              </View>
-            }
-          />
-        )}
+        {MemoizedTable}
       </View>
 
-      {/* Modals */}
+      {/* Create Modal */}
       <AddPromotionsModal
-        isVisible={addModalVisible}
-        onClose={() => setAddModalVisible(false)}
+        isVisible={addVisible}
+        onClose={() => setAddVisible(false)}
         onSave={addPromotion}
         products={products}
       />
 
+      {/* Edit Modal */}
       <EditPromotionModal
-        isVisible={editModalVisible}
+        isVisible={editVisible}
         onClose={() => {
-          setEditModalVisible(false);
-          setSelectedPromotion(null);
+          setEditVisible(false);
+          setSelectedPromo(null);
         }}
         onUpdate={updatePromotion}
-        promotion={selectedPromotion}
+        promotion={selectedPromo}
       />
 
+      {/* Delete Confirmation */}
       <ConfirmationModal
-        visible={deleteModalVisible}
-        title="Delete Promotion?"
-        description={`Are you sure you want to remove "${selectedPromotion?.name}"? This action cannot be undone.`}
-        confirmLabel="Yes, Delete"
-        onConfirm={confirmDelete}
+        visible={deleteVisible}
+        title="Remove Promotion?"
+        description={`This will delete all pricing tiers for ${selectedPromo?.productName}. This action cannot be undone.`}
+        confirmLabel="Remove All"
+        onConfirm={onConfirmDelete}
         onCancel={() => {
-          setDeleteModalVisible(false);
-          setSelectedPromotion(null);
+          setDeleteVisible(false);
+          setSelectedPromo(null);
         }}
         variant="danger"
       />

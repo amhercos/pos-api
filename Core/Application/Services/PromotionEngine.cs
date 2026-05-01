@@ -25,7 +25,8 @@ namespace Application.Services
 
             var bestPromo = activePromos
                 .OrderBy(p => p.Type == PromotionType.Bundle ? 0 : 1)
-                .FirstOrDefault();
+                .ThenByDescending(p => p.PromoQuantity)
+                .FirstOrDefault(p => p.Type != PromotionType.Bulk || (p.PromoQuantity <= quantity));
 
             if (bestPromo == null || !_strategyMap.TryGetValue(bestPromo.Type, out var strategy))
             {
