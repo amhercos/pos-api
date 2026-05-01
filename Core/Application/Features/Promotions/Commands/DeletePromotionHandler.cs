@@ -1,22 +1,20 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Promotions.Commands;
 
 public class DeletePromotionHandler(
+    IPromotionRepository promotionRepo,
     IPosDbContext context) : IRequestHandler<DeletePromotionCommand, Unit>
 {
     public async Task<Unit> Handle(DeletePromotionCommand request, CancellationToken ct)
     {
-        var promos = await context.Promotions
-            .Where(p => p.MainProductId == request.MainProductId)
-            .ToListAsync(ct);
+        var promos = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
 
         if (promos.Any())
         {
-            context.Promotions.RemoveRange(promos);
+            promotionRepo.RemoveRange(promos);
             await context.SaveChangesAsync(ct);
         }
 
