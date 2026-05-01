@@ -86,5 +86,17 @@ namespace Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync(ct);
         }
+
+        public async Task<List<Promotion>> GetByMainProductIdAsync(Guid productId, CancellationToken ct)
+        {
+            return await context.Promotions
+                .Where(p => p.MainProductId == productId && p.StoreId == currentUserService.StoreId)
+                .ToListAsync(ct);
+        }
+
+        public void RemoveRange(IEnumerable<Promotion> promotions)
+        {
+            context.Promotions.RemoveRange(promotions);
+        }
     }
 }

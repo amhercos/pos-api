@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Entities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace Application.Services.Pricing
 {
@@ -13,13 +13,15 @@ namespace Application.Services.Pricing
 
         public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
         {
-            if (promo.TieUpProductId == null)
-                return product.Price * quantity;
+            if (!promo.IsActive || promo.TieUpProductId == null)
+            {
+                return quantity * product.Price;
+            }
 
             var tieUpItem = basket.FirstOrDefault(i => i.ProductId == promo.TieUpProductId);
-            int tieUpAvailable = tieUpItem?.Quantity ?? 0;
+            int tieUpInCart = tieUpItem?.Quantity ?? 0;
 
-            int applicableBundleCount = Math.Min(quantity, tieUpAvailable);
+            int applicableBundleCount = Math.Min(quantity, tieUpInCart);
             int regularPriceCount = quantity - applicableBundleCount;
 
             decimal bundlePrice = promo.PromoPrice ?? product.Price;
