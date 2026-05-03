@@ -75,7 +75,7 @@ public class CreateTransactionHandler(
                 }
             }
 
-            transaction.TotalAmount = transaction.Items.Sum(x => x.Quantity * x.UnitPrice);
+            transaction.TotalAmount = Math.Round(transaction.Items.Sum(x => x.Quantity * x.UnitPrice), 2, MidpointRounding.AwayFromZero);
 
             if (transaction.PaymentType == PaymentType.Credit)
             {

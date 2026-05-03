@@ -5,9 +5,6 @@ using MediatR;
 namespace Application.Features.Transactions.Commands
 {
     public record CreateTransactionCommand(
-        //Guid? LocalId,
-        //bool IsOfflineSync,
-        //DateTime? OfflineCreatedAt,
         List<BasketItemDto> Items,
         PaymentType PaymentType,
         decimal TotalAmount,

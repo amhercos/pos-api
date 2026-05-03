@@ -1,39 +1,63 @@
 export enum PromotionType {
-  Bulk = 1, // Ensure this matches your Backend Enum (usually 0-indexed in C#)
-  Bundle = 2,
   Discount = 3,
+  Bulk = 1,
+  Bundle = 2,
 }
 
-export interface PromoTier {
+export interface PromotionTier {
+  id?: string;
   quantity: number;
   price: number;
+  promotionId?: string;
 }
 
 export interface Promotion {
-  mainProductId: string;
-  productName: string;
+  id: string;
   name: string;
-  type: PromotionType;
-  isActive: boolean;
-  tiers: PromoTier[];
+  type: PromotionType | string;
+  mainProductId: string;
+  productName?: string;
   originalPrice?: number;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  tiers: PromotionTier[];
   tieUpProductId?: string | null;
   tieUpProductName?: string | null;
+  tieUpQuantity?: number | null;
+}
+
+export interface BasketItem {
+  productId: string;
+  quantity: number;
 }
 
 export interface CreatePromotionRequest {
   name: string;
-  type: PromotionType;
+  type: string;
   mainProductId: string;
-  tiers: PromoTier[];
+  isActive: boolean;
+  tiers: Omit<PromotionTier, "id" | "promotionId">[];
   tieUpProductId?: string | null;
+  tieUpQuantity?: number | null;
 }
 
 export interface UpdatePromotionRequest {
-  mainProductId: string;
+  id: string;
   name: string;
-  type: PromotionType;
-  tiers: PromoTier[];
   isActive: boolean;
-  tieUpProductId?: string | null;
+  tiers: Omit<PromotionTier, "id" | "promotionId">[];
+}
+
+export interface PromotionCalculationRequest {
+  productId: string;
+  quantity: number;
+  basket: BasketItem[];
+}
+
+export interface PromotionCalculationResponse {
+  originalTotal: number;
+  discountedTotal: number;
+  savings: number;
+  appliedPromotionName: string | null;
 }
