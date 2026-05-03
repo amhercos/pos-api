@@ -14,22 +14,33 @@ public class GetPromotionsHandler(IPromotionRepository promotionRepo)
 
         return promotions
             .GroupBy(p => p.MainProductId)
-            .Select(group => {
-                var first = group.First();
-                return new PromotionResponse
-                {
-                    MainProductId = group.Key,
-                    Name = first.Name,
-                    ProductName = first.MainProduct?.Name ?? "Unknown",
-                    OriginalPrice = first.MainProduct?.Price ?? 0,
-                    IsActive = group.Any(p => p.IsActive),
-                    Tiers = group
-                        .Where(p => p.PromoQuantity.HasValue)
-                        .Select(p => new PromoTier(p.PromoQuantity!.Value, p.PromoPrice ?? 0))
-                        .OrderBy(t => t.Quantity)
-                        .ToList(),
-                    TieUpProductName = first.TieUpProduct?.Name
-                };
-            });
+           .Select(group =>
+           {
+               var first = group.First();
+
+               return new PromotionResponse
+               {
+                   MainProductId = group.Key,
+                   Name = first.Name,
+                   ProductName = first.MainProduct?.Name ?? "Unknown",
+                   OriginalPrice = first.MainProduct?.Price ?? 0,
+
+                   IsActive = group.Any(p => p.IsActive),
+                   Type = first.Type,
+
+                   Tiers = group
+                       .Where(p => p.PromoQuantity.HasValue)
+                       .Select(p => new PromoTier(
+                           p.PromoQuantity!.Value,
+                           p.PromoPrice ?? 0
+                       ))
+                       .OrderBy(t => t.Quantity)
+                       .ToList(),
+
+                   TieUpProductId = first.TieUpProductId,
+
+                   TieUpProductName = first.TieUpProduct?.Name
+               };
+           });
     }
 }
