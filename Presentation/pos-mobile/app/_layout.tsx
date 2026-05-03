@@ -1,7 +1,8 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { BarChart3, LogOut, Settings, Store } from "lucide-react-native";
+import { BarChart3, LogOut, Settings, Store, Tag } from "lucide-react-native"; // Added Tag icon
 import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +19,15 @@ import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { NavigationBridge, setDrawerNavigation } from "../src/utils/drawerRef";
 import { showToast } from "../src/utils/toast";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 const SectionHeader = memo(({ title }: { title: string }) => (
   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-2">
@@ -101,6 +111,12 @@ function CustomDrawerContent(
             label="Analytics"
             onPress={() => navigateTo("/(tabs)/reports")}
           />
+          {/* Added Promotions Menu Item */}
+          <DrawerItem
+            icon={<Tag size={20} color="#64748b" />}
+            label="Promotions"
+            onPress={() => navigateTo("/(tabs)/promotions")}
+          />
         </View>
 
         <SectionHeader title="Account" />
@@ -182,10 +198,12 @@ function RootLayoutNav(): React.JSX.Element {
 
 export default function RootLayout(): React.JSX.Element {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-      <Toast />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RootLayoutNav />
+        <Toast />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

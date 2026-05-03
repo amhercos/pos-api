@@ -1,4 +1,4 @@
-import { Promotion } from "./sale";
+import { Promotion } from "./promotion";
 export interface Category {
   id: string;
   name: string;

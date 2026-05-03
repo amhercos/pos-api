@@ -2,64 +2,50 @@ import { apiClient } from "../api/client";
 import {
   CreatePromotionRequest,
   Promotion,
+  PromotionCalculationRequest,
+  PromotionCalculationResponse,
   UpdatePromotionRequest,
 } from "../types/promotion";
 import { showToast } from "../utils/toast";
 
-export const PromotionService = {
-  getAll: async () => {
+export const promotionService = {
+  getAll: async (): Promise<Promotion[]> => {
     const response = await apiClient.get<Promotion[]>("/Promotions");
     return response.data;
   },
 
-  getCalculatedPrice: async (productId: string, quantity: number) => {
-    const response = await apiClient.get<number>("/Promotions/calculate", {
-      params: { productId, quantity },
-    });
+  getById: async (id: string): Promise<Promotion> => {
+    const response = await apiClient.get<Promotion>(`/Promotions/${id}`);
     return response.data;
   },
 
-  create: async (command: CreatePromotionRequest) => {
-    try {
-      const response = await apiClient.post<string>("/Promotions", command);
-      showToast.success("Promotion created successfully");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  create: async (data: CreatePromotionRequest): Promise<Promotion> => {
+    const response = await apiClient.post<Promotion>("/Promotions", data);
+    showToast.success("Success", "Promotion created successfully");
+    return response.data;
   },
 
-  update: async (mainProductId: string, command: UpdatePromotionRequest) => {
-    try {
-      const response = await apiClient.put(
-        `/Promotions/${mainProductId}`,
-        command,
-      );
-      showToast.success("Promotion updated successfully");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  update: async (data: UpdatePromotionRequest): Promise<void> => {
+    await apiClient.put(`/Promotions/${data.id}`, data);
+    showToast.success("Updated", "Promotion has been updated");
   },
 
-  delete: async (mainProductId: string) => {
-    try {
-      await apiClient.delete(`/Promotions/${mainProductId}`);
-      showToast.success("Promotion deleted");
-    } catch (error) {
-      throw error;
-    }
+  toggle: async (id: string): Promise<void> => {
+    await apiClient.patch(`/Promotions/${id}/toggle`);
   },
 
-  toggle: async (mainProductId: string) => {
-    try {
-      const response = await apiClient.patch<boolean>(
-        `/Promotions/${mainProductId}/toggle`,
-      );
-      showToast.success("Status updated successfully");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/Promotions/${id}`);
+    showToast.success("Deleted", "Promotion removed");
+  },
+
+  calculate: async (
+    params: PromotionCalculationRequest,
+  ): Promise<PromotionCalculationResponse> => {
+    const response = await apiClient.post<PromotionCalculationResponse>(
+      "/Promotions/calculate",
+      params,
+    );
+    return response.data;
   },
 };

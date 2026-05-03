@@ -1,130 +1,121 @@
-import { Plus } from "lucide-react-native";
-import React, { useCallback, useMemo, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import CreatePromotionModal from "../../components/promotions/CreatePromotionModal";
+import EmptyPromotions from "../../components/promotions/EmptyPromotions";
+import PromotionCard from "../../components/promotions/PromotionCard";
+import { usePromotions } from "../../src/hooks/use-promotions";
 
-// Hooks
-import { useInventory } from "@/src/hooks/use-inventory";
-import { usePromotions } from "@/src/hooks/use-promotions";
-import { Promotion } from "@/src/types/promotion";
+export default function PromotionsScreen() {
+  // Data & Actions from your TanStack hook
+  const { promotions, isLoading, refresh, togglePromotion, removePromotion } =
+    usePromotions();
 
-// Components
-import { ConfirmationModal } from "@/components/ConfirmationModal";
-import { AddPromotionsModal } from "@/components/promotions/AddPromotionsModal";
-import { EditPromotionModal } from "@/components/promotions/EditPromotionModal";
-import { PromotionTable } from "@/components/promotions/PromotionTable";
+  // Local UI State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-export default function PromotionScreen() {
-  const {
-    promotions,
-    loading,
-    addPromotion,
-    updatePromotion,
-    removePromotion,
-    refresh,
-  } = usePromotions();
-
-  const { products } = useInventory();
-
-  // Visibility States
-  const [addVisible, setAddVisible] = useState(false);
-  const [editVisible, setEditVisible] = useState(false);
-  const [deleteVisible, setDeleteVisible] = useState(false);
-  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
-
-  // 1. Safe Modal Triggers using requestAnimationFrame (Same as handlePeriodChange)
-  const handleEditTrigger = useCallback((promo: Promotion) => {
-    requestAnimationFrame(() => {
-      setSelectedPromo(promo);
-      setEditVisible(true);
+  // Filter logic with strict null checks for TypeScript
+  const filteredPromotions = useMemo(() => {
+    return (promotions || []).filter((p) => {
+      const nameMatch =
+        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
+      const productMatch =
+        p.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ??
+        false;
+      return nameMatch || productMatch;
     });
-  }, []);
+  }, [promotions, searchQuery]);
 
-  const handleDeleteTrigger = useCallback((promo: Promotion) => {
-    requestAnimationFrame(() => {
-      setSelectedPromo(promo);
-      setDeleteVisible(true);
-    });
-  }, []);
-
-  const onConfirmDelete = async () => {
-    if (selectedPromo) {
-      await removePromotion(selectedPromo.mainProductId);
-      setDeleteVisible(false);
-      setSelectedPromo(null);
-    }
-  };
-
-  // 2. Memoize the Table to prevent unnecessary re-renders during modal state changes
-  const MemoizedTable = useMemo(
-    () => (
-      <PromotionTable
-        promotions={promotions}
-        loading={loading}
-        onRefresh={refresh}
-        onEdit={handleEditTrigger}
-        onDelete={handleDeleteTrigger}
-      />
-    ),
-    [promotions, loading, refresh, handleEditTrigger, handleDeleteTrigger],
-  );
+  if (isLoading && (promotions?.length ?? 0) === 0) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-6">
-        {/* Header */}
-        <View className="flex-row justify-between items-end mb-8 mt-4">
+    <View className="flex-1 bg-slate-50">
+      {/* --- HEADER SECTION --- */}
+      <View className="bg-white px-6 pt-16 pb-6 shadow-sm border-b border-slate-100">
+        <View className="flex-row justify-between items-end mb-6">
           <View>
+            <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-1">
+              Store Strategy
+            </Text>
             <Text className="text-3xl font-black text-slate-900">
               Promotions
             </Text>
-            <Text className="text-slate-500 font-medium">
-              Bulk pricing & bundle engine
-            </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setAddVisible(true)}
-            className="bg-blue-600 w-14 h-14 rounded-2xl items-center justify-center shadow-xl shadow-blue-300 active:opacity-80"
+            onPress={() => setIsModalOpen(true)}
+            activeOpacity={0.7}
+            className="bg-blue-600 w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-blue-200"
           >
             <Plus color="white" size={28} />
           </TouchableOpacity>
         </View>
 
-        {MemoizedTable}
+        {/* --- SEARCH & FILTER BAR --- */}
+        <View className="flex-row gap-3">
+          <View className="flex-1 flex-row items-center bg-slate-100 px-4 py-3 rounded-2xl">
+            <Search size={18} color="#64748b" />
+            <TextInput
+              placeholder="Search deals or products..."
+              className="flex-1 ml-3 font-semibold text-slate-700"
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <TouchableOpacity className="bg-slate-100 p-4 rounded-2xl items-center justify-center">
+            <SlidersHorizontal size={20} color="#475569" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Create Modal */}
-      <AddPromotionsModal
-        isVisible={addVisible}
-        onClose={() => setAddVisible(false)}
-        onSave={addPromotion}
-        products={products}
+      {/* --- PROMOTIONS LIST --- */}
+      <FlatList
+        data={filteredPromotions}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <PromotionCard
+            promotion={item}
+            onToggle={() => togglePromotion(item.id)}
+            onDelete={() => removePromotion(item.id)}
+          />
+        )}
+        ListEmptyComponent={<EmptyPromotions />}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 20,
+          paddingBottom: 120,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refresh}
+            tintColor="#2563eb"
+            colors={["#2563eb"]}
+          />
+        }
       />
 
-      {/* Edit Modal */}
-      <EditPromotionModal
-        isVisible={editVisible}
-        onClose={() => {
-          setEditVisible(false);
-          setSelectedPromo(null);
-        }}
-        onUpdate={updatePromotion}
-        promotion={selectedPromo}
+      {/* --- CREATE MODAL --- */}
+      <CreatePromotionModal
+        isVisible={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
-
-      {/* Delete Confirmation */}
-      <ConfirmationModal
-        visible={deleteVisible}
-        title="Remove Promotion?"
-        description={`This will delete all pricing tiers for ${selectedPromo?.productName}. This action cannot be undone.`}
-        confirmLabel="Remove All"
-        onConfirm={onConfirmDelete}
-        onCancel={() => {
-          setDeleteVisible(false);
-          setSelectedPromo(null);
-        }}
-        variant="danger"
-      />
-    </SafeAreaView>
+    </View>
   );
 }
