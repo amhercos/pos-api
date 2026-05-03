@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Entities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace Application.Services.Pricing
 {
@@ -13,31 +13,18 @@ namespace Application.Services.Pricing
 
         public decimal CalculateLineTotal(Product product, Promotion promo, int quantity, IEnumerable<TransactionItem> basket)
         {
-            var bulkTiers = product.Promotions
-                .Where(p => p.IsActive && p.Type == PromotionType.Bulk)
-                .OrderByDescending(p => p.PromoQuantity)
-                .ToList();
-
-            if (!bulkTiers.Any())
+            if (promo.Tiers == null || !promo.Tiers.Any())
                 return quantity * product.Price;
 
-            decimal total = 0;
-            int remainingQty = quantity;
+            var applicableTier = promo.Tiers
+                .Where(t => quantity >= t.Quantity)
+                .OrderByDescending(t => t.Quantity)
+                .FirstOrDefault();
 
-            foreach (var tier in bulkTiers)
-            {
-                int threshold = tier.PromoQuantity ?? 0;
-                if (threshold > 0 && remainingQty >= threshold)
-                {
-                    int sets = remainingQty / threshold;
-                    total += sets * (tier.PromoPrice ?? 0);
-                    remainingQty %= threshold;
-                }
-            }
+            if (applicableTier == null)
+                return quantity * product.Price;
 
-            total += remainingQty * product.Price;
-
-            return total;
+            return quantity * applicableTier.Price;
         }
     }
 }

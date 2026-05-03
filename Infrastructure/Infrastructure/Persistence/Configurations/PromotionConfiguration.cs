@@ -16,23 +16,26 @@ namespace Infrastructure.Persistence.Configurations
                 .HasMaxLength(100)
                 .IsRequired();
 
+          
             builder.Property(p => p.Type)
+                .HasConversion<string>()
                 .IsRequired();
-
-            builder.Property(p => p.PromoPrice)
-                .HasPrecision(18, 2);
 
             builder.Property(p => p.StoreId)
                 .IsRequired();
 
+            builder.HasMany(p => p.Tiers)
+                .WithOne(t => t.Promotion)
+                .HasForeignKey(t => t.PromotionId)
+                .OnDelete(DeleteBehavior.Cascade); // If promo is deleted, tiers must go too
 
-            // -> Main Product (required)
+            // Main Product
             builder.HasOne(p => p.MainProduct)
-             .WithMany(p => p.Promotions)
-             .HasForeignKey(p => p.MainProductId)
-             .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(p => p.Promotions)
+                .HasForeignKey(p => p.MainProductId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // -> Tie-up Product (optional)
+            // Tie-up Product
             builder.HasOne(p => p.TieUpProduct)
                 .WithMany()
                 .HasForeignKey(p => p.TieUpProductId)

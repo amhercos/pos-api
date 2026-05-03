@@ -6,20 +6,21 @@ namespace Domain.Entities
     public class Promotion : BaseEntity, ITenantEntity
     {
         public required string Name { get; set; }
-        public PromotionType Type { get; set; }
+        public PromotionType Type { get; set; } = PromotionType.Bulk;
 
+        // Tenant Requirement
         public Guid StoreId { get; set; }
-        public Store Store { get; set; } = null!;
+        public virtual Store Store { get; set; } = null!;
 
         public Guid MainProductId { get; set; }
-        public Product MainProduct { get; set; } = null!;
-        // bulk
-        public int? PromoQuantity { get; set; }
-        public decimal? PromoPrice { get; set; }
+        public virtual Product MainProduct { get; set; } = null!;
 
-      // tie up
+        // Bulk pricing
+        public virtual ICollection<PromotionTier> Tiers { get; set; } = new List<PromotionTier>();
+
+        // Bundle / Tie-up
         public Guid? TieUpProductId { get; set; }
-        public Product? TieUpProduct { get; set; }
+        public virtual Product? TieUpProduct { get; set; }
         public int? TieUpQuantity { get; set; }
 
         public bool IsActive { get; set; } = true;

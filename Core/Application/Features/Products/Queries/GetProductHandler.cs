@@ -23,15 +23,15 @@ public class GetProductsHandler(IProductRepository productRepository)
             p.Category?.CategoryName ?? "No Category",
             p.ExpiryDate,
             p.CategoryId,
-         
+
             p.Promotions?.Select(promo => new PromotionDto(
                 promo.Id,
-                (PromotionType)promo.Type,
-                promo.PromoQuantity,
-                promo.PromoPrice,
+                promo.Name,
+                promo.Type, 
+                promo.IsActive,
+                promo.Tiers?.Select(t => new PromoTierDto(t.Quantity, t.Price)).ToList() ?? new(),
                 promo.TieUpProductId,
-                promo.TieUpQuantity,
-                promo.IsActive
+                promo.TieUpQuantity
             )).ToList()
         ));
 

@@ -1,7 +1,8 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Dto;
 using Application.Features.Promotions.Commands;
+using Application.Interfaces.Repositories;
+using Domain.Entities;
 using MediatR;
-using Application.Dto;
 
 namespace Application.Features.Promotions.Queries;
 
@@ -12,35 +13,24 @@ public class GetPromotionsHandler(IPromotionRepository promotionRepo)
     {
         var promotions = await promotionRepo.GetAllAsync(ct);
 
-        return promotions
-            .GroupBy(p => p.MainProductId)
-           .Select(group =>
-           {
-               var first = group.First();
+        return promotions.Select(p => new PromotionResponse
+        {
+            Id = p.Id,
+            MainProductId = p.MainProductId,
+            Name = p.Name,
+            ProductName = p.MainProduct?.Name ?? "Unknown",
+            OriginalPrice = p.MainProduct?.Price ?? 0,
+            IsActive = p.IsActive,
+            Type = p.Type,
 
-               return new PromotionResponse
-               {
-                   MainProductId = group.Key,
-                   Name = first.Name,
-                   ProductName = first.MainProduct?.Name ?? "Unknown",
-                   OriginalPrice = first.MainProduct?.Price ?? 0,
+            Tiers = p.Tiers
+                .Select(t => new PromoTierResponse(t.Quantity, t.Price))
+                .OrderBy(t => t.Quantity)
+                .ToList(),
 
-                   IsActive = group.Any(p => p.IsActive),
-                   Type = first.Type,
-
-                   Tiers = group
-                       .Where(p => p.PromoQuantity.HasValue)
-                       .Select(p => new PromoTier(
-                           p.PromoQuantity!.Value,
-                           p.PromoPrice ?? 0
-                       ))
-                       .OrderBy(t => t.Quantity)
-                       .ToList(),
-
-                   TieUpProductId = first.TieUpProductId,
-
-                   TieUpProductName = first.TieUpProduct?.Name
-               };
-           });
+            TieUpProductId = p.TieUpProductId,
+            TieUpProductName = p.TieUpProduct?.Name,
+            TieUpQuantity = p.TieUpQuantity
+        });
     }
 }
