@@ -1,110 +1,91 @@
-import { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
-import { PromotionService } from "../services/promotionService";
+import {
+  useMutation,
+  UseMutationResult,
+  useQuery,
+  useQueryClient,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import { promotionService } from "../services/promotionService";
 import {
   CreatePromotionRequest,
   Promotion,
+  PromotionCalculationRequest,
+  PromotionCalculationResponse,
   UpdatePromotionRequest,
 } from "../types/promotion";
 
-export function usePromotions() {
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [loading, setLoading] = useState(false);
+export const usePromotions = () => {
+  const queryClient = useQueryClient();
 
-  const fetchPromotions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await PromotionService.getAll();
-      setPromotions(data);
-    } catch {
-      Alert.alert("Error", "Failed to load promotions");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    data: promotions = [],
+    isLoading,
+    refetch,
+  }: UseQueryResult<Promotion[], Error> = useQuery({
+    queryKey: ["promotions"],
+    queryFn: promotionService.getAll,
+  });
 
-  const addPromotion = async (
-    command: CreatePromotionRequest,
-  ): Promise<boolean> => {
-    try {
-      await PromotionService.create(command);
-      await fetchPromotions();
-      return true;
-    } catch {
-      Alert.alert("Error", "Failed to create promotion");
-      return false;
-    }
+  // Create Promotion
+  const createMutation: UseMutationResult<
+    Promotion,
+    Error,
+    CreatePromotionRequest
+  > = useMutation({
+    mutationFn: (data: CreatePromotionRequest) => promotionService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotions"] });
+    },
+  });
+
+  // Update Promotion
+  const updateMutation: UseMutationResult<void, Error, UpdatePromotionRequest> =
+    useMutation({
+      mutationFn: (data: UpdatePromotionRequest) =>
+        promotionService.update(data),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["promotions"] });
+      },
+    });
+
+  // Toggle Promotion (Active/Inactive)
+  const toggleMutation: UseMutationResult<void, Error, string> = useMutation({
+    mutationFn: (id: string) => promotionService.toggle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotions"] });
+    },
+  });
+
+  // Delete Promotion
+  const deleteMutation: UseMutationResult<void, Error, string> = useMutation({
+    mutationFn: (id: string) => promotionService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotions"] });
+    },
+  });
+
+  // Calculation Logic (Used for real-time pricing in Sales Screen)
+  const calculatePrice = async (
+    params: PromotionCalculationRequest,
+  ): Promise<PromotionCalculationResponse> => {
+    return await promotionService.calculate(params);
   };
-
-  const updatePromotion = async (
-    mainProductId: string,
-    command: UpdatePromotionRequest,
-  ): Promise<boolean> => {
-    try {
-      await PromotionService.update(mainProductId, command);
-      await fetchPromotions();
-      return true;
-    } catch {
-      Alert.alert("Error", "Failed to update promotion");
-      return false;
-    }
-  };
-
-  const removePromotion = async (mainProductId: string): Promise<boolean> => {
-    try {
-      await PromotionService.delete(mainProductId);
-      setPromotions((prev) =>
-        prev.filter((p) => p.mainProductId !== mainProductId),
-      );
-      return true;
-    } catch {
-      Alert.alert("Error", "Could not delete promotion");
-      return false;
-    }
-  };
-
-  const calculatePreview = async (
-    productId: string,
-    quantity: number,
-  ): Promise<number | null> => {
-    try {
-      return await PromotionService.getCalculatedPrice(productId, quantity);
-    } catch {
-      return null;
-    }
-  };
-
-  const togglePromotion = async (mainProductId: string): Promise<boolean> => {
-    const previousPromotions = [...promotions];
-
-    setPromotions((prev) =>
-      prev.map((p) =>
-        p.mainProductId === mainProductId ? { ...p, isActive: !p.isActive } : p,
-      ),
-    );
-
-    try {
-      await PromotionService.toggle(mainProductId);
-      return true;
-    } catch {
-      setPromotions(previousPromotions);
-      Alert.alert("Error", "Failed to toggle promotion status");
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    fetchPromotions();
-  }, [fetchPromotions]);
 
   return {
     promotions,
-    loading,
-    addPromotion,
-    updatePromotion,
-    removePromotion,
-    togglePromotion,
-    calculatePreview,
-    refresh: fetchPromotions,
+    isLoading,
+    isProcessing:
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      toggleMutation.isPending ||
+      deleteMutation.isPending,
+
+    addPromotion: createMutation.mutate,
+    updatePromotion: updateMutation.mutate,
+    togglePromotion: toggleMutation.mutate,
+    removePromotion: deleteMutation.mutate,
+
+    refresh: refetch,
+    calculatePrice,
   };
-}
+};
