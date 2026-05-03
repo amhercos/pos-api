@@ -1,6 +1,5 @@
 import { apiClient } from "@/src/api/client";
 import { roundTo } from "@/src/lib/math";
-import { calculateLineTotal } from "@/src/lib/pricing";
 import {
   PaymentType,
   type ApiError,
@@ -13,19 +12,22 @@ import {
 import { isAxiosError, type AxiosError } from "axios";
 import { useCallback, useState } from "react";
 import { Alert } from "react-native";
+import { calculateBestPromo } from "../utils/promotion-engine";
 
 export function useSale() {
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Helper to get evaluated totals for any payment type
   const calculateTotal = useCallback(
     (paymentType: PaymentType): number => {
       const rawTotal = basket.reduce((acc, item) => {
         if (paymentType === PaymentType.Credit) {
-          // Credit transactions usually ignore promos (SRP pricing)
           return acc + item.unitPrice * item.quantity;
         }
-        return acc + calculateLineTotal(item, basket);
+        // FIX: Use the new promo engine here
+        const { total } = calculateBestPromo(item, basket);
+        return acc + total;
       }, 0);
 
       return roundTo(rawTotal);
@@ -68,13 +70,13 @@ export function useSale() {
     setBasket((prev) => prev.filter((item) => item.productId !== productId));
   }, []);
 
+  // Updated to handle absolute quantity instead of delta for better predictability
   const updateQuantity = useCallback(
-    (productId: string, delta: number): void => {
+    (productId: string, nextQty: number): void => {
       setBasket((prev) =>
         prev.map((item) => {
           if (item.productId !== productId) return item;
 
-          const nextQty = item.quantity + delta;
           if (nextQty > item.stock) {
             Alert.alert("Stock Limit", `Cannot exceed ${item.stock} units.`);
             return item;
@@ -120,11 +122,13 @@ export function useSale() {
             };
           }
 
-          const lineTotal = calculateLineTotal(item, basket);
+          // Calculate the effective unit price after promo
+          const { total } = calculateBestPromo(item, basket);
           return {
             productId: item.productId,
             quantity: item.quantity,
-            unitPrice: roundTo(lineTotal / item.quantity, 2),
+            // Effective Price = Discounted Total / Quantity
+            unitPrice: roundTo(total / item.quantity, 2),
           };
         }),
         paymentType: params.paymentType,
