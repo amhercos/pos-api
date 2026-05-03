@@ -16,26 +16,39 @@ namespace Application.Services
 
         public decimal CalculateLineTotal(Product product, int quantity, IEnumerable<TransactionItem> basket)
         {
-            var activePromos = product.Promotions.Where(p => p.IsActive).ToList();
+            decimal originalTotal = product.Price * quantity;
+            decimal bestTotal = originalTotal;
+
+            var activePromos = product.Promotions
+                .Where(p => p.IsActive && !p.IsDeleted)
+                .ToList();
 
             if (!activePromos.Any())
             {
-                return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
+                return Math.Round(originalTotal, 2, MidpointRounding.AwayFromZero);
             }
 
-            var bestPromo = activePromos
-                .OrderBy(p => p.Type == PromotionType.Bundle ? 0 : 1)
-                .ThenByDescending(p => p.PromoQuantity)
-                .FirstOrDefault(p => p.Type != PromotionType.Bulk || (p.PromoQuantity <= quantity));
-
-            if (bestPromo == null || !_strategyMap.TryGetValue(bestPromo.Type, out var strategy))
+            foreach (var promo in activePromos)
             {
-                return Math.Round(product.Price * quantity, 2, MidpointRounding.AwayFromZero);
+                if (_strategyMap.TryGetValue(promo.Type, out var strategy))
+                {
+                    try
+                    {
+                        var promoTotal = strategy.CalculateLineTotal(product, promo, quantity, basket);
+
+                        if (promoTotal < bestTotal)
+                        {
+                            bestTotal = promoTotal;
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
             }
 
-            var total = strategy.CalculateLineTotal(product, bestPromo, quantity, basket);
-
-            return Math.Round(total, 2, MidpointRounding.AwayFromZero);
+            return Math.Round(bestTotal, 2, MidpointRounding.AwayFromZero);
         }
     }
 }

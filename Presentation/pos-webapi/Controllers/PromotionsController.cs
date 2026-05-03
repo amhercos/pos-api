@@ -23,7 +23,7 @@ public class PromotionsController : ControllerBase
         => Ok(await _mediator.Send(new GetCalculatedPriceQuery(productId, quantity), ct));
 
     [HttpPost]
-    public async Task<IActionResult> Create(CreatePromotionCommand command, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreatePromotionCommand command, CancellationToken ct)
     {
         await _mediator.Send(command, ct);
         return Ok();

@@ -10,19 +10,16 @@ public class TogglePromotionHandler(
 {
     public async Task<bool> Handle(TogglePromotionCommand request, CancellationToken ct)
     {
-        var tiers = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+        var promotion = await promotionRepo.GetByProductIdAsync(request.MainProductId, ct);
 
-        if (!tiers.Any()) throw new KeyNotFoundException("Promotion group not found");
+        if (promotion == null)
+            throw new KeyNotFoundException("Promotion for this product not found");
 
-        bool newStatus = !tiers.First().IsActive;
+        promotion.IsActive = !promotion.IsActive;
 
-        foreach (var tier in tiers)
-        {
-            tier.IsActive = newStatus;
-            promotionRepo.Update(tier);
-        }
-
+        promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
-        return newStatus;
+
+        return promotion.IsActive;
     }
 }
