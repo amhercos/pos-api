@@ -10,24 +10,38 @@ public static class PromotionFactory
         PromotionType type,
         Guid storeId,
         Guid mainProductId,
-        int quantity,
-        decimal price,
+        List<(int Quantity, decimal Price)> tiers,
         Guid? tieUpId = null,
         int? tieUpQty = null)
     {
-        return new Promotion
+        var promotionId = Guid.NewGuid();
+
+        var promotion = new Promotion
         {
-            Id = Guid.NewGuid(),
+            Id = promotionId,
             Name = name,
             Type = type,
             StoreId = storeId,
             MainProductId = mainProductId,
-            PromoQuantity = quantity,
-            PromoPrice = price,
             TieUpProductId = tieUpId,
             TieUpQuantity = tieUpQty,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Tiers = new List<PromotionTier>()
         };
+
+        foreach (var tier in tiers)
+        {
+            promotion.Tiers.Add(new PromotionTier
+            {
+                Id = Guid.NewGuid(),
+                PromotionId = promotionId,
+                StoreId = storeId,
+                Quantity = tier.Quantity,
+                Price = tier.Price
+            });
+        }
+
+        return promotion;
     }
 }

@@ -3,12 +3,12 @@ using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 namespace Infrastructure.Repositories
 {
     public class PromotionRepository(PosDbContext context) : IPromotionRepository
@@ -37,6 +37,7 @@ namespace Infrastructure.Repositories
             return await context.Promotions
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
+                .Include(p => p.Tiers)
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }
 
@@ -45,6 +46,8 @@ namespace Infrastructure.Repositories
             return await context.Promotions
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
+                .Include(p => p.Tiers)
+                .Where(p => !p.IsDeleted)
                 .AsNoTracking()
                 .ToListAsync(ct);
         }
@@ -54,6 +57,8 @@ namespace Infrastructure.Repositories
             var query = context.Promotions
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
+                .Include(p => p.Tiers)
+                .Where(p => !p.IsDeleted)
                 .AsNoTracking();
 
             var totalCount = await query.CountAsync(ct);
@@ -71,9 +76,9 @@ namespace Infrastructure.Repositories
         {
             return await context.Promotions
                 .Include(p => p.MainProduct)
-                    .ThenInclude(mp => mp.Promotions)
                 .Include(p => p.TieUpProduct)
-                .Where(p => p.MainProductId == productId && p.IsActive)
+                .Include(p => p.Tiers)
+                .Where(p => p.MainProductId == productId && p.IsActive && !p.IsDeleted)
                 .FirstOrDefaultAsync(ct);
         }
 
@@ -82,7 +87,8 @@ namespace Infrastructure.Repositories
             return await context.Promotions
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
-                .Where(p => p.StoreId == storeId && p.IsActive)
+                .Include(p => p.Tiers)
+                .Where(p => p.StoreId == storeId && p.IsActive && !p.IsDeleted)
                 .AsNoTracking()
                 .ToListAsync(ct);
         }
@@ -90,7 +96,8 @@ namespace Infrastructure.Repositories
         public async Task<List<Promotion>> GetByMainProductIdAsync(Guid productId, CancellationToken ct)
         {
             return await context.Promotions
-                .Where(p => p.MainProductId == productId)
+                .Include(p => p.Tiers)
+                .Where(p => p.MainProductId == productId && !p.IsDeleted)
                 .ToListAsync(ct);
         }
     }

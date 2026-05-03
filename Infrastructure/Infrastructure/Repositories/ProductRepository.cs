@@ -4,18 +4,21 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {
     public class ProductRepository(PosDbContext context) : IProductRepository
     {
-
         public async Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct)
         {
             var query = context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Promotions)
+                    .ThenInclude(promo => promo.Tiers) 
                 .AsNoTracking()
                 .Where(p => !p.IsDeleted);
 
@@ -29,22 +32,39 @@ namespace Infrastructure.Repositories
 
             return (items, totalCount);
         }
-        public void Add(Product product) => context.Products.Add(product);
-        public async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct)
-        {
-            return await context.Products
-            .Include(p => p.Category)
-            .AsNoTracking()
-            .ToListAsync(ct);
-        }
 
         public async Task<Product?> GetByIdAsync(Guid id, CancellationToken ct)
         {
             return await context.Products
-                .Include(p => p.Promotions)
                 .Include(p => p.Category)
+                .Include(p => p.Promotions)
+                    .ThenInclude(promo => promo.Tiers) // Added: Fetch price tiers for single product detail
                 .FirstOrDefaultAsync(p => p.Id == id, ct);
         }
+
+        public async Task<List<Product>> GetByIdsWithPromotionsAsync(IEnumerable<Guid> ids, Guid storeId, CancellationToken ct)
+        {
+            return await context.Products
+                .Include(p => p.Promotions)
+                    .ThenInclude(promo => promo.Tiers) // Added: Critical for the PromotionEngine calculation
+                .Where(p => ids.Contains(p.Id) && p.StoreId == storeId)
+                .ToListAsync(ct);
+        }
+
+        public async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct)
+        {
+            return await context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Promotions)
+                    .ThenInclude(promo => promo.Tiers) // Added for completeness
+                .AsNoTracking()
+                .ToListAsync(ct);
+        }
+
+        // Methods below remain unchanged as they don't involve Promotion DTOs
+        public void Add(Product product) => context.Products.Add(product);
+
+        public void Update(Product product) => context.Products.Update(product);
 
         public void Remove(Product product)
         {
@@ -58,10 +78,6 @@ namespace Infrastructure.Repositories
                 .Where(p => p.StoreId == storeId && p.Stock <= p.LowStockThreshold)
                 .CountAsync(ct);
         }
-
-        public void Update(Product product) => context.Products.Update(product);
-
-
 
         public async Task<List<Product>> GetNearExpiryProductsAsync(Guid storeId)
         {
@@ -78,14 +94,6 @@ namespace Infrastructure.Repositories
                          && p.ExpiryDate <= thresholdDate
                          && p.ExpiryDate >= today)
                 .ToListAsync();
-        }
-
-        public async Task<List<Product>> GetByIdsWithPromotionsAsync(IEnumerable<Guid> ids, Guid storeId, CancellationToken ct)
-        {
-            return await context.Products
-                .Include(p => p.Promotions)
-                .Where(p => ids.Contains(p.Id) && p.StoreId == storeId)
-                .ToListAsync(ct);
         }
     }
 }

@@ -15,37 +15,32 @@ public class CreatePromotionHandler(
     {
         var storeId = currentUserService.StoreId;
 
-        if (request.Type == PromotionType.Bulk && request.Tiers.Any())
+        var promotion = new Promotion
         {
-            foreach (var tier in request.Tiers)
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Type = request.Type,
+            StoreId = storeId,
+            MainProductId = request.MainProductId,
+            TieUpProductId = request.TieUpProductId,
+            TieUpQuantity = request.TieUpQuantity,
+            IsActive = true
+        };
+
+        var distinctTiers = request.Tiers
+            .GroupBy(t => t.Quantity)
+            .Select(g => g.First())
+            .Select(t => new PromotionTier
             {
-                var promo = PromotionFactory.Create(
-                    name: $"{request.Name} ({tier.Quantity} qty)",
-                    type: request.Type,
-                    storeId: storeId,
-                    mainProductId: request.MainProductId,
-                    quantity: tier.Quantity,
-                    price: tier.Price
-                );
-                promotionRepo.Add(promo);
-            }
-        }
-        else
-        {
-            // Handle Discount or Bundle
-            var firstTier = request.Tiers.FirstOrDefault();
-            var promo = PromotionFactory.Create(
-                name: request.Name,
-                type: request.Type,
-                storeId: storeId,
-                mainProductId: request.MainProductId,
-                quantity: firstTier?.Quantity ?? 1,
-                price: firstTier?.Price ?? 0,
-                tieUpId: request.TieUpProductId,
-                tieUpQty: request.TieUpQuantity
-            );
-            promotionRepo.Add(promo);
-        }
+                Id = Guid.NewGuid(),
+                PromotionId = promotion.Id,
+                StoreId = storeId,
+                Quantity = t.Quantity,
+                Price = t.Price
+            }).ToList();
+
+        promotion.Tiers = distinctTiers;
+        promotionRepo.Add(promotion);
 
         await context.SaveChangesAsync(ct);
         return Unit.Value;

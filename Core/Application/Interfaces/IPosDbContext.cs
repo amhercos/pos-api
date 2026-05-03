@@ -14,6 +14,7 @@ public interface IPosDbContext
     DbSet<CreditPayment> CreditPayments { get; }
     DbSet<StoreSettings> StoreSettings { get; }
     DbSet<Promotion> Promotions { get; }
+    DbSet<PromotionTier> PromotionTiers { get; }
 
     DatabaseFacade Database { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

@@ -7,44 +7,47 @@ namespace Application.Features.Promotions.Commands;
 
 public class UpdatePromotionHandler(
     IPromotionRepository promotionRepo,
-    IPosDbContext context,
-    ICurrentUserService currentUserService) : IRequestHandler<UpdatePromotionCommand, Unit>
+    IPosDbContext context) : IRequestHandler<UpdatePromotionCommand, Unit>
 {
     public async Task<Unit> Handle(UpdatePromotionCommand request, CancellationToken ct)
     {
-        var storeId = currentUserService.StoreId;
+        var promotion = await promotionRepo.GetByIdAsync(request.Id, ct);
 
-        var existingTiers = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+        if (promotion == null)
+            throw new Exception("Promotion not found.");
 
-        if (existingTiers.Any())
-        {
-            context.Promotions.RemoveRange(existingTiers);
-        }
+        var storeId = promotion.StoreId;
 
-        var sortedTiers = request.Tiers.OrderByDescending(t => t.Quantity);
+        promotion.Name = request.Name;
+        promotion.Type = request.Type;
+        promotion.IsActive = request.IsActive;
+        promotion.MainProductId = request.MainProductId;
+        promotion.TieUpProductId = request.TieUpProductId;
+        promotion.TieUpQuantity = request.TieUpQuantity;
 
-        foreach (var tier in sortedTiers)
-        {
-            var promotion = new Promotion
+   
+        promotion.Tiers.Clear();
+
+        var newTiers = request.Tiers
+            .GroupBy(t => t.Quantity)
+            .Select(g => g.First())
+            .Select(t => new PromotionTier
             {
                 Id = Guid.NewGuid(),
-                Name = request.Name,
-                Type = request.Type,
+                PromotionId = promotion.Id,
                 StoreId = storeId,
-                MainProductId = request.MainProductId,
-                PromoQuantity = tier.Quantity,
-                PromoPrice = tier.Price,
-                TieUpProductId = request.TieUpProductId,
-                TieUpQuantity = request.TieUpQuantity,
-                IsActive = request.IsActive,
-                IsDeleted = false,
-                CreatedAt = DateTime.UtcNow
-            };
+                Quantity = t.Quantity,
+                Price = t.Price
+            }).ToList();
 
-            promotionRepo.Add(promotion);
+        foreach (var tier in newTiers)
+        {
+            promotion.Tiers.Add(tier);
         }
 
+        promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
+
         return Unit.Value;
     }
 }
