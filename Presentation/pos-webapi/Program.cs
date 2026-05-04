@@ -26,7 +26,7 @@ try
     builder.Logging.ClearProviders();
 
 
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5130";
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(int.Parse(port));
