@@ -9,8 +9,12 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { showToast } from "../utils/toast";
 
-const BASE_URL = "https://bizflow-ohsr.onrender.com/api";
-const HEALTH_URL = "https://bizflow-ohsr.onrender.com/health";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const HEALTH_URL = process.env.EXPO_PUBLIC_HEALTH_URL;
+
+if (!BASE_URL) {
+  console.warn("[System] EXPO_PUBLIC_API_URL is not defined in .env");
+}
 
 let isRedirecting = false;
 
@@ -32,12 +36,13 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 export const pingHealthCheck = async (): Promise<void> => {
+  if (!HEALTH_URL) return;
+
   try {
-    console.log("[System] Pinging root health check to wake up backend...");
-    await apiClient.get(HEALTH_URL, {
+    console.log(`[System] Pinging health check at: ${HEALTH_URL}`);
+    await axios.get(HEALTH_URL, {
       timeout: 15000,
-      _retryCount: 99,
-    } as BizFlowRequestConfig);
+    });
   } catch {
     console.log("[System] Health check ping finished.");
   }
@@ -61,7 +66,6 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<BackendErrorResponse>): Promise<AxiosResponse> => {
     const config = error.config as BizFlowRequestConfig | undefined;
     const status = error.response?.status;
-
     const errorData = error.response?.data;
 
     const isNetworkError =
@@ -71,7 +75,7 @@ apiClient.interceptors.response.use(
 
     const MAX_RETRIES = 3;
 
-    // Network Retries
+    // Network Retries Logic
     if (isNetworkError && config && (config._retryCount ?? 0) < MAX_RETRIES) {
       config._retryCount = (config._retryCount ?? 0) + 1;
       const delay = (config._retryCount ?? 1) * 2000;
@@ -84,14 +88,17 @@ apiClient.interceptors.response.use(
       return apiClient(config);
     }
 
-    const isHealthCheck = config?.url?.includes(HEALTH_URL);
+    const isHealthCheck = config?.url === HEALTH_URL;
 
-    // toast - Persistent Network Failures
+    // Persistent Network Failures
     if (isNetworkError && !isHealthCheck) {
-      showToast.error("Connection Error", "Check your internet connection.");
+      showToast.error(
+        "Connection Error",
+        "Check your internet connection or backend status.",
+      );
     }
 
-    // 401 Unauthorized
+    // 401 Unauthorized Logic
     if (status === 401 && !config?.url?.toLowerCase().includes("/auth/")) {
       if (!isRedirecting) {
         isRedirecting = true;
@@ -111,7 +118,7 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error("Session expired."));
     }
 
-    //  400/500 Errors with Backend Messages
+    // 400/500 Errors with Backend Messages
     if (status && status >= 400 && !isHealthCheck) {
       const errorMessage =
         errorData?.message || "An unexpected error occurred.";
