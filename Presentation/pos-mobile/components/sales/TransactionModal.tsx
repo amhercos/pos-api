@@ -1,7 +1,13 @@
 import { type CustomerCredit } from "@/src/types/credit";
 import { PaymentType, type BasketItem } from "@/src/types/sale";
-import React, { useState } from "react";
-import { Modal, StyleSheet, useWindowDimensions, View } from "react-native";
+import React, { Dispatch, SetStateAction } from "react";
+import {
+  Modal,
+  StatusBar,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { TransactionContent } from "./TransactionContent";
 
 interface TransactionModalProps {
@@ -11,11 +17,11 @@ interface TransactionModalProps {
   activePayment: PaymentType;
   setActivePayment: (p: PaymentType) => void;
   cashReceived: number;
-  setCashReceived: React.Dispatch<React.SetStateAction<number>>;
+  setCashReceived: Dispatch<SetStateAction<number>>;
   isSubmitting: boolean;
   handleCheckout: () => void;
   updateQuantity: (id: string, q: number) => void;
-  removeItem: (id: string) => void; // Changed from removeFromBasket to removeItem
+  removeItem: (id: string) => void;
   clearBasket: () => void;
   credits: CustomerCredit[];
   selectedCreditId: string;
@@ -29,25 +35,23 @@ interface TransactionModalProps {
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = (props) => {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const [showVoidConfirm, setShowVoidConfirm] = useState<boolean>(false);
-
-  if (isTablet) return null;
+  const { width, height } = useWindowDimensions();
+  const isLandscapeOrTablet = width > height || width >= 768;
 
   return (
     <Modal
       visible={props.isOpen}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle={isLandscapeOrTablet ? "overFullScreen" : "pageSheet"}
       onRequestClose={props.onClose}
+      supportedOrientations={["portrait", "landscape"]}
     >
+      <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
         <TransactionContent
           {...props}
-          isTablet={false}
-          showVoidConfirm={showVoidConfirm}
-          setShowVoidConfirm={setShowVoidConfirm}
+          isTablet={isLandscapeOrTablet}
+          onClose={props.onClose}
         />
       </View>
     </Modal>
@@ -57,5 +61,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
   },
 });

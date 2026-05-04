@@ -10,7 +10,7 @@ import {
   type TransactionResponse,
 } from "@/src/types/sale";
 import { isAxiosError, type AxiosError } from "axios";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { calculateBestPromo } from "../utils/promotion-engine";
 
@@ -18,22 +18,22 @@ export function useSale() {
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Helper to get evaluated totals for any payment type
-  const calculateTotal = useCallback(
-    (paymentType: PaymentType): number => {
-      const rawTotal = basket.reduce((acc, item) => {
-        if (paymentType === PaymentType.Credit) {
-          return acc + item.unitPrice * item.quantity;
-        }
-        // FIX: Use the new promo engine here
-        const { total } = calculateBestPromo(item, basket);
-        return acc + total;
-      }, 0);
+  const totals = useMemo(() => {
+    const cashTotal = basket.reduce((acc, item) => {
+      const { total } = calculateBestPromo(item, basket);
+      return acc + total;
+    }, 0);
 
-      return roundTo(rawTotal);
-    },
-    [basket],
-  );
+    const creditTotal = basket.reduce((acc, item) => {
+      // No promotions for Credit payments as per domain rules
+      return acc + item.unitPrice * item.quantity;
+    }, 0);
+
+    return {
+      cash: roundTo(cashTotal),
+      credit: roundTo(creditTotal),
+    };
+  }, [basket]);
 
   const addToBasket = useCallback((product: Product): void => {
     setBasket((prev) => {
@@ -70,7 +70,6 @@ export function useSale() {
     setBasket((prev) => prev.filter((item) => item.productId !== productId));
   }, []);
 
-  // Updated to handle absolute quantity instead of delta for better predictability
   const updateQuantity = useCallback(
     (productId: string, nextQty: number): void => {
       setBasket((prev) =>
@@ -95,7 +94,9 @@ export function useSale() {
   const checkout = async (params: CheckoutParams): Promise<boolean> => {
     if (basket.length === 0) return false;
 
-    const capturedTotal = calculateTotal(params.paymentType);
+    const capturedTotal =
+      params.paymentType === PaymentType.Credit ? totals.credit : totals.cash;
+
     const capturedCash = params.cashReceived ?? 0;
 
     if (
@@ -114,6 +115,7 @@ export function useSale() {
     try {
       const command: CreateTransactionCommand = {
         items: basket.map((item) => {
+          // Logic: Apply discounts to unitPrice only if payment is Cash
           if (params.paymentType === PaymentType.Credit) {
             return {
               productId: item.productId,
@@ -122,12 +124,10 @@ export function useSale() {
             };
           }
 
-          // Calculate the effective unit price after promo
           const { total } = calculateBestPromo(item, basket);
           return {
             productId: item.productId,
             quantity: item.quantity,
-            // Effective Price = Discounted Total / Quantity
             unitPrice: roundTo(total / item.quantity, 2),
           };
         }),
@@ -161,7 +161,7 @@ export function useSale() {
 
   return {
     basket,
-    calculateTotal,
+    totals,
     addToBasket,
     removeItem,
     updateQuantity,
@@ -180,7 +180,8 @@ function handleApiError(err: unknown): void {
 
   if (isAxiosError(err)) {
     const axiosError = err as AxiosError<ApiError>;
-    message = axiosError.response?.data?.message ?? axiosError.message;
+    // Checks for various .NET error response formats
+    message = axiosError.response?.data?.message || axiosError.message;
 
     if (__DEV__) {
       console.error(
