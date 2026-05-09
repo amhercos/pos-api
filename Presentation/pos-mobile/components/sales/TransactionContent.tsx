@@ -1,210 +1,345 @@
-import { Minus, Plus, Trash2, X } from "lucide-react-native";
-import React, { useMemo } from "react";
+import { usePromotions } from "@/src/hooks/use-promotions";
+import { type CustomerCredit } from "@/src/types/credit";
+import { PromotionCalculationResponse } from "@/src/types/promotion";
+import { PaymentType, type BasketItem } from "@/src/types/sale";
+import { CheckCircle2, RotateCcw, X } from "lucide-react-native";
+import React, {
+  Dispatch,
+  memo,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-import { formatPHP, roundTo } from "@/src/lib/math";
+import { formatPHP } from "@/src/lib/math";
 import { cn } from "@/src/lib/utils";
-import { PaymentType, type BasketItem } from "@/src/types/sale";
-import { calculateBestPromo } from "@/src/utils/promotion-engine";
+import { BillDetails } from "./BillDetails";
+import { OrderSummary } from "./OrderSummary";
+import { PaymentSection } from "./PaymentSection";
 
-interface Props {
-  isTablet: boolean;
-  onClose: () => void;
+const QUICK_CASH = [20, 50, 100, 200, 500, 1000];
+
+interface TransactionContentProps {
   basket: BasketItem[];
   activePayment: PaymentType;
   setActivePayment: (p: PaymentType) => void;
+  cashReceived: number;
+  setCashReceived: Dispatch<SetStateAction<number>>;
+  handleCheckout: () => void;
+  clearBasket: () => void;
+  onClose: () => void;
   updateQuantity: (id: string, q: number) => void;
   removeItem: (id: string) => void;
-  handleCheckout: () => void;
+  credits: CustomerCredit[];
+  selectedCreditId: string;
+  setSelectedCreditId: (s: string) => void;
+  isNewCustomer: boolean;
+  setIsNewCustomer: (b: boolean) => void;
+  newCustomerName: string;
+  setNewCustomerName: (s: string) => void;
+  newCustomerContact: string;
+  setNewCustomerContact: (s: string) => void;
   isSubmitting: boolean;
+  isTablet?: boolean;
 }
 
-export const TransactionContent: React.FC<Props> = ({
-  isTablet,
-  onClose,
-  basket,
-  activePayment,
-  setActivePayment,
-  updateQuantity,
-  removeItem,
-  handleCheckout,
-  isSubmitting,
-}) => {
-  /**
-   * ✅ Evaluate Promotions
-   * Recalculates whenever the basket contents change.
-   */
-  const evaluated = useMemo(() => {
-    return basket.map((item) => ({
-      ...item,
-      promo: calculateBestPromo(item, basket),
-    }));
-  }, [basket]);
+export const TransactionContent = memo<TransactionContentProps>(
+  ({
+    basket,
+    activePayment,
+    setActivePayment,
+    cashReceived,
+    setCashReceived,
+    handleCheckout,
+    clearBasket,
+    onClose,
+    updateQuantity,
+    credits,
+    selectedCreditId,
+    setSelectedCreditId,
+    isNewCustomer,
+    setIsNewCustomer,
+    newCustomerName,
+    setNewCustomerName,
+    newCustomerContact,
+    setNewCustomerContact,
+    isSubmitting,
+    isTablet = false,
+  }) => {
+    const { calculatePrice } = usePromotions();
+    const [isCalculating, setIsCalculating] = useState<boolean>(false);
+    const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  /**
-   * ✅ Total Calculation
-   * Checks payment type: Credit bypasses promos, Cash applies them.
-   */
-  const total = useMemo(() => {
-    return roundTo(
-      evaluated.reduce((sum, item) => {
-        if (activePayment === PaymentType.Credit) {
-          return sum + item.unitPrice * item.quantity;
-        }
-        return sum + item.promo.total;
-      }, 0),
+    const [calcResult, setCalcResult] = useState<PromotionCalculationResponse>({
+      originalTotal: 0,
+      discountedTotal: 0,
+      savings: 0,
+      appliedPromotionName: null,
+    });
+
+    useEffect(() => {
+      Animated.timing(fadeAnim, {
+        toValue: isCalculating ? 0.6 : 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }, [isCalculating, fadeAnim]);
+
+    const syncPricing = useCallback(async () => {
+      if (basket.length === 0) {
+        setCalcResult({
+          originalTotal: 0,
+          discountedTotal: 0,
+          savings: 0,
+          appliedPromotionName: null,
+        });
+        return;
+      }
+
+      setIsCalculating(true);
+      try {
+        const results = await Promise.all(
+          basket.map(async (item: BasketItem) => {
+            try {
+              const r = await calculatePrice({
+                productId: item.productId,
+                quantity: item.quantity,
+              });
+              return {
+                originalTotal:
+                  Number(r?.originalTotal) || item.unitPrice * item.quantity,
+                discountedTotal:
+                  Number(r?.discountedTotal) || item.unitPrice * item.quantity,
+                appliedPromotionName: r?.appliedPromotionName ?? null,
+              };
+            } catch {
+              const fallback = item.unitPrice * item.quantity;
+              return {
+                originalTotal: fallback,
+                discountedTotal: fallback,
+                appliedPromotionName: null,
+              };
+            }
+          }),
+        );
+
+        const totalOriginal = results.reduce(
+          (sum, r) => sum + r.originalTotal,
+          0,
+        );
+        const totalDiscounted = results.reduce(
+          (sum, r) => sum + r.discountedTotal,
+          0,
+        );
+        const promoNames = results
+          .map((r) => r.appliedPromotionName)
+          .filter((n): n is string => n !== null);
+
+        setCalcResult({
+          originalTotal: totalOriginal,
+          discountedTotal: totalDiscounted,
+          savings: Math.max(0, totalOriginal - totalDiscounted),
+          appliedPromotionName:
+            promoNames.length > 0
+              ? Array.from(new Set(promoNames)).join(", ")
+              : null,
+        });
+      } finally {
+        setIsCalculating(false);
+      }
+    }, [basket, calculatePrice]);
+
+    useEffect(() => {
+      syncPricing();
+    }, [syncPricing]);
+
+    const changeAmount = useMemo(
+      () => cashReceived - calcResult.discountedTotal,
+      [cashReceived, calcResult.discountedTotal],
     );
-  }, [evaluated, activePayment]);
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 bg-white"
-    >
-      {/* HEADER */}
-      <View className="flex-row justify-between items-center px-5 py-4 border-b border-slate-50">
-        <View>
-          <Text className="font-black text-xl text-slate-900">
-            Current Sale
-          </Text>
-          <Text className="text-slate-400 font-bold text-xs">
-            {basket.length} items in basket
-          </Text>
-        </View>
+    const isCheckoutDisabled = useMemo(
+      () =>
+        isSubmitting ||
+        isCalculating ||
+        basket.length === 0 ||
+        (activePayment === PaymentType.Cash &&
+          (cashReceived === 0 || changeAmount < 0)) ||
+        (activePayment === PaymentType.Credit &&
+          !isNewCustomer &&
+          !selectedCreditId) ||
+        (activePayment === PaymentType.Credit &&
+          isNewCustomer &&
+          !newCustomerName),
+      [
+        isSubmitting,
+        isCalculating,
+        basket.length,
+        activePayment,
+        cashReceived,
+        changeAmount,
+        isNewCustomer,
+        selectedCreditId,
+        newCustomerName,
+      ],
+    );
 
-        {!isTablet && (
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        {/* Header */}
+        <View className="h-20 flex-row items-center px-6 border-b border-slate-100">
           <TouchableOpacity
             onPress={onClose}
-            className="bg-slate-100 p-2 rounded-full"
+            className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
           >
             <X size={20} color="#64748b" />
           </TouchableOpacity>
-        )}
-      </View>
 
-      {/* ITEMS LIST */}
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {evaluated.map((item) => {
-          const hasPromo =
-            activePayment !== PaymentType.Credit && item.promo.appliedPromoId;
+          <View className="flex-1 ml-4">
+            <Text className="text-lg font-black text-slate-900 uppercase tracking-tighter">
+              Checkout
+            </Text>
+            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {basket.length} {basket.length === 1 ? "Item" : "Items"} in Basket
+            </Text>
+          </View>
 
-          return (
-            <View
-              key={item.productId}
-              className="border-b border-slate-100 py-5"
+          <TouchableOpacity
+            onPress={clearBasket}
+            className="flex-row items-center bg-rose-50 px-4 py-2 rounded-xl"
+          >
+            <RotateCcw size={14} color="#ef4444" className="mr-2" />
+            <Text className="text-rose-500 font-black text-[11px] uppercase">
+              Reset
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className={cn("flex-1", isTablet ? "flex-row" : "flex-column")}>
+          <View
+            className={cn("bg-slate-50/50", isTablet ? "flex-[0.6]" : "flex-1")}
+          >
+            <OrderSummary basket={basket} updateQuantity={updateQuantity} />
+          </View>
+
+          <View
+            className={cn(
+              "bg-white border-slate-100",
+              isTablet ? "flex-[0.4] border-l" : "flex-[1.2]",
+            )}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
             >
-              <View className="flex-row justify-between items-start">
-                <View className="flex-1 pr-4">
-                  <Text className="font-bold text-slate-800 text-base leading-tight">
-                    {item.name}
-                  </Text>
+              <PaymentSection
+                activePayment={activePayment}
+                setActivePayment={setActivePayment}
+                cashReceived={cashReceived}
+                setCashReceived={setCashReceived}
+                credits={credits}
+                selectedCreditId={selectedCreditId}
+                setSelectedCreditId={setSelectedCreditId}
+                isNewCustomer={isNewCustomer}
+                setIsNewCustomer={setIsNewCustomer}
+                newCustomerName={newCustomerName}
+                setNewCustomerName={setNewCustomerName}
+                newCustomerContact={newCustomerContact}
+                setNewCustomerContact={setNewCustomerContact}
+              />
 
-                  {/* Unit Price Context */}
-                  <Text className="text-slate-400 text-[10px] font-bold mt-1">
-                    Base: {formatPHP(item.unitPrice)}/unit
-                  </Text>
-                </View>
-
-                <View className="items-end">
-                  <Text
-                    className={cn(
-                      "font-black text-base",
-                      hasPromo ? "text-blue-600" : "text-slate-900",
-                    )}
-                  >
-                    {activePayment === PaymentType.Credit
-                      ? formatPHP(item.unitPrice * item.quantity)
-                      : formatPHP(item.promo.total)}
-                  </Text>
-
-                  {/* Discount Callout */}
-                  {hasPromo && item.promo.savings > 0 && (
-                    <Text className="text-[10px] text-emerald-500 font-bold">
-                      Saved {formatPHP(item.promo.savings)}
+              {/* Improved Quick Cash Section */}
+              {activePayment === PaymentType.Cash && (
+                <View className="px-5 mt-2">
+                  <View className="bg-slate-50/80 p-4 rounded-3xl border border-dashed border-slate-200">
+                    <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">
+                      Quick Denominations
                     </Text>
-                  )}
-                </View>
-              </View>
-
-              {/* Promo Description */}
-              {hasPromo && (
-                <View className="mt-2 bg-blue-50 self-start px-2 py-1 rounded-md">
-                  <Text className="text-[10px] text-blue-600 font-black uppercase">
-                    {item.promo.description}
-                  </Text>
+                    <View className="flex-row flex-wrap justify-between gap-y-2">
+                      {QUICK_CASH.map((val) => (
+                        <TouchableOpacity
+                          key={val}
+                          onPress={() =>
+                            setCashReceived(
+                              (prev) =>
+                                (typeof prev === "number" ? prev : 0) + val,
+                            )
+                          }
+                          className="w-[31%] py-3 rounded-xl bg-white border border-slate-100 items-center justify-center shadow-sm active:bg-slate-100"
+                        >
+                          <Text className="text-slate-700 font-black text-xs">
+                            +₱{val}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <TouchableOpacity
+                        onPress={() => setCashReceived(0)}
+                        className="w-[31%] py-3 rounded-xl bg-rose-50 border border-rose-100 items-center justify-center"
+                      >
+                        <Text className="text-rose-500 font-black text-[10px] uppercase">
+                          Clear
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
               )}
 
-              {/* CONTROLS */}
-              <View className="flex-row items-center mt-4">
-                <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-xl px-2">
-                  <TouchableOpacity
-                    onPress={() =>
-                      item.quantity > 1
-                        ? updateQuantity(item.productId, item.quantity - 1)
-                        : removeItem(item.productId)
-                    }
-                    className="p-3"
-                  >
-                    {item.quantity > 1 ? (
-                      <Minus size={16} color="#475569" />
-                    ) : (
-                      <Trash2 size={16} color="#ef4444" />
-                    )}
-                  </TouchableOpacity>
+              <View className="h-[1px] bg-slate-100 mx-5 my-6" />
 
-                  <Text className="mx-4 font-black text-slate-900 text-base">
-                    {item.quantity}
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      updateQuantity(item.productId, item.quantity + 1)
-                    }
-                    className="p-3"
-                  >
-                    <Plus size={16} color="#475569" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      {/* FOOTER */}
-      <View className="p-6 border-t border-slate-100 bg-slate-50/30">
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="font-bold text-slate-500 uppercase tracking-widest text-xs">
-            Total Due
-          </Text>
-          <Text className="text-3xl font-black text-slate-900">
-            {formatPHP(total)}
-          </Text>
+              <Animated.View style={{ opacity: fadeAnim }}>
+                <BillDetails
+                  calcResult={calcResult}
+                  isCalculating={isCalculating}
+                />
+              </Animated.View>
+            </ScrollView>
+          </View>
         </View>
 
-        <TouchableOpacity
-          onPress={handleCheckout}
-          disabled={isSubmitting || basket.length === 0}
-          className={cn(
-            "h-16 rounded-2xl items-center justify-center shadow-lg",
-            basket.length === 0
-              ? "bg-slate-200"
-              : "bg-blue-600 shadow-blue-100",
-          )}
-        >
-          <Text className="text-white font-black text-lg">
-            {isSubmitting ? "Generating Receipt..." : "Complete Checkout"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  );
-};
+        {/* Unified Sticky Checkout Button */}
+        <View className="p-6 border-t border-slate-100 bg-white">
+          <TouchableOpacity
+            onPress={handleCheckout}
+            disabled={isCheckoutDisabled}
+            className={cn(
+              "h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-slate-200",
+              isCheckoutDisabled ? "bg-slate-200" : "bg-slate-900",
+            )}
+          >
+            <CheckCircle2 size={20} color="white" className="mr-3" />
+            <Text className="text-white font-black text-base uppercase tracking-widest">
+              {isSubmitting
+                ? "Finalizing..."
+                : `Submit Transaction • ${formatPHP(calcResult.discountedTotal)}`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  },
+);
+
+TransactionContent.displayName = "TransactionContent";
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  scrollContent: { paddingBottom: 40 },
+});

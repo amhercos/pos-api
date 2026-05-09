@@ -52,7 +52,7 @@ export interface UpdatePromotionRequest {
 export interface PromotionCalculationRequest {
   productId: string;
   quantity: number;
-  basket: BasketItem[];
+  basket?: BasketItem[];
 }
 
 export interface PromotionCalculationResponse {
