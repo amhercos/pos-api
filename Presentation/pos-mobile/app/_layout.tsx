@@ -2,7 +2,7 @@ import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { BarChart3, LogOut, Settings, Store, Tag } from "lucide-react-native"; // Added Tag icon
+import { BarChart3, LogOut, Settings, Store } from "lucide-react-native"; // Added Tag icon
 import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -111,12 +111,12 @@ function CustomDrawerContent(
             label="Analytics"
             onPress={() => navigateTo("/(tabs)/reports")}
           />
-          {/* Added Promotions Menu Item */}
+          {/* Added Promotions Menu Item
           <DrawerItem
             icon={<Tag size={20} color="#64748b" />}
             label="Promotions"
             onPress={() => navigateTo("/(tabs)/promotions")}
-          />
+          /> */}
         </View>
 
         <SectionHeader title="Account" />
