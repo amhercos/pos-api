@@ -1,9 +1,7 @@
-import { Filter, Search, ShoppingCart } from "lucide-react-native";
-import { Skeleton } from "moti/skeleton";
-import React, { useCallback, useMemo, useState } from "react";
+import { Filter, Search } from "lucide-react-native";
+import React, { useMemo, useState } from "react";
 import {
   FlatList,
-  ListRenderItem,
   RefreshControl,
   Text,
   TextInput,
@@ -21,7 +19,6 @@ import { formatPHP } from "@/src/lib/math";
 import { cn } from "@/src/lib/utils";
 
 // Types
-import { type Product as InventoryProduct } from "@/src/types/inventory";
 import { PaymentType, type Product as SaleProduct } from "@/src/types/sale";
 
 // Components
@@ -29,23 +26,20 @@ import { TransactionContent } from "@/components/sales/TransactionContent";
 import { TransactionModal } from "@/components/sales/TransactionModal";
 
 export default function NewSalePage() {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
+  const { width, height } = useWindowDimensions();
+  const isTablet = useMemo(
+    () => width >= 768 || (width > height && width > 600),
+    [width, height],
+  );
 
-  const {
-    products = [],
-    loading: isLoadingProducts,
-    hasMore,
-    fetchMore,
-    refresh,
-  } = useInventory();
-
+  const { products = [], refresh } = useInventory();
   const { credits } = useCredits();
+
   const {
     basket,
-    calculateTotal,
+    totals,
     addToBasket,
-    removeItem, // Correctly pulled from useSale
+    removeItem,
     updateQuantity,
     clearBasket,
     checkout,
@@ -69,20 +63,8 @@ export default function NewSalePage() {
   const [newCustomerContact, setNewCustomerContact] = useState("");
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
 
-  /**
-   * DYNAMIC TOTAL CALCULATION
-   */
-  const currentTotal = useMemo(() => {
-    return calculateTotal(activePayment);
-  }, [activePayment, calculateTotal, basket]); // Added basket to ensure total updates when items change
-
-  const columnWidth = isTablet ? (width - 380 - 80) / 3 : (width - 48) / 2;
-
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !isLoadingProducts && fetchMore) {
-      fetchMore();
-    }
-  }, [hasMore, isLoadingProducts, fetchMore]);
+  const currentTotal =
+    activePayment === PaymentType.Credit ? totals.credit : totals.cash;
 
   const handleCheckout = async () => {
     const success = await checkout({
@@ -93,27 +75,34 @@ export default function NewSalePage() {
           ? selectedCreditId
           : undefined,
       newCustomerName: isNewCustomer ? newCustomerName : undefined,
-      newCustomerContact: isNewCustomer ? newCustomerContact : undefined,
+      newCustomerContact: isNewCustomer ? newCustomerContact : undefined, // Passed to backend
     });
 
     if (success) {
       setIsModalOpen(false);
       setCashReceived(0);
       setSelectedCreditId("");
+      setIsNewCustomer(false);
       setNewCustomerName("");
       setNewCustomerContact("");
-      setIsNewCustomer(false);
     }
   };
 
-  const categories = useMemo(() => {
-    const uniqueCats = Array.from(
-      new Set(products.map((p) => p.categoryName || "Uncategorized")),
-    );
-    return ["All", ...uniqueCats.sort()].filter((cat) =>
-      cat.toLowerCase().includes(categorySearch.toLowerCase()),
-    );
-  }, [products, categorySearch]);
+  // Grid Logic
+  const numColumns = useMemo(() => {
+    if (!isTablet) return 2;
+    return width > 1100 ? 4 : 3;
+  }, [width, isTablet]);
+
+  const sidebarWidth = useMemo(() => {
+    if (!isTablet) return 0;
+    return Math.min(Math.max(width * 0.35, 340), 450);
+  }, [width, isTablet]);
+
+  const columnWidth = useMemo(() => {
+    const availableWidth = width - sidebarWidth - (isTablet ? 60 : 48);
+    return availableWidth / numColumns;
+  }, [width, sidebarWidth, numColumns, isTablet]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -125,9 +114,18 @@ export default function NewSalePage() {
     });
   }, [products, search, selectedCategory]);
 
-  // Combined Props for consistency between Tablet Sidebar and Mobile Modal
+  const categories = useMemo(() => {
+    const uniqueCats = Array.from(
+      new Set(products.map((p) => p.categoryName || "Uncategorized")),
+    );
+    return ["All", ...uniqueCats.sort()].filter((cat) =>
+      cat.toLowerCase().includes(categorySearch.toLowerCase()),
+    );
+  }, [products, categorySearch]);
+
   const sharedProps = {
     basket,
+    totals,
     activePayment,
     setActivePayment,
     cashReceived,
@@ -135,7 +133,7 @@ export default function NewSalePage() {
     isSubmitting,
     handleCheckout,
     updateQuantity,
-    removeItem, // Correctly passed
+    removeItem,
     clearBasket,
     credits: credits || [],
     selectedCreditId,
@@ -144,64 +142,18 @@ export default function NewSalePage() {
     setIsNewCustomer,
     newCustomerName,
     setNewCustomerName,
-    newCustomerContact,
-    setNewCustomerContact,
+    newCustomerContact, // Now passed to sharedProps
+    setNewCustomerContact, // Now passed to sharedProps
     showVoidConfirm,
     setShowVoidConfirm,
     onClose: () => setIsModalOpen(false),
   };
 
-  const renderProduct: ListRenderItem<InventoryProduct> = ({ item: p }) => (
-    <TouchableOpacity
-      disabled={p.stockQuantity <= 0}
-      onPress={() =>
-        addToBasket({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          stock: p.stockQuantity,
-          categoryName: p.categoryName || "Uncategorized",
-          promotions: p.promotions,
-        } as SaleProduct)
-      }
-      style={{ width: columnWidth }}
-      className={cn(
-        "p-4 bg-white border border-slate-100 rounded-3xl mb-4 shadow-sm",
-        p.stockQuantity <= 0 && "opacity-40",
-      )}
-    >
-      <View className="flex-row items-center gap-1.5 mb-2">
-        <View
-          className={cn(
-            "w-2 h-2 rounded-full",
-            p.stockQuantity <= p.lowStockThreshold
-              ? "bg-rose-500"
-              : "bg-emerald-500",
-          )}
-        />
-        <Text className="text-[10px] font-black text-slate-400 uppercase">
-          {p.stockQuantity} Left
-        </Text>
-      </View>
-      <Text
-        numberOfLines={2}
-        className="font-bold text-slate-800 text-[11px] uppercase h-8 leading-tight"
-      >
-        {p.name}
-      </Text>
-      <View className="mt-3 bg-slate-50 rounded-xl py-2 px-3">
-        <Text className="font-black text-slate-900 text-center">
-          {formatPHP(p.price)}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-1 flex-row">
-        {/* LEFT SIDE: PRODUCT LISTING */}
         <View className="flex-1">
+          {/* Header & Search */}
           <View className="px-5 py-4 border-b border-slate-50">
             <View className="flex-row items-center gap-2 mb-4">
               <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
@@ -254,77 +206,67 @@ export default function NewSalePage() {
 
           <FlatList
             data={filteredProducts}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
-            numColumns={isTablet ? 3 : 2}
-            key={isTablet ? "tablet-grid" : "mobile-grid"} // Re-mounts list when columns change
-            columnWrapperStyle={{
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-            }}
+            key={`${numColumns}-grid`}
+            numColumns={numColumns}
+            columnWrapperStyle={{ gap: 16, paddingHorizontal: 20 }}
             contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
+            renderItem={({ item: p }) => (
+              <TouchableOpacity
+                disabled={p.stockQuantity <= 0}
+                onPress={() =>
+                  addToBasket({
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    stock: p.stockQuantity,
+                  } as SaleProduct)
+                }
+                style={{ width: columnWidth }}
+                className={cn(
+                  "p-4 bg-white border border-slate-100 rounded-3xl mb-4 shadow-sm",
+                  p.stockQuantity <= 0 && "opacity-40",
+                )}
+              >
+                <View className="flex-row items-center gap-1.5 mb-2">
+                  <View
+                    className={cn(
+                      "w-2 h-2 rounded-full",
+                      p.stockQuantity <= p.lowStockThreshold
+                        ? "bg-rose-500"
+                        : "bg-emerald-500",
+                    )}
+                  />
+                  <Text className="text-[10px] font-black text-slate-400 uppercase">
+                    {p.stockQuantity} Left
+                  </Text>
+                </View>
+                <Text
+                  numberOfLines={2}
+                  className="font-bold text-slate-800 text-[11px] uppercase h-8 leading-tight"
+                >
+                  {p.name}
+                </Text>
+                <View className="mt-3 bg-slate-50 rounded-xl py-2 px-3">
+                  <Text className="font-black text-slate-900 text-center">
+                    {formatPHP(p.price)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
             refreshControl={
               <RefreshControl refreshing={false} onRefresh={refresh} />
             }
-            ListEmptyComponent={
-              isLoadingProducts ? (
-                <View className="px-5 flex-row flex-wrap justify-between">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <View
-                      key={i}
-                      className="p-4 bg-white border border-slate-50 rounded-3xl mb-4"
-                      style={{ width: columnWidth }}
-                    >
-                      <Skeleton
-                        colorMode="light"
-                        width={50}
-                        height={10}
-                        radius={4}
-                      />
-                      <View className="my-3">
-                        <Skeleton
-                          colorMode="light"
-                          width={columnWidth - 60}
-                          height={18}
-                          radius={4}
-                        />
-                      </View>
-                      <Skeleton
-                        colorMode="light"
-                        width={columnWidth - 64}
-                        height={35}
-                        radius={12}
-                      />
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View className="flex-1 items-center justify-center py-20">
-                  <Text className="text-slate-400 font-bold">
-                    No products found
-                  </Text>
-                </View>
-              )
-            }
           />
 
-          {/* MOBILE ACTION BAR */}
           {!isTablet && basket.length > 0 && (
             <View className="absolute bottom-8 left-5 right-5">
               <TouchableOpacity
                 onPress={() => setIsModalOpen(true)}
                 className="bg-slate-900 h-16 rounded-3xl flex-row items-center justify-between px-6 shadow-xl"
               >
-                <View className="flex-row items-center gap-3">
-                  <View className="bg-white/20 p-2 rounded-xl">
-                    <ShoppingCart size={20} color="white" />
-                  </View>
-                  <Text className="text-white font-black text-xs uppercase tracking-tighter">
-                    {basket.length} {basket.length === 1 ? "Item" : "Items"}
-                  </Text>
-                </View>
+                <Text className="text-white font-black text-xs uppercase">
+                  {basket.length} {basket.length === 1 ? "Item" : "Items"}
+                </Text>
                 <View
                   className={cn(
                     "px-4 py-2 rounded-2xl",
@@ -342,10 +284,9 @@ export default function NewSalePage() {
           )}
         </View>
 
-        {/* RIGHT SIDE: TABLET SIDEBAR */}
         {isTablet && (
           <View
-            style={{ width: 380 }}
+            style={{ width: sidebarWidth }}
             className="border-l border-slate-100 bg-slate-50"
           >
             <TransactionContent {...sharedProps} isTablet={true} />
@@ -353,7 +294,6 @@ export default function NewSalePage() {
         )}
       </View>
 
-      {/* MOBILE TRANSACTION MODAL */}
       {!isTablet && <TransactionModal {...sharedProps} isOpen={isModalOpen} />}
     </SafeAreaView>
   );

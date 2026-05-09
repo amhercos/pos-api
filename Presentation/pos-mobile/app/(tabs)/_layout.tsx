@@ -134,7 +134,6 @@ export default function TabLayout(): React.JSX.Element {
 
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ title: "Reports", href: null }} />
-      <Tabs.Screen name="pricing" options={{ href: null }} />
     </Tabs>
   );
 }

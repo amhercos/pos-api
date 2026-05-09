@@ -1,8 +1,8 @@
 import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
+  ListRenderItem,
   RefreshControl,
   Text,
   TextInput,
@@ -12,40 +12,62 @@ import {
 import CreatePromotionModal from "../../components/promotions/CreatePromotionModal";
 import EmptyPromotions from "../../components/promotions/EmptyPromotions";
 import PromotionCard from "../../components/promotions/PromotionCard";
+import PromotionCardSkeleton from "../../components/promotions/PromotionCardSkeleton";
 import { usePromotions } from "../../src/hooks/use-promotions";
+import { Promotion } from "../../src/types/promotion";
+
+// Define a strict type for our list items
+type PromotionListItem = Promotion | { isSkeleton: true; id: string };
 
 export default function PromotionsScreen() {
-  // Data & Actions from your TanStack hook
   const { promotions, isLoading, refresh, togglePromotion, removePromotion } =
     usePromotions();
 
-  // Local UI State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Filter logic with strict null checks for TypeScript
-  const filteredPromotions = useMemo(() => {
-    return (promotions || []).filter((p) => {
-      const nameMatch =
-        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
+  const filteredPromotions = useMemo((): Promotion[] => {
+    const data = promotions ?? [];
+    return data.filter((p) => {
+      const query = searchQuery.toLowerCase();
+      const nameMatch = p.name?.toLowerCase().includes(query) ?? false;
       const productMatch =
-        p.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ??
-        false;
+        p.productName?.toLowerCase().includes(query) ?? false;
       return nameMatch || productMatch;
     });
   }, [promotions, searchQuery]);
 
-  if (isLoading && (promotions?.length ?? 0) === 0) {
+  // Determine the display state
+  const isInitialLoading =
+    isLoading && (!promotions || promotions.length === 0);
+
+  // Generate strictly typed data for the FlatList
+  const listData = useMemo((): PromotionListItem[] => {
+    if (isInitialLoading) {
+      return Array.from({ length: 4 }).map((_, i) => ({
+        isSkeleton: true,
+        id: `skeleton-${i}`,
+      }));
+    }
+    return filteredPromotions;
+  }, [isInitialLoading, filteredPromotions]);
+
+  const renderItem: ListRenderItem<PromotionListItem> = ({ item }) => {
+    if ("isSkeleton" in item) {
+      return <PromotionCardSkeleton />;
+    }
+
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <PromotionCard
+        promotion={item}
+        onToggle={() => togglePromotion(item.id)}
+        onDelete={() => removePromotion(item.id)}
+      />
     );
-  }
+  };
 
   return (
     <View className="flex-1 bg-slate-50">
-      {/* --- HEADER SECTION --- */}
       <View className="bg-white px-6 pt-16 pb-6 shadow-sm border-b border-slate-100">
         <View className="flex-row justify-between items-end mb-6">
           <View>
@@ -65,7 +87,6 @@ export default function PromotionsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* --- SEARCH & FILTER BAR --- */}
         <View className="flex-row gap-3">
           <View className="flex-1 flex-row items-center bg-slate-100 px-4 py-3 rounded-2xl">
             <Search size={18} color="#64748b" />
@@ -83,18 +104,11 @@ export default function PromotionsScreen() {
         </View>
       </View>
 
-      {/* --- PROMOTIONS LIST --- */}
       <FlatList
-        data={filteredPromotions}
+        data={listData}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <PromotionCard
-            promotion={item}
-            onToggle={() => togglePromotion(item.id)}
-            onDelete={() => removePromotion(item.id)}
-          />
-        )}
-        ListEmptyComponent={<EmptyPromotions />}
+        renderItem={renderItem}
+        ListEmptyComponent={!isLoading ? <EmptyPromotions /> : null}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 20,
@@ -103,7 +117,7 @@ export default function PromotionsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading}
+            refreshing={isLoading && (promotions?.length ?? 0) > 0}
             onRefresh={refresh}
             tintColor="#2563eb"
             colors={["#2563eb"]}
@@ -111,7 +125,6 @@ export default function PromotionsScreen() {
         }
       />
 
-      {/* --- CREATE MODAL --- */}
       <CreatePromotionModal
         isVisible={isModalOpen}
         onClose={() => setIsModalOpen(false)}

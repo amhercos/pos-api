@@ -42,9 +42,14 @@ export const promotionService = {
   calculate: async (
     params: PromotionCalculationRequest,
   ): Promise<PromotionCalculationResponse> => {
-    const response = await apiClient.post<PromotionCalculationResponse>(
+    const response = await apiClient.get<PromotionCalculationResponse>(
       "/Promotions/calculate",
-      params,
+      {
+        params: {
+          productId: params.productId,
+          quantity: params.quantity,
+        },
+      },
     );
     return response.data;
   },
