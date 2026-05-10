@@ -27,7 +27,7 @@ namespace Infrastructure.Persistence.Configurations
             builder.HasMany(p => p.Tiers)
                 .WithOne(t => t.Promotion)
                 .HasForeignKey(t => t.PromotionId)
-                .OnDelete(DeleteBehavior.Cascade); // If promo is deleted, tiers must go too
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Main Product
             builder.HasOne(p => p.MainProduct)
@@ -49,8 +49,11 @@ namespace Infrastructure.Persistence.Configurations
             builder.Property(p => p.RowVersion)
                 .IsRowVersion();
 
+            builder.HasIndex(p => new { p.MainProductId, p.IsDeleted })
+            .HasFilter("\"IsDeleted\" = false")
+            .IsUnique();
+
             builder.HasIndex(p => p.StoreId);
-            builder.HasIndex(p => p.MainProductId);
             builder.HasIndex(p => p.IsActive);
         }
     }

@@ -10,11 +10,11 @@ public class DeletePromotionHandler(
 {
     public async Task<Unit> Handle(DeletePromotionCommand request, CancellationToken ct)
     {
-        var promotion = await promotionRepo.GetByProductIdAsync(request.MainProductId, ct);
+        var promos = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
 
-        if (promotion != null)
+        if (promos.Any())
         {
-            promotionRepo.Remove(promotion);
+            promotionRepo.RemoveRange(promos);
             await context.SaveChangesAsync(ct);
         }
 
