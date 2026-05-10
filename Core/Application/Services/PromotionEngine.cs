@@ -17,38 +17,24 @@ namespace Application.Services
         public decimal CalculateLineTotal(Product product, int quantity, IEnumerable<TransactionItem> basket)
         {
             decimal originalTotal = product.Price * quantity;
-            decimal bestTotal = originalTotal;
 
-            var activePromos = product.Promotions
-                .Where(p => p.IsActive && !p.IsDeleted)
-                .ToList();
+            var promo = product.Promotions
+                .FirstOrDefault(p => p.IsActive && !p.IsDeleted);
 
-            if (!activePromos.Any())
+            if (promo == null || !_strategyMap.TryGetValue(promo.Type, out var strategy))
             {
                 return Math.Round(originalTotal, 2, MidpointRounding.AwayFromZero);
             }
 
-            foreach (var promo in activePromos)
+            try
             {
-                if (_strategyMap.TryGetValue(promo.Type, out var strategy))
-                {
-                    try
-                    {
-                        var promoTotal = strategy.CalculateLineTotal(product, promo, quantity, basket);
-
-                        if (promoTotal < bestTotal)
-                        {
-                            bestTotal = promoTotal;
-                        }
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
+                var promoTotal = strategy.CalculateLineTotal(product, promo, quantity, basket);
+                return Math.Round(Math.Min(promoTotal, originalTotal), 2, MidpointRounding.AwayFromZero);
             }
-
-            return Math.Round(bestTotal, 2, MidpointRounding.AwayFromZero);
+            catch
+            {
+                return Math.Round(originalTotal, 2, MidpointRounding.AwayFromZero);
+            }
         }
     }
 }

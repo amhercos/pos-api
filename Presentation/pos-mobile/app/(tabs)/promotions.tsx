@@ -9,14 +9,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import CreatePromotionModal from "../../components/promotions/CreatePromotionModal";
+import EditPromotionModal from "../../components/promotions/EditPromotionModal"; // We will create this below
 import EmptyPromotions from "../../components/promotions/EmptyPromotions";
 import PromotionCard from "../../components/promotions/PromotionCard";
 import PromotionCardSkeleton from "../../components/promotions/PromotionCardSkeleton";
 import { usePromotions } from "../../src/hooks/use-promotions";
 import { Promotion } from "../../src/types/promotion";
 
-// Define a strict type for our list items
 type PromotionListItem = Promotion | { isSkeleton: true; id: string };
 
 export default function PromotionsScreen() {
@@ -24,24 +25,32 @@ export default function PromotionsScreen() {
     usePromotions();
 
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+
+  // Edit State
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(
+    null,
+  );
+
+  // Delete Confirmation State
+  const [promotionToDelete, setPromotionToDelete] = useState<string | null>(
+    null,
+  );
 
   const filteredPromotions = useMemo((): Promotion[] => {
     const data = promotions ?? [];
     return data.filter((p) => {
       const query = searchQuery.toLowerCase();
-      const nameMatch = p.name?.toLowerCase().includes(query) ?? false;
-      const productMatch =
-        p.productName?.toLowerCase().includes(query) ?? false;
-      return nameMatch || productMatch;
+      return (
+        p.name?.toLowerCase().includes(query) ||
+        p.productName?.toLowerCase().includes(query)
+      );
     });
   }, [promotions, searchQuery]);
 
-  // Determine the display state
   const isInitialLoading =
     isLoading && (!promotions || promotions.length === 0);
 
-  // Generate strictly typed data for the FlatList
   const listData = useMemo((): PromotionListItem[] => {
     if (isInitialLoading) {
       return Array.from({ length: 4 }).map((_, i) => ({
@@ -52,22 +61,29 @@ export default function PromotionsScreen() {
     return filteredPromotions;
   }, [isInitialLoading, filteredPromotions]);
 
-  const renderItem: ListRenderItem<PromotionListItem> = ({ item }) => {
-    if ("isSkeleton" in item) {
-      return <PromotionCardSkeleton />;
+  const handleDeleteConfirm = () => {
+    if (promotionToDelete) {
+      removePromotion(promotionToDelete);
+      setPromotionToDelete(null);
     }
+  };
+
+  const renderItem: ListRenderItem<PromotionListItem> = ({ item }) => {
+    if ("isSkeleton" in item) return <PromotionCardSkeleton />;
 
     return (
       <PromotionCard
         promotion={item}
-        onToggle={() => togglePromotion(item.id)}
-        onDelete={() => removePromotion(item.id)}
+        onToggle={(id) => togglePromotion(id)}
+        onDelete={(id) => setPromotionToDelete(id)}
+        onEdit={() => setEditingPromotion(item)}
       />
     );
   };
 
   return (
     <View className="flex-1 bg-slate-50">
+      {/* Header logic remains the same */}
       <View className="bg-white px-6 pt-16 pb-6 shadow-sm border-b border-slate-100">
         <View className="flex-row justify-between items-end mb-6">
           <View>
@@ -79,9 +95,8 @@ export default function PromotionsScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setIsModalOpen(true)}
-            activeOpacity={0.7}
-            className="bg-blue-600 w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-blue-200"
+            onPress={() => setIsCreateModalOpen(true)}
+            className="bg-blue-600 w-12 h-12 rounded-2xl items-center justify-center shadow-lg"
           >
             <Plus color="white" size={28} />
           </TouchableOpacity>
@@ -91,14 +106,13 @@ export default function PromotionsScreen() {
           <View className="flex-1 flex-row items-center bg-slate-100 px-4 py-3 rounded-2xl">
             <Search size={18} color="#64748b" />
             <TextInput
-              placeholder="Search deals or products..."
+              placeholder="Search deals..."
               className="flex-1 ml-3 font-semibold text-slate-700"
-              placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
-          <TouchableOpacity className="bg-slate-100 p-4 rounded-2xl items-center justify-center">
+          <TouchableOpacity className="bg-slate-100 p-4 rounded-2xl">
             <SlidersHorizontal size={20} color="#475569" />
           </TouchableOpacity>
         </View>
@@ -114,20 +128,37 @@ export default function PromotionsScreen() {
           paddingTop: 20,
           paddingBottom: 120,
         }}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading && (promotions?.length ?? 0) > 0}
+            refreshing={isLoading && promotions.length > 0}
             onRefresh={refresh}
             tintColor="#2563eb"
-            colors={["#2563eb"]}
           />
         }
       />
 
+      {/* Modals */}
       <CreatePromotionModal
-        isVisible={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isVisible={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      {editingPromotion && (
+        <EditPromotionModal
+          isVisible={!!editingPromotion}
+          promotion={editingPromotion}
+          onClose={() => setEditingPromotion(null)}
+        />
+      )}
+
+      <ConfirmationModal
+        visible={!!promotionToDelete}
+        title="Remove Promotion"
+        description="Are you sure you want to delete this deal? This action cannot be undone."
+        confirmLabel="Remove Deal"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPromotionToDelete(null)}
+        variant="danger"
       />
     </View>
   );

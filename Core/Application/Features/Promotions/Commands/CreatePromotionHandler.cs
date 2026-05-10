@@ -15,6 +15,13 @@ public class CreatePromotionHandler(
     {
         var storeId = currentUserService.StoreId;
 
+        var existingPromotions = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+
+        if (existingPromotions != null && existingPromotions.Any())
+        {
+            promotionRepo.RemoveRange(existingPromotions);
+        }
+
         var promotion = new Promotion
         {
             Id = Guid.NewGuid(),
@@ -24,7 +31,8 @@ public class CreatePromotionHandler(
             MainProductId = request.MainProductId,
             TieUpProductId = request.TieUpProductId,
             TieUpQuantity = request.TieUpQuantity,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
         };
 
         var distinctTiers = request.Tiers
@@ -40,9 +48,10 @@ public class CreatePromotionHandler(
             }).ToList();
 
         promotion.Tiers = distinctTiers;
-        promotionRepo.Add(promotion);
 
+        promotionRepo.Add(promotion);
         await context.SaveChangesAsync(ct);
+
         return Unit.Value;
     }
 }

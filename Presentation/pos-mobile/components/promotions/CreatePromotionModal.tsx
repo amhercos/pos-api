@@ -1,13 +1,17 @@
+import { cn } from "@/src/lib/utils";
 import {
+  ArrowRight,
   Check,
+  Layers,
+  Link as LinkIcon,
   Package,
   Plus,
   Search,
+  Tag,
   Trash2,
   X,
-  Zap,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { FC, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,10 +23,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useInventory } from "../../src/hooks/use-inventory"; // Assuming you have an inventory hook
+import { useInventory } from "../../src/hooks/use-inventory";
 import { usePromotions } from "../../src/hooks/use-promotions";
 import {
   CreatePromotionRequest,
+  PromotionTier,
   PromotionType,
 } from "../../src/types/promotion";
 
@@ -31,232 +36,361 @@ interface CreatePromotionModalProps {
   onClose: () => void;
 }
 
+type TierInput = Omit<PromotionTier, "id" | "promotionId">;
+
+interface StrategyOption {
+  id: PromotionType;
+  label: string;
+  icon: FC<{ size: number; color: string }>;
+}
+
+const STRATEGIES: StrategyOption[] = [
+  { id: PromotionType.Bulk, label: "Bulk", icon: Package },
+  { id: PromotionType.Bundle, label: "Bundle", icon: Layers },
+  { id: PromotionType.Discount, label: "Discount", icon: Tag },
+];
+
 export default function CreatePromotionModal({
   isVisible,
   onClose,
 }: CreatePromotionModalProps) {
-  // --- Hooks ---
   const { addPromotion, isProcessing } = usePromotions();
-  const { products } = useInventory(); // To fetch products for the picker
+  const { products } = useInventory();
 
-  // --- Form State ---
   const [type, setType] = useState<PromotionType>(PromotionType.Bulk);
-  const [name, setName] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [productSearch, setProductSearch] = useState("");
-  const [tiers, setTiers] = useState([{ quantity: 1, price: 0 }]);
+  const [name, setName] = useState<string>("");
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [productSearch, setProductSearch] = useState<string>("");
 
-  // --- Tier Logic (CRUD within form) ---
-  const addTier = () => setTiers([...tiers, { quantity: 1, price: 0 }]);
+  const [tieUpProductId, setTieUpProductId] = useState<string | null>(null);
+  const [tieUpSearch, setTieUpSearch] = useState<string>("");
+  const [tieUpQuantity, setTieUpQuantity] = useState<number>(1);
 
-  const removeTier = (index: number) => {
-    if (tiers.length > 1) {
-      setTiers(tiers.filter((_, i) => i !== index));
-    }
+  const [tiers, setTiers] = useState<TierInput[]>([{ quantity: 1, price: 0 }]);
+
+  const isBulk = type === PromotionType.Bulk;
+  const isBundle = type === PromotionType.Bundle;
+
+  const updateTier = (index: number, field: keyof TierInput, value: string) => {
+    const numValue = parseFloat(value.replace(/[^0-9.]/g, "")) || 0;
+    setTiers((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: numValue };
+      return updated;
+    });
   };
 
-  const updateTier = (
-    index: number,
-    field: "quantity" | "price",
-    value: string,
-  ) => {
-    const newTiers = [...tiers];
-    const numValue = parseFloat(value) || 0;
-    if (field === "quantity") newTiers[index].quantity = numValue;
-    if (field === "price") newTiers[index].price = numValue;
-    setTiers(newTiers);
-  };
-
-  //submit handler
   const handleSubmit = () => {
-    if (!name || !selectedProductId || tiers.some((t) => t.price <= 0)) return;
+    if (!name || !selectedProductId || tiers[0].price <= 0) return;
+    if (isBundle && (!tieUpProductId || tieUpQuantity < 1)) return;
 
     const payload: CreatePromotionRequest = {
       name,
-      type: typeof type === "number" ? PromotionType[type] : type,
+      type: PromotionType[type] as unknown as string,
       mainProductId: selectedProductId,
       isActive: true,
-      tiers: tiers.map((t) => ({
-        quantity: Number(t.quantity),
-        price: Number(t.price),
-      })),
+      tiers: (isBulk ? tiers : [{ quantity: 1, price: tiers[0].price }]).map(
+        (t) => ({
+          quantity: t.quantity,
+          price: t.price,
+        }),
+      ),
+      tieUpProductId: isBundle ? tieUpProductId : null,
+      tieUpQuantity: isBundle ? tieUpQuantity : null,
     };
+
     addPromotion(payload, {
       onSuccess: () => {
         setName("");
         setSelectedProductId("");
         setProductSearch("");
+        setTieUpProductId(null);
+        setTieUpSearch("");
+        setTieUpQuantity(1);
         setTiers([{ quantity: 1, price: 0 }]);
         onClose();
       },
     });
   };
 
-  // Filtered product list for the "picker"
-  const filteredProducts = products
-    ?.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-    .slice(0, 3);
+  const filteredMainProducts = useMemo(
+    () =>
+      products
+        ?.filter((p) =>
+          p.name.toLowerCase().includes(productSearch.toLowerCase()),
+        )
+        .slice(0, 3),
+    [products, productSearch],
+  );
+
+  const filteredTieUpProducts = useMemo(
+    () =>
+      products
+        ?.filter((p) =>
+          p.name.toLowerCase().includes(tieUpSearch.toLowerCase()),
+        )
+        .slice(0, 3),
+    [products, tieUpSearch],
+  );
 
   return (
     <Modal visible={isVisible} animationType="slide" transparent>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 justify-end bg-black/40"
+        className="flex-1 justify-end bg-slate-900/40"
       >
-        <View className="bg-white rounded-t-[40px] h-[92%] px-6 pt-8 shadow-2xl">
-          {/* Header */}
-          <View className="flex-row justify-between items-center mb-6">
+        <View className="bg-white rounded-t-[32px] h-[90%] shadow-2xl">
+          {/* Compact Header */}
+          <View className="px-6 pt-6 pb-2 flex-row justify-between items-center">
             <View>
-              <Text className="text-2xl font-black text-slate-900">
-                New Promotion
+              <Text className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+                Configure Deal
               </Text>
-              <Text className="text-slate-500 font-medium">
-                Configure store strategy
+              <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Strategy Builder
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              className="bg-slate-100 p-2 rounded-full"
+              className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center"
             >
-              <X size={24} color="#64748b" />
+              <X size={18} color="#64748b" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-            {/* Strategy Type */}
-            <View className="flex-row gap-3 mb-6">
-              {[
-                { id: PromotionType.Bulk, label: "Bulk", icon: Package },
-                { id: PromotionType.Bundle, label: "Bundle", icon: Zap },
-              ].map((strategy) => (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            className="flex-1 px-6"
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Slim Strategy Switcher */}
+            <View className="flex-row gap-2 my-4">
+              {STRATEGIES.map((s) => (
                 <TouchableOpacity
-                  key={strategy.id}
-                  onPress={() => setType(strategy.id)}
-                  className={`flex-1 flex-row items-center justify-center p-4 rounded-2xl border-2 ${
-                    type === strategy.id
+                  key={s.id}
+                  onPress={() => {
+                    setType(s.id);
+                    setTiers([{ quantity: 1, price: 0 }]);
+                  }}
+                  className={cn(
+                    "flex-1 flex-row items-center justify-center py-2.5 rounded-xl border",
+                    type === s.id
                       ? "border-blue-600 bg-blue-50"
-                      : "border-slate-100 bg-white"
-                  }`}
+                      : "border-slate-100 bg-white",
+                  )}
                 >
-                  <strategy.icon
-                    size={20}
-                    color={type === strategy.id ? "#2563eb" : "#94a3b8"}
+                  <s.icon
+                    size={14}
+                    color={type === s.id ? "#2563eb" : "#94a3b8"}
                   />
                   <Text
-                    className={`ml-2 font-bold ${type === strategy.id ? "text-blue-600" : "text-slate-400"}`}
+                    className={cn(
+                      "ml-1.5 text-[10px] font-black uppercase",
+                      type === s.id ? "text-blue-600" : "text-slate-400",
+                    )}
                   >
-                    {strategy.label}
+                    {s.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Promo Name */}
-            <View className="mb-6">
-              <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                Promotion Title
-              </Text>
-              <TextInput
-                placeholder="e.g. Wholesale Price"
-                className="bg-slate-50 p-4 rounded-2xl font-semibold text-slate-900 border border-slate-100"
-                value={name}
-                onChangeText={setName}
-              />
-            </View>
-
-            {/* Product Search / Picker */}
-            <View className="mb-6">
-              <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                Apply to Product
-              </Text>
-              <View className="bg-slate-50 flex-row items-center px-4 py-1 rounded-2xl border border-slate-100">
-                <Search size={18} color="#94a3b8" />
+            <View className="gap-y-4">
+              {/* Title - Slimmer Input */}
+              <View>
+                <Text className="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">
+                  Title
+                </Text>
                 <TextInput
-                  placeholder="Search inventory..."
-                  className="flex-1 p-3 font-semibold text-slate-900"
-                  value={productSearch}
-                  onChangeText={setProductSearch}
+                  placeholder="e.g. Promo Name"
+                  className="bg-slate-50/50 p-3 rounded-xl font-bold text-slate-900 border border-slate-100"
+                  value={name}
+                  onChangeText={setName}
                 />
               </View>
 
-              {/* Product Search Results (Subtle List) */}
-              {productSearch.length > 0 && !selectedProductId && (
-                <View className="mt-2 bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                  {filteredProducts?.map((product) => (
-                    <TouchableOpacity
-                      key={product.id}
-                      onPress={() => {
-                        setSelectedProductId(product.id);
-                        setProductSearch(product.name);
-                      }}
-                      className="p-4 border-b border-slate-50 active:bg-slate-50"
-                    >
-                      <Text className="font-bold text-slate-700">
-                        {product.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Dynamic Tiers Management */}
-            <View className="mb-10">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Pricing Tiers
+              {/* Main Product Selection */}
+              <View>
+                <Text className="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">
+                  {isBundle ? "Item to Discount" : "Target Product"}
                 </Text>
-                <TouchableOpacity
-                  onPress={addTier}
-                  className="flex-row items-center"
-                >
-                  <Plus size={16} color="#2563eb" />
-                  <Text className="text-blue-600 font-bold ml-1">Add Tier</Text>
-                </TouchableOpacity>
+                <View className="bg-slate-50/50 flex-row items-center px-3 rounded-xl border border-slate-100">
+                  <Search size={14} color="#94a3b8" />
+                  <TextInput
+                    placeholder="Search product..."
+                    className="flex-1 p-2.5 font-bold text-slate-900 text-sm"
+                    value={productSearch}
+                    onChangeText={(val) => {
+                      setProductSearch(val);
+                      if (selectedProductId) setSelectedProductId("");
+                    }}
+                  />
+                </View>
+                {!selectedProductId && productSearch.length > 0 && (
+                  <View className="mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-10">
+                    {filteredMainProducts?.map((p) => (
+                      <TouchableOpacity
+                        key={p.id}
+                        onPress={() => {
+                          setSelectedProductId(p.id);
+                          setProductSearch(p.name);
+                        }}
+                        className="p-3 border-b border-slate-50"
+                      >
+                        <Text className="font-bold text-slate-700 text-xs">
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
 
-              {tiers.map((tier, index) => (
-                <View key={index} className="flex-row items-center gap-3 mb-3">
-                  <View className="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <TextInput
-                      placeholder="Min Qty"
-                      keyboardType="numeric"
-                      className="font-bold text-slate-900 text-center"
-                      onChangeText={(val) => updateTier(index, "quantity", val)}
-                    />
+              {/* Redesigned Bundle Pairing - Compact & Linked */}
+              {isBundle && (
+                <View className="flex-column items-center">
+                  <View className="flex-row items-center w-full">
+                    <View className="w-6 items-center">
+                      <LinkIcon size={14} color="#3b82f6" />
+                    </View>
+                    <View className="flex-1 bg-blue-50/30 p-3 rounded-xl border border-blue-100 flex-row items-center gap-x-2">
+                      <TextInput
+                        placeholder="Required pairing item..."
+                        className="flex-1 font-bold text-slate-900 text-xs"
+                        value={tieUpSearch}
+                        onChangeText={(val) => {
+                          setTieUpSearch(val);
+                          if (tieUpProductId) setTieUpProductId(null);
+                        }}
+                      />
+                      <View className="w-10 border-l border-blue-100 pl-2">
+                        <TextInput
+                          placeholder="Qty"
+                          keyboardType="numeric"
+                          className="font-black text-center text-blue-600 text-xs"
+                          value={tieUpQuantity.toString()}
+                          onChangeText={(val) =>
+                            setTieUpQuantity(
+                              Number(val.replace(/[^0-9]/g, "")) || 1,
+                            )
+                          }
+                        />
+                      </View>
+                    </View>
                   </View>
-                  <View className="flex-[2] bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <TextInput
-                      placeholder="Unit Price (₱)"
-                      keyboardType="numeric"
-                      className="font-bold text-slate-900"
-                      onChangeText={(val) => updateTier(index, "price", val)}
-                    />
-                  </View>
-                  <TouchableOpacity onPress={() => removeTier(index)}>
-                    <Trash2 size={20} color="#e11d48" />
-                  </TouchableOpacity>
+                  {!tieUpProductId && tieUpSearch.length > 0 && (
+                    <View className="w-full mt-1 bg-white border border-blue-100 rounded-xl shadow-md">
+                      {filteredTieUpProducts?.map((p) => (
+                        <TouchableOpacity
+                          key={p.id}
+                          onPress={() => {
+                            setTieUpProductId(p.id);
+                            setTieUpSearch(p.name);
+                          }}
+                          className="p-3 border-b border-slate-50"
+                        >
+                          <Text className="font-bold text-slate-700 text-xs">
+                            {p.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              ))}
+              )}
+
+              {/* Pricing Section - Compact */}
+              <View className="mt-2 pb-6">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Pricing
+                  </Text>
+                  {isBulk && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setTiers([...tiers, { quantity: 1, price: 0 }])
+                      }
+                      className="flex-row items-center"
+                    >
+                      <Plus size={12} color="#2563eb" />
+                      <Text className="text-blue-600 font-black text-[9px] ml-1 uppercase">
+                        Add Tier
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {tiers.map((tier, index) => (
+                  <View
+                    key={index}
+                    className="flex-row items-center gap-2 mb-2"
+                  >
+                    {isBulk ? (
+                      <View className="flex-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                        <Text className="text-[7px] font-black text-slate-400 uppercase mb-0.5 text-center">
+                          Min Qty
+                        </Text>
+                        <TextInput
+                          keyboardType="numeric"
+                          value={tier.quantity.toString()}
+                          className="font-black text-slate-900 text-center text-xs"
+                          onChangeText={(val) =>
+                            updateTier(index, "quantity", val)
+                          }
+                        />
+                      </View>
+                    ) : (
+                      <View className="w-8 items-center">
+                        <ArrowRight size={16} color="#cbd5e1" />
+                      </View>
+                    )}
+
+                    <View className="flex-[2] bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                      <Text className="text-[7px] font-black text-slate-400 uppercase mb-0.5">
+                        {isBundle ? "Promo Unit Price" : "Unit Price"} (₱)
+                      </Text>
+                      <TextInput
+                        placeholder="0.00"
+                        keyboardType="numeric"
+                        value={tier.price === 0 ? "" : tier.price.toString()}
+                        className="font-black text-slate-900 text-sm"
+                        onChangeText={(val) => updateTier(index, "price", val)}
+                      />
+                    </View>
+
+                    {isBulk && tiers.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          setTiers(tiers.filter((_, i) => i !== index))
+                        }
+                        className="p-1"
+                      >
+                        <Trash2 size={16} color="#e11d48" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
             </View>
           </ScrollView>
 
-          {/* Footer Action */}
-          <View className="py-8 border-t border-slate-100">
+          {/* Footer - Professional & Slim */}
+          <View className="p-5 border-t border-slate-50 bg-white">
             <TouchableOpacity
               disabled={isProcessing}
               onPress={handleSubmit}
-              className={`p-5 rounded-2xl flex-row justify-center items-center shadow-lg ${
-                isProcessing ? "bg-slate-300" : "bg-blue-600 shadow-blue-200"
-              }`}
+              className={cn(
+                "h-14 rounded-2xl flex-row justify-center items-center shadow-lg",
+                isProcessing ? "bg-slate-200" : "bg-slate-900 shadow-slate-300",
+              )}
             >
               {isProcessing ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Check size={20} color="white" />
-                  <Text className="text-white font-black text-lg ml-2">
-                    Create Promotion
+                  <Check size={18} color="white" />
+                  <Text className="text-white font-black text-sm ml-2 uppercase tracking-widest">
+                    Save Promotion
                   </Text>
                 </>
               )}

@@ -16,15 +16,24 @@ namespace Application.Services.Pricing
             if (promo.Tiers == null || !promo.Tiers.Any())
                 return quantity * product.Price;
 
-            var applicableTier = promo.Tiers
-                .Where(t => quantity >= t.Quantity)
-                .OrderByDescending(t => t.Quantity)
-                .FirstOrDefault();
+            decimal total = 0;
+            int remainingQuantity = quantity;
 
-            if (applicableTier == null)
-                return quantity * product.Price;
+            var sortedTiers = promo.Tiers.OrderByDescending(t => t.Quantity).ToList();
 
-            return quantity * applicableTier.Price;
+            foreach (var tier in sortedTiers)
+            {
+                if (remainingQuantity >= tier.Quantity)
+                {
+                    int numberOfPacks = remainingQuantity / tier.Quantity;
+                    total += numberOfPacks * Math.Round(tier.Quantity * tier.Price, 2, MidpointRounding.AwayFromZero);
+                    remainingQuantity %= tier.Quantity;
+                }
+            }
+
+            total += (remainingQuantity * product.Price);
+
+            return total;
         }
     }
 }
