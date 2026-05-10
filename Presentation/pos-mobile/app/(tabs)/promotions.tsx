@@ -60,8 +60,8 @@ export default function PromotionsScreen() {
     return (
       <PromotionCard
         promotion={item}
-        onToggle={() => togglePromotion(item.id)}
-        onDelete={() => removePromotion(item.id)}
+        onToggle={(id) => togglePromotion(id)}
+        onDelete={(id) => removePromotion(id)}
       />
     );
   };
