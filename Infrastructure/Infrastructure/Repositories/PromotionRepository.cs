@@ -78,7 +78,7 @@ namespace Infrastructure.Repositories
                 .Include(p => p.MainProduct)
                 .Include(p => p.TieUpProduct)
                 .Include(p => p.Tiers)
-                .Where(p => p.MainProductId == productId && p.IsActive && !p.IsDeleted)
+                .Where(p => p.MainProductId == productId && !p.IsDeleted)
                 .FirstOrDefaultAsync(ct);
         }
 

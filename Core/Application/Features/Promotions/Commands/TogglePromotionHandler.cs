@@ -10,14 +10,14 @@ public class TogglePromotionHandler(
 {
     public async Task<bool> Handle(TogglePromotionCommand request, CancellationToken ct)
     {
-        var promotion = await promotionRepo.GetByProductIdAsync(request.MainProductId, ct);
+        var promotions = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+        var promotion = promotions.FirstOrDefault();
 
         if (promotion == null)
             throw new KeyNotFoundException("Promotion for this product not found");
 
         promotion.IsActive = !promotion.IsActive;
 
-        promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
 
         return promotion.IsActive;

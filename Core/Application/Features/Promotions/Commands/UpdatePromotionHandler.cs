@@ -12,11 +12,16 @@ public class UpdatePromotionHandler(
     public async Task<Unit> Handle(UpdatePromotionCommand request, CancellationToken ct)
     {
         var promotion = await promotionRepo.GetByIdAsync(request.Id, ct);
+        if (promotion == null) throw new KeyNotFoundException("Promotion not found.");
 
-        if (promotion == null)
-            throw new Exception("Promotion not found.");
-
-        var storeId = promotion.StoreId;
+        if (promotion.MainProductId != request.MainProductId)
+        {
+            var existingForNewProduct = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+            if (existingForNewProduct.Any())
+            {
+                promotionRepo.RemoveRange(existingForNewProduct);
+            }
+        }
 
         promotion.Name = request.Name;
         promotion.Type = request.Type;
@@ -25,9 +30,7 @@ public class UpdatePromotionHandler(
         promotion.TieUpProductId = request.TieUpProductId;
         promotion.TieUpQuantity = request.TieUpQuantity;
 
-   
         promotion.Tiers.Clear();
-
         var newTiers = request.Tiers
             .GroupBy(t => t.Quantity)
             .Select(g => g.First())
@@ -35,19 +38,15 @@ public class UpdatePromotionHandler(
             {
                 Id = Guid.NewGuid(),
                 PromotionId = promotion.Id,
-                StoreId = storeId,
+                StoreId = promotion.StoreId,
                 Quantity = t.Quantity,
                 Price = t.Price
             }).ToList();
 
-        foreach (var tier in newTiers)
-        {
-            promotion.Tiers.Add(tier);
-        }
+        foreach (var tier in newTiers) promotion.Tiers.Add(tier);
 
         promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
-
         return Unit.Value;
     }
 }

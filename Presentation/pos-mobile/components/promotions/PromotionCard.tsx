@@ -1,6 +1,7 @@
 import { cn } from "@/src/lib/utils";
 import {
   ArrowDownCircle,
+  Edit3,
   Layers,
   Package,
   Tag,
@@ -14,14 +15,16 @@ import TypeBadge from "./TypeBadge";
 
 interface PromotionCardProps {
   promotion: Promotion;
-  onToggle: (mainProductId: string) => void; // Updated type signature
-  onDelete: (mainProductId: string) => void; // Updated type signature
+  onToggle: (mainProductId: string) => void;
+  onDelete: (mainProductId: string) => void;
+  onEdit: (promotion: Promotion) => void; // Added Edit prop
 }
 
 const PromotionCard: React.FC<PromotionCardProps> = ({
   promotion,
   onToggle,
   onDelete,
+  onEdit,
 }) => {
   const isBulk =
     promotion.type === PromotionType.Bulk || promotion.type === "Bulk";
@@ -59,9 +62,9 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         <View className="items-end">
           <Switch
             value={promotion.isActive}
-            // Backend expects the MainProductId for the toggle command
+            // FIX: Ensure onValueChange triggers the toggle with the correct backend ID
             onValueChange={() => onToggle(promotion.mainProductId)}
-            trackColor={{ false: "#e2e8f0", true: "#dbeafe" }}
+            trackColor={{ false: "#f1f5f9", true: "#dbeafe" }}
             thumbColor={promotion.isActive ? "#2563eb" : "#94a3b8"}
           />
           <Text
@@ -80,7 +83,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         className={cn(
           "rounded-2xl p-4 mb-4 border",
           isDiscount
-            ? "bg-blue-50 border-blue-100"
+            ? "bg-blue-50/50 border-blue-100"
             : "bg-slate-50/80 border-slate-100",
         )}
       >
@@ -110,7 +113,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
                 {formatPHP(flatPrice)}
               </Text>
             </View>
-            <View className="bg-blue-600 px-3 py-1 rounded-lg">
+            <View className="bg-blue-600 px-3 py-1 rounded-lg shadow-sm shadow-blue-200">
               <Text className="text-white font-black text-[10px] uppercase">
                 Save {formatPHP((promotion.originalPrice ?? 0) - flatPrice)}
               </Text>
@@ -123,7 +126,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
               className="flex-row justify-between items-center py-2 border-b border-slate-200/50 last:border-b-0"
             >
               <View className="flex-row items-center flex-1">
-                <View className="bg-white w-8 h-8 rounded-lg items-center justify-center border border-slate-200">
+                <View className="bg-white w-8 h-8 rounded-lg items-center justify-center border border-slate-200 shadow-sm">
                   <Text className="text-slate-900 font-black text-xs">
                     {tier.quantity}
                   </Text>
@@ -145,7 +148,6 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
           ))
         )}
 
-        {/* Bundle Requirement */}
         {promotion.tieUpProductName && (
           <View
             className={cn(
@@ -186,25 +188,38 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
       <View className="flex-row justify-between items-center">
         <View>
           <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-            Target Product ID
+            Product Code
           </Text>
           <Text className="text-slate-900 font-mono text-[9px]">
-            {promotion.mainProductId.split("-")[0]}...
-            {promotion.mainProductId.slice(-4)}
+            {promotion.mainProductId.split("-")[0].toUpperCase()}
           </Text>
         </View>
 
-        <TouchableOpacity
-          // Backend expects the MainProductId for the delete command
-          onPress={() => onDelete(promotion.mainProductId)}
-          activeOpacity={0.6}
-          className="flex-row items-center bg-rose-50 px-4 py-2.5 rounded-xl border border-rose-100"
-        >
-          <Trash2 size={14} color="#e11d48" />
-          <Text className="ml-2 text-rose-600 font-black text-[11px] uppercase">
-            Remove
-          </Text>
-        </TouchableOpacity>
+        <View className="flex-row gap-2">
+          {/* EDIT BUTTON */}
+          <TouchableOpacity
+            onPress={() => onEdit(promotion)}
+            activeOpacity={0.6}
+            className="flex-row items-center bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100"
+          >
+            <Edit3 size={14} color="#64748b" />
+            <Text className="ml-2 text-slate-600 font-black text-[11px] uppercase">
+              Edit
+            </Text>
+          </TouchableOpacity>
+
+          {/* REMOVE BUTTON */}
+          <TouchableOpacity
+            onPress={() => onDelete(promotion.mainProductId)}
+            activeOpacity={0.6}
+            className="flex-row items-center bg-rose-50 px-4 py-2.5 rounded-xl border border-rose-100"
+          >
+            <Trash2 size={14} color="#e11d48" />
+            <Text className="ml-2 text-rose-600 font-black text-[11px] uppercase">
+              Remove
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
