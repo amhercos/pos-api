@@ -29,20 +29,20 @@ public class PromotionsController : ControllerBase
         return Ok();
     }
 
-    [HttpPut("{mainProductId}")]
-    public async Task<IActionResult> Update(Guid mainProductId, UpdatePromotionCommand command, CancellationToken ct)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePromotionCommand command, CancellationToken ct)
     {
-        if (mainProductId != command.MainProductId) return BadRequest();
+        if (id != command.MainProductId) return BadRequest("Product ID mismatch");
 
         await _mediator.Send(command, ct);
         return Ok();
     }
 
-    [HttpDelete("{mainProductId}")]
-    public async Task<IActionResult> Delete(Guid mainProductId, CancellationToken ct)
-        => Ok(await _mediator.Send(new DeletePromotionCommand(mainProductId), ct));
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+        => Ok(await _mediator.Send(new DeletePromotionCommand(id), ct));
 
-    [HttpPatch("{mainProductId}/toggle")]
-    public async Task<IActionResult> Toggle(Guid mainProductId, CancellationToken ct)
-        => Ok(await _mediator.Send(new TogglePromotionCommand(mainProductId), ct));
+    [HttpPatch("{id}/toggle")]
+    public async Task<IActionResult> Toggle(Guid id, CancellationToken ct)
+        => Ok(await _mediator.Send(new TogglePromotionCommand(id), ct));
 }
