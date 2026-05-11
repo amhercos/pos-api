@@ -31,6 +31,7 @@ public class GetProductsHandler(IProductRepository productRepository)
                 promo.IsActive,
                 promo.Tiers?.Select(t => new PromoTierDto(t.Quantity, t.Price)).ToList() ?? new(),
                 promo.TieUpProductId,
+                promo.TieUpProduct?.Name,
                 promo.TieUpQuantity
             )).ToList()
         ));

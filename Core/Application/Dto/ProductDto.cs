@@ -16,14 +16,15 @@ namespace Application.Dto
     );
 
     public record PromotionDto(
-        Guid Id,
-        string Name,
-        PromotionType PromotionType,
-        bool IsActive,
-        List<PromoTierDto> Tiers,
-        Guid? TieUpProductId = null,
-        int? TieUpQuantity = null
-    );
+      Guid Id,
+      string Name,
+      PromotionType PromotionType,
+      bool IsActive,
+      List<PromoTierDto> Tiers,
+      Guid? TieUpProductId = null,
+      string? TieUpProductName = null,
+      int? TieUpQuantity = null
+  );
 
     public record PromoTierDto(
         int Quantity,
