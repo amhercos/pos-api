@@ -10,7 +10,7 @@ public class TogglePromotionHandler(
 {
     public async Task<bool> Handle(TogglePromotionCommand request, CancellationToken ct)
     {
-        var promotions = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+        var promotions = await promotionRepo.GetByMainProductIdAsync(request.Id, ct);
         var promotion = promotions.FirstOrDefault();
 
         if (promotion == null)

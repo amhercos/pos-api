@@ -10,7 +10,7 @@ public class DeletePromotionHandler(
 {
     public async Task<Unit> Handle(DeletePromotionCommand request, CancellationToken ct)
     {
-        var promos = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
+        var promos = await promotionRepo.GetByMainProductIdAsync(request.Id, ct);
 
         if (promos.Any())
         {
