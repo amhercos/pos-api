@@ -18,8 +18,6 @@ namespace Infrastructure.Repositories
             return await context.Stores.AnyAsync(s => s.StoreName == name, ct);
         }
 
-        // Updated: Removed .Include(s => s.Settings) 
-        // This repository now strictly handles Public Store Identity data.
         public async Task<Store?> GetByIdAsync(Guid storeId, CancellationToken ct)
         {
             return await context.Stores

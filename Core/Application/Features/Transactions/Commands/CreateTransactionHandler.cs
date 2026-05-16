@@ -58,7 +58,7 @@ public class CreateTransactionHandler(
                 });
             }
 
-            // --- PROMOTION LOGIC UPDATE ---
+            // PROMOTION LOGIC UPDATE 
             foreach (var item in transaction.Items)
             {
                 var product = productMap[item.ProductId];

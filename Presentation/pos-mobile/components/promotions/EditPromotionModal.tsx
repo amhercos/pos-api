@@ -1,15 +1,15 @@
 import { X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { usePromotions } from "../../src/hooks/use-promotions";
 import { Promotion, UpdatePromotionRequest } from "../../src/types/promotion";
@@ -35,7 +35,9 @@ export default function EditPromotionModal({
     value: string,
   ) => {
     const newTiers = [...tiers];
-    const numValue = parseFloat(value.replace(/[^0-9.]/g, "")) || 0;
+    const numValue =
+      value === "" ? 0 : parseFloat(value.replace(/[^0-9.]/g, ""));
+
     if (field === "quantity") newTiers[index].quantity = Math.floor(numValue);
     if (field === "price") newTiers[index].price = numValue;
     setTiers(newTiers);
@@ -43,13 +45,21 @@ export default function EditPromotionModal({
 
   const handleUpdate = () => {
     const payload: UpdatePromotionRequest = {
-      id: promotion.mainProductId, // Match backend Guid param
+      id: promotion.id,
+      mainProductId: promotion.mainProductId,
       name,
+      type: promotion.type as string,
       isActive: promotion.isActive,
       tiers: tiers.map((t) => ({ quantity: t.quantity, price: t.price })),
+      tieUpProductId: promotion.tieUpProductId,
+      tieUpQuantity: promotion.tieUpQuantity,
     };
 
-    updatePromotion(payload, { onSuccess: onClose });
+    updatePromotion(payload, {
+      onSuccess: () => {
+        onClose();
+      },
+    });
   };
 
   return (
@@ -60,9 +70,14 @@ export default function EditPromotionModal({
       >
         <View className="bg-white rounded-t-[40px] h-[70%] px-6 pt-8">
           <View className="flex-row justify-between items-center mb-6">
-            <Text className="text-2xl font-black text-slate-900 uppercase">
-              Edit Deal
-            </Text>
+            <View>
+              <Text className="text-2xl font-black text-slate-900 uppercase">
+                Edit Deal
+              </Text>
+              <Text className="text-xs font-bold text-blue-600">
+                {promotion.productName}
+              </Text>
+            </View>
             <TouchableOpacity
               onPress={onClose}
               className="bg-slate-100 p-2 rounded-full"
@@ -89,18 +104,28 @@ export default function EditPromotionModal({
               </Text>
               {tiers.map((tier, index) => (
                 <View key={index} className="flex-row items-center gap-2 mb-3">
-                  <TextInput
-                    className="flex-1 bg-slate-50 p-4 rounded-2xl font-black text-center"
-                    keyboardType="numeric"
-                    value={tier.quantity.toString()}
-                    onChangeText={(v) => updateTier(index, "quantity", v)}
-                  />
-                  <TextInput
-                    className="flex-[2] bg-slate-50 p-4 rounded-2xl font-black"
-                    keyboardType="numeric"
-                    value={tier.price.toString()}
-                    onChangeText={(v) => updateTier(index, "price", v)}
-                  />
+                  <View className="flex-1">
+                    <Text className="text-[8px] font-bold text-slate-400 ml-2 mb-1">
+                      QTY
+                    </Text>
+                    <TextInput
+                      className="bg-slate-50 p-4 rounded-2xl font-black text-center"
+                      keyboardType="numeric"
+                      value={tier.quantity.toString()}
+                      onChangeText={(v) => updateTier(index, "quantity", v)}
+                    />
+                  </View>
+                  <View className="flex-[2]">
+                    <Text className="text-[8px] font-bold text-slate-400 ml-2 mb-1">
+                      NEW UNIT PRICE
+                    </Text>
+                    <TextInput
+                      className="bg-slate-50 p-4 rounded-2xl font-black"
+                      keyboardType="numeric"
+                      value={tier.price.toString()}
+                      onChangeText={(v) => updateTier(index, "price", v)}
+                    />
+                  </View>
                 </View>
               ))}
             </View>
@@ -110,7 +135,7 @@ export default function EditPromotionModal({
             <TouchableOpacity
               onPress={handleUpdate}
               disabled={isProcessing}
-              className="bg-slate-900 p-5 rounded-3xl flex-row justify-center items-center"
+              className={`p-5 rounded-3xl flex-row justify-center items-center ${isProcessing ? "bg-slate-400" : "bg-slate-900"}`}
             >
               {isProcessing ? (
                 <ActivityIndicator color="white" />
