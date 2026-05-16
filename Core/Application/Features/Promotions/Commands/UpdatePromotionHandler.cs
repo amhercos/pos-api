@@ -2,6 +2,7 @@
 using Application.Interfaces.Repositories;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Promotions.Commands;
 
@@ -14,15 +15,6 @@ public class UpdatePromotionHandler(
         var promotion = await promotionRepo.GetByIdAsync(request.Id, ct);
         if (promotion == null) throw new KeyNotFoundException("Promotion not found.");
 
-        if (promotion.MainProductId != request.MainProductId)
-        {
-            var existingForNewProduct = await promotionRepo.GetByMainProductIdAsync(request.MainProductId, ct);
-            if (existingForNewProduct.Any())
-            {
-                promotionRepo.RemoveRange(existingForNewProduct);
-            }
-        }
-
         promotion.Name = request.Name;
         promotion.Type = request.Type;
         promotion.IsActive = request.IsActive;
@@ -30,35 +22,44 @@ public class UpdatePromotionHandler(
         promotion.TieUpProductId = request.TieUpProductId;
         promotion.TieUpQuantity = request.TieUpQuantity;
 
-        if (promotion.Tiers.Any())
+        var incomingTiers = (request.Tiers ?? new List<UpdatePromoTierDto>())
+            .GroupBy(t => t.Quantity)
+            .Select(g => g.First())
+            .ToList();
+
+        var existingTiers = promotion.Tiers.ToList();
+
+        foreach (var existing in existingTiers)
         {
-            context.PromotionTiers.RemoveRange(promotion.Tiers);
-            promotion.Tiers.Clear();
+            if (!incomingTiers.Any(i => i.Quantity == existing.Quantity))
+            {
+                context.PromotionTiers.Remove(existing);
+            }
         }
 
-        if (request.Tiers != null && request.Tiers.Any())
+        foreach (var incoming in incomingTiers)
         {
-            var newTiers = request.Tiers
-                .GroupBy(t => t.Quantity)
-                .Select(g => g.First())
-                .Select(t => new PromotionTier
+            var existing = existingTiers.FirstOrDefault(e => e.Quantity == incoming.Quantity);
+
+            if (existing != null)
+            {
+                existing.Price = incoming.Price;
+            }
+            else
+            {
+                var newTier = new PromotionTier
                 {
                     Id = Guid.NewGuid(),
                     PromotionId = promotion.Id,
                     StoreId = promotion.StoreId,
-                    Quantity = t.Quantity,
-                    Price = t.Price
-                }).ToList();
-
-            foreach (var tier in newTiers)
-            {
-                promotion.Tiers.Add(tier);
+                    Quantity = incoming.Quantity,
+                    Price = incoming.Price
+                };
+                context.PromotionTiers.Add(newTier);
             }
         }
 
-        promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
-
         return Unit.Value;
     }
 }

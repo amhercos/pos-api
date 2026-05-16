@@ -15,7 +15,14 @@ namespace Infrastructure.Repositories
     {
         public void Add(Promotion promotion) => context.Promotions.Add(promotion);
 
-        public void Update(Promotion promotion) => context.Promotions.Update(promotion);
+        public void Update(Promotion promotion)
+        {
+            var entry = context.Entry(promotion);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Promotions.Update(promotion);
+            }
+        }
 
         public void Remove(Promotion promotion)
         {
