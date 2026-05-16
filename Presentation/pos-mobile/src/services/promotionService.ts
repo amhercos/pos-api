@@ -26,10 +26,9 @@ export const promotionService = {
   },
 
   update: async (data: UpdatePromotionRequest): Promise<void> => {
-    await apiClient.put(`/Promotions/${data.id}`, data);
+    await apiClient.put(`/Promotions/${data.mainProductId}`, data);
     showToast.success("Updated", "Promotion has been updated");
   },
-
   toggle: async (id: string): Promise<void> => {
     await apiClient.patch(`/Promotions/${id}/toggle`);
   },
@@ -48,6 +47,8 @@ export const promotionService = {
         params: {
           productId: params.productId,
           quantity: params.quantity,
+          // Note: If you want to send the whole basket, the backend needs to change to POST
+          // or handle complex query strings. For now, matching your current GET:
         },
       },
     );
