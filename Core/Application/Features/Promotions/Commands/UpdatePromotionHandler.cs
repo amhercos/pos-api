@@ -30,23 +30,35 @@ public class UpdatePromotionHandler(
         promotion.TieUpProductId = request.TieUpProductId;
         promotion.TieUpQuantity = request.TieUpQuantity;
 
-        promotion.Tiers.Clear();
-        var newTiers = request.Tiers
-            .GroupBy(t => t.Quantity)
-            .Select(g => g.First())
-            .Select(t => new PromotionTier
-            {
-                Id = Guid.NewGuid(),
-                PromotionId = promotion.Id,
-                StoreId = promotion.StoreId,
-                Quantity = t.Quantity,
-                Price = t.Price
-            }).ToList();
+        if (promotion.Tiers.Any())
+        {
+            context.PromotionTiers.RemoveRange(promotion.Tiers);
+            promotion.Tiers.Clear();
+        }
 
-        foreach (var tier in newTiers) promotion.Tiers.Add(tier);
+        if (request.Tiers != null && request.Tiers.Any())
+        {
+            var newTiers = request.Tiers
+                .GroupBy(t => t.Quantity)
+                .Select(g => g.First())
+                .Select(t => new PromotionTier
+                {
+                    Id = Guid.NewGuid(),
+                    PromotionId = promotion.Id,
+                    StoreId = promotion.StoreId,
+                    Quantity = t.Quantity,
+                    Price = t.Price
+                }).ToList();
+
+            foreach (var tier in newTiers)
+            {
+                promotion.Tiers.Add(tier);
+            }
+        }
 
         promotionRepo.Update(promotion);
         await context.SaveChangesAsync(ct);
+
         return Unit.Value;
     }
 }

@@ -1,7 +1,7 @@
 export enum PromotionType {
-  Discount = 3,
-  Bulk = 1,
-  Bundle = 2,
+  Discount = "Discount",
+  Bulk = "Bulk",
+  Bundle = "Bundle",
 }
 
 export interface PromotionTier {
@@ -44,9 +44,13 @@ export interface CreatePromotionRequest {
 
 export interface UpdatePromotionRequest {
   id: string;
+  mainProductId: string;
   name: string;
+  type: PromotionType | string;
   isActive: boolean;
   tiers: Omit<PromotionTier, "id" | "promotionId">[];
+  tieUpProductId?: string | null;
+  tieUpQuantity?: number | null;
 }
 
 export interface PromotionCalculationRequest {

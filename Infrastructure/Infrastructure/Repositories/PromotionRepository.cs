@@ -28,6 +28,10 @@ namespace Infrastructure.Repositories
             foreach (var promo in promotions)
             {
                 promo.IsDeleted = true;
+                if (promo.Tiers != null && promo.Tiers.Any())
+                {
+                    context.PromotionTiers.RemoveRange(promo.Tiers);
+                }
             }
             context.Promotions.UpdateRange(promotions);
         }
