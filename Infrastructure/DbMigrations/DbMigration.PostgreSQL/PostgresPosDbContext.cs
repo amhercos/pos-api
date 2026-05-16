@@ -22,6 +22,9 @@ public class PostgresPosDbContext : PosDbContext
     {
 
         base.OnModelCreating(builder);
+        builder.Entity<PromotionTier>()
+            .Property(p => p.RowVersion)
+            .IsConcurrencyToken(false);
         builder.Ignore<Store>();
         builder.Ignore<User>();
 
@@ -47,12 +50,21 @@ public class PostgresPosDbContext : PosDbContext
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && !entityType.ClrType.IsAbstract)
             {
-                builder.Entity(entityType.ClrType)
-                    .Property(nameof(BaseEntity.RowVersion))
+                var entityBuilder = builder.Entity(entityType.ClrType);
+
+                var versionProp = entityBuilder.Property(nameof(BaseEntity.RowVersion))
                     .HasColumnName("xmin")
                     .HasColumnType("xid")
-                    .ValueGeneratedOnAddOrUpdate()
-                    .IsConcurrencyToken();
+                    .ValueGeneratedOnAddOrUpdate();
+
+                if (entityType.ClrType != typeof(PromotionTier))
+                {
+                    versionProp.IsConcurrencyToken();
+                }
+                else
+                {
+                    versionProp.IsConcurrencyToken(false);
+                }
             }
         }
     }
