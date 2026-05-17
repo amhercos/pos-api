@@ -1,4 +1,4 @@
-import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { Plus, Search } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   FlatList,
@@ -11,42 +11,54 @@ import {
 } from "react-native";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import CreatePromotionModal from "../../components/promotions/CreatePromotionModal";
-import EditPromotionModal from "../../components/promotions/EditPromotionModal"; // We will create this below
+import EditPromotionModal from "../../components/promotions/EditPromotionModal";
 import EmptyPromotions from "../../components/promotions/EmptyPromotions";
 import PromotionCard from "../../components/promotions/PromotionCard";
 import PromotionCardSkeleton from "../../components/promotions/PromotionCardSkeleton";
 import { usePromotions } from "../../src/hooks/use-promotions";
+import { cn } from "../../src/lib/utils";
 import { Promotion } from "../../src/types/promotion";
 
 type PromotionListItem = Promotion | { isSkeleton: true; id: string };
+type StrategyFilter = "All" | "Discount" | "Bulk" | "Bundle";
+
+interface BackendPromotionShape extends Promotion {
+  promotionType?: string;
+}
+
+const STRATEGIES: StrategyFilter[] = ["All", "Discount", "Bulk", "Bundle"];
 
 export default function PromotionsScreen() {
   const { promotions, isLoading, refresh, togglePromotion, removePromotion } =
     usePromotions();
 
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedStrategy, setSelectedStrategy] =
+    useState<StrategyFilter>("All");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-
-  // Edit State
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(
     null,
   );
-
-  // Delete Confirmation State
   const [promotionToDelete, setPromotionToDelete] = useState<string | null>(
     null,
   );
 
   const filteredPromotions = useMemo((): Promotion[] => {
-    const data = promotions ?? [];
+    const data = (promotions as BackendPromotionShape[]) ?? [];
     return data.filter((p) => {
       const query = searchQuery.toLowerCase();
-      return (
+      const matchesSearch =
         p.name?.toLowerCase().includes(query) ||
-        p.productName?.toLowerCase().includes(query)
-      );
+        p.productName?.toLowerCase().includes(query);
+
+      const resolvedType = p.type || p.promotionType || "";
+      const matchesStrategy =
+        selectedStrategy === "All" ||
+        String(resolvedType).toLowerCase() === selectedStrategy.toLowerCase();
+
+      return matchesSearch && matchesStrategy;
     });
-  }, [promotions, searchQuery]);
+  }, [promotions, searchQuery, selectedStrategy]);
 
   const isInitialLoading =
     isLoading && (!promotions || promotions.length === 0);
@@ -82,39 +94,53 @@ export default function PromotionsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-slate-50">
-      {/* Header logic remains the same */}
-      <View className="bg-white px-6 pt-16 pb-6 shadow-sm border-b border-slate-100">
-        <View className="flex-row justify-between items-end mb-6">
-          <View>
-            <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-1">
-              Store Strategy
-            </Text>
-            <Text className="text-3xl font-black text-slate-900">
-              Promotions
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 w-12 h-12 rounded-2xl items-center justify-center shadow-lg"
-          >
-            <Plus color="white" size={28} />
-          </TouchableOpacity>
-        </View>
-
-        <View className="flex-row gap-3">
-          <View className="flex-1 flex-row items-center bg-slate-100 px-4 py-3 rounded-2xl">
-            <Search size={18} color="#64748b" />
+    <View className="flex-1 bg-white">
+      <View className="bg-white px-5 pt-4 pb-3 border-b border-slate-100">
+        <View className="flex-row gap-2 items-center mb-3">
+          <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
+            <Search size={18} color="#94a3b8" />
             <TextInput
-              placeholder="Search deals..."
-              className="flex-1 ml-3 font-semibold text-slate-700"
+              placeholder="Search active promotions..."
+              className="flex-1 ml-2 text-slate-900 font-bold h-full p-0"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
-          <TouchableOpacity className="bg-slate-100 p-4 rounded-2xl">
-            <SlidersHorizontal size={20} color="#475569" />
+          <TouchableOpacity
+            onPress={() => setIsCreateModalOpen(true)}
+            className="bg-blue-600 w-12 h-12 rounded-2xl items-center justify-center shadow-sm"
+            activeOpacity={0.85}
+          >
+            <Plus color="white" size={22} strokeWidth={3} />
           </TouchableOpacity>
+        </View>
+
+        <View className="flex-row gap-2 mt-1">
+          {STRATEGIES.map((strat) => {
+            const isActive = selectedStrategy === strat;
+            return (
+              <TouchableOpacity
+                key={strat}
+                onPress={() => setSelectedStrategy(strat)}
+                className={cn(
+                  "px-4 h-8 rounded-full justify-center items-center border",
+                  isActive
+                    ? "bg-slate-900 border-slate-900"
+                    : "bg-white border-slate-200",
+                )}
+                activeOpacity={0.8}
+              >
+                <Text
+                  className={cn(
+                    "text-[11px] font-black uppercase tracking-wider",
+                    isActive ? "text-white" : "text-slate-400",
+                  )}
+                >
+                  {strat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -123,9 +149,10 @@ export default function PromotionsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={!isLoading ? <EmptyPromotions /> : null}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingTop: 20,
+          paddingTop: 16,
           paddingBottom: 120,
         }}
         refreshControl={
@@ -137,7 +164,6 @@ export default function PromotionsScreen() {
         }
       />
 
-      {/* Modals */}
       <CreatePromotionModal
         isVisible={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

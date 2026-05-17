@@ -2,7 +2,7 @@ import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { BarChart3, LogOut, Settings, Store } from "lucide-react-native"; // Added Tag icon
+import { BarChart3, LogOut, Settings, Store } from "lucide-react-native";
 import React, { memo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import "../global.css";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
@@ -36,25 +37,21 @@ const SectionHeader = memo(({ title }: { title: string }) => (
 ));
 SectionHeader.displayName = "SectionHeader";
 
-const DrawerItem = memo(
-  ({
-    icon,
-    label,
-    onPress,
-  }: {
-    icon: React.ReactNode;
-    label: string;
-    onPress: () => void;
-  }) => (
-    <TouchableOpacity
-      onPress={onPress}
-      className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
-    >
-      {icon}
-      <Text className="ml-3 font-bold text-slate-700">{label}</Text>
-    </TouchableOpacity>
-  ),
-);
+interface DrawerItemProps {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}
+
+const DrawerItem = memo(({ icon, label, onPress }: DrawerItemProps) => (
+  <TouchableOpacity
+    onPress={onPress}
+    className="flex-row items-center p-4 rounded-2xl active:bg-slate-100"
+  >
+    {icon}
+    <Text className="ml-3 font-bold text-slate-700">{label}</Text>
+  </TouchableOpacity>
+));
 DrawerItem.displayName = "DrawerItem";
 
 function CustomDrawerContent(
@@ -62,6 +59,7 @@ function CustomDrawerContent(
 ): React.JSX.Element {
   const { logout } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const bridge: NavigationBridge = {
@@ -90,7 +88,7 @@ function CustomDrawerContent(
   );
 
   return (
-    <View style={styles.flexOne}>
+    <View style={[styles.flexOne, { paddingTop: Math.max(insets.top, 20) }]}>
       <ScrollView
         contentContainerStyle={styles.drawerScroll}
         showsVerticalScrollIndicator={false}
@@ -111,12 +109,6 @@ function CustomDrawerContent(
             label="Analytics"
             onPress={() => navigateTo("/(tabs)/reports")}
           />
-          {/* Added Promotions Menu Item
-          <DrawerItem
-            icon={<Tag size={20} color="#64748b" />}
-            label="Promotions"
-            onPress={() => navigateTo("/(tabs)/promotions")}
-          /> */}
         </View>
 
         <SectionHeader title="Account" />
@@ -130,9 +122,7 @@ function CustomDrawerContent(
 
         <View className="mt-auto pt-6 border-t border-slate-100">
           <TouchableOpacity
-            onPress={() => {
-              void handleLogout();
-            }}
+            onPress={handleLogout}
             className="flex-row items-center p-4 rounded-2xl bg-rose-50 active:bg-rose-100"
           >
             <LogOut size={20} color="#e11d48" />
@@ -184,6 +174,7 @@ function RootLayoutNav(): React.JSX.Element {
             drawerType: "front",
             drawerStyle: { width: isLargeScreen ? 300 : "80%" },
             overlayColor: "rgba(0, 0, 0, 0.4)",
+            sceneStyle: { backgroundColor: "#ffffff" },
           }}
         >
           <Drawer.Screen
@@ -218,7 +209,6 @@ const styles = StyleSheet.create({
   drawerScroll: {
     flexGrow: 1,
     paddingBottom: 40,
-    paddingTop: 60,
     paddingHorizontal: 16,
   },
 });
