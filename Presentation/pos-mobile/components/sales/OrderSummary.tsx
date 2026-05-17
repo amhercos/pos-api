@@ -1,4 +1,3 @@
-// src/components/sales/OrderSummary.tsx
 import { formatPHP } from "@/src/lib/math";
 import { cn } from "@/src/lib/utils";
 import { type BasketItem } from "@/src/types/sale";
@@ -10,7 +9,7 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 interface OrderSummaryProps {
   basket: BasketItem[];
   updateQuantity: (id: string, q: number) => void;
-  removeItem: (id: string) => void; // Explicit delete hook mapping injected here
+  removeItem: (id: string) => void;
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({

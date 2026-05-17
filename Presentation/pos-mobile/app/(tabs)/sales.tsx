@@ -63,7 +63,6 @@ export default function NewSalePage() {
   const [newCustomerContact, setNewCustomerContact] = useState("");
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
 
-  // FIX: Mapped correctly to the new useSale calculation engine structure
   const currentTotal =
     activePayment === PaymentType.Credit
       ? totals.creditTotal
@@ -223,7 +222,7 @@ export default function NewSalePage() {
                     name: p.name,
                     price: p.price,
                     stock: p.stockQuantity,
-                    promotions: p.promotions, // Feeds promotion schema data safely into useSale calculation loops
+                    promotions: p.promotions,
                   } as SaleProduct)
                 }
                 style={{ width: columnWidth }}

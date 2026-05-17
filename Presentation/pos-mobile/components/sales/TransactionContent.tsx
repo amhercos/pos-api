@@ -80,7 +80,6 @@ export const TransactionContent = memo<TransactionContentProps>(
   }) => {
     const isCredit = activePayment === PaymentType.Credit;
 
-    // DYNAMIC FIX: Choose the layout target directly to drive immediate UI component updates
     const currentTargetTotal = isCredit ? totals.creditTotal : totals.cashTotal;
     const currentSavingsTotal = isCredit ? 0 : totals.savings;
     const currentPromotionLabels = isCredit ? null : totals.promotionsApplied;

@@ -14,7 +14,7 @@ export function calculateLineTotal(
 ): LineCalculation {
   const originalTotal = item.unitPrice * item.quantity;
 
-  // 1. Guard Rule: Return standard totals if no valid strategies are defined
+  // Return standard totals if no valid strategies are defined
   if (!item.promotions || item.promotions.length === 0) {
     return {
       discountedTotal: originalTotal,
@@ -24,7 +24,7 @@ export function calculateLineTotal(
     };
   }
 
-  // 2. Safely locate the running active campaign
+  // locate the running active campaign
   const promo = item.promotions.find((p) => p.isActive === true);
   if (!promo || !promo.tiers || promo.tiers.length === 0) {
     return {
@@ -37,9 +37,8 @@ export function calculateLineTotal(
 
   const strategyType = String(promo.promotionType).toLowerCase();
 
-  // --- STRATEGY 1: FLAT DISCOUNT MARKDOWN ---
+  // FLAT DISCOUNT MARKDOWN
   if (strategyType === "discount") {
-    // Replicates C# OrderBy(t => t.Quantity).FirstOrDefault()
     const sortedTiers = [...promo.tiers].sort(
       (a, b) => a.quantity - b.quantity,
     );
@@ -55,7 +54,7 @@ export function calculateLineTotal(
     };
   }
 
-  // --- STRATEGY 2: COMBO BUNDLE ---
+  // COMBO BUNDLE
   if (strategyType === "bundle" && promo.tieUpProductId) {
     const sortedTiers = [...promo.tiers].sort(
       (a, b) => a.quantity - b.quantity,
@@ -81,12 +80,11 @@ export function calculateLineTotal(
     };
   }
 
-  // --- STRATEGY 3: BULK PACK WHOLESALE (Mirrors C# BulkPricingStrategy exactly) ---
+  // BULK PACK WHOLESALE
   if (strategyType === "bulk") {
     let total = 0;
     let remainingQuantity = item.quantity;
 
-    // Replicates C# OrderByDescending(t => t.Quantity).ToList()
     const sortedTiers = [...promo.tiers].sort(
       (b, a) => a.quantity - b.quantity,
     );
@@ -99,7 +97,6 @@ export function calculateLineTotal(
       }
     }
 
-    // Accumulate standard retail price for loose remainder items
     total += remainingQuantity * item.unitPrice;
 
     return {
