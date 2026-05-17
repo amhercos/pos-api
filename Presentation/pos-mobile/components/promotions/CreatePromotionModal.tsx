@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Check,
   Layers,
-  Link as LinkIcon,
   Package,
   Plus,
   Search,
@@ -70,9 +69,11 @@ export default function CreatePromotionModal({
 
   const isBulk = type === PromotionType.Bulk;
   const isBundle = type === PromotionType.Bundle;
+  const isDiscount = type === PromotionType.Discount;
 
   const updateTier = (index: number, field: keyof TierInput, value: string) => {
-    const numValue = parseFloat(value.replace(/[^0-9.]/g, "")) || 0;
+    const cleaned = value.replace(/[^0-9.]/g, "");
+    const numValue = cleaned === "" ? 0 : parseFloat(cleaned);
     setTiers((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: numValue };
@@ -137,24 +138,19 @@ export default function CreatePromotionModal({
     <Modal visible={isVisible} animationType="slide" transparent>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 justify-end bg-slate-900/40"
+        className="flex-1 justify-end bg-slate-900/50"
       >
-        <View className="bg-white rounded-t-[32px] h-[90%] shadow-2xl">
-          {/* Compact Header */}
-          <View className="px-6 pt-6 pb-2 flex-row justify-between items-center">
-            <View>
-              <Text className="text-xl font-black text-slate-900 uppercase tracking-tighter">
-                Configure Deal
-              </Text>
-              <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                Strategy Builder
-              </Text>
-            </View>
+        <View className="bg-white rounded-t-[40px] h-[85%] shadow-2xl">
+          {/* HEADER */}
+          <View className="px-6 pt-7 pb-2 flex-row justify-between items-center">
+            <Text className="text-2xl font-black text-slate-900 tracking-tight">
+              New Promotion
+            </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center"
+              className="w-9 h-9 bg-slate-100 rounded-full items-center justify-center"
             >
-              <X size={18} color="#64748b" />
+              <X size={18} color="#475569" />
             </TouchableOpacity>
           </View>
 
@@ -163,7 +159,7 @@ export default function CreatePromotionModal({
             className="flex-1 px-6"
             keyboardShouldPersistTaps="handled"
           >
-            {/* Slim Strategy Switcher */}
+            {/* TYPE SWITCHER */}
             <View className="flex-row gap-2 my-4">
               {STRATEGIES.map((s) => (
                 <TouchableOpacity
@@ -173,20 +169,20 @@ export default function CreatePromotionModal({
                     setTiers([{ quantity: 1, price: 0 }]);
                   }}
                   className={cn(
-                    "flex-1 flex-row items-center justify-center py-2.5 rounded-xl border",
+                    "flex-1 flex-row items-center justify-center py-3 rounded-xl border",
                     type === s.id
-                      ? "border-blue-600 bg-blue-50"
+                      ? "border-blue-600 bg-blue-50/60"
                       : "border-slate-100 bg-white",
                   )}
                 >
                   <s.icon
                     size={14}
-                    color={type === s.id ? "#2563eb" : "#94a3b8"}
+                    color={type === s.id ? "#2563eb" : "#64748b"}
                   />
                   <Text
                     className={cn(
-                      "ml-1.5 text-[10px] font-black uppercase",
-                      type === s.id ? "text-blue-600" : "text-slate-400",
+                      "ml-2 text-xs font-bold",
+                      type === s.id ? "text-blue-700" : "text-slate-500",
                     )}
                   >
                     {s.label}
@@ -195,97 +191,130 @@ export default function CreatePromotionModal({
               ))}
             </View>
 
-            <View className="gap-y-4">
-              {/* Title - Slimmer Input */}
+            <View className="gap-y-4 pt-1">
+              {/* PROMO TITLE */}
               <View>
-                <Text className="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">
-                  Title
+                <Text className="text-xs font-bold text-slate-900 mb-1.5 ml-1">
+                  Promo Title
                 </Text>
                 <TextInput
-                  placeholder="e.g. Promo Name"
-                  className="bg-slate-50/50 p-3 rounded-xl font-bold text-slate-900 border border-slate-100"
+                  placeholder="eg. Year End Promo, etc."
+                  className="bg-slate-50 p-4 rounded-xl font-medium text-slate-900 border border-slate-100 text-sm"
                   value={name}
                   onChangeText={setName}
                 />
               </View>
 
-              {/* Main Product Selection */}
-              <View>
-                <Text className="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">
-                  {isBundle ? "Item to Discount" : "Target Product"}
-                </Text>
-                <View className="bg-slate-50/50 flex-row items-center px-3 rounded-xl border border-slate-100">
-                  <Search size={14} color="#94a3b8" />
-                  <TextInput
-                    placeholder="Search product..."
-                    className="flex-1 p-2.5 font-bold text-slate-900 text-sm"
-                    value={productSearch}
-                    onChangeText={(val) => {
-                      setProductSearch(val);
-                      if (selectedProductId) setSelectedProductId("");
-                    }}
-                  />
-                </View>
-                {!selectedProductId && productSearch.length > 0 && (
-                  <View className="mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-10">
-                    {filteredMainProducts?.map((p) => (
-                      <TouchableOpacity
-                        key={p.id}
-                        onPress={() => {
-                          setSelectedProductId(p.id);
-                          setProductSearch(p.name);
-                        }}
-                        className="p-3 border-b border-slate-50"
-                      >
-                        <Text className="font-bold text-slate-700 text-xs">
-                          {p.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              {/* Redesigned Bundle Pairing - Compact & Linked */}
-              {isBundle && (
-                <View className="flex-column items-center">
-                  <View className="flex-row items-center w-full">
-                    <View className="w-6 items-center">
-                      <LinkIcon size={14} color="#3b82f6" />
-                    </View>
-                    <View className="flex-1 bg-blue-50/30 p-3 rounded-xl border border-blue-100 flex-row items-center gap-x-2">
+              {/* DYNAMIC FORM WORKFLOWS */}
+              {isBundle ? (
+                <View className="bg-amber-50/40 border border-amber-200/60 p-4 rounded-2xl gap-y-3">
+                  {/* CONDITION PRODUCT (TIE-UP) */}
+                  <View>
+                    <Text className="text-xs font-bold text-amber-900 mb-1.5 ml-1">
+                      Primary Producteg.
+                    </Text>
+                    <View className="bg-white flex-row items-center px-3 rounded-xl border border-amber-200/70">
+                      <Search size={14} color="#b45309" />
                       <TextInput
-                        placeholder="Required pairing item..."
-                        className="flex-1 font-bold text-slate-900 text-xs"
+                        placeholder="Search required pairing product..."
+                        className="flex-1 p-3.5 font-medium text-slate-900 text-xs"
                         value={tieUpSearch}
                         onChangeText={(val) => {
                           setTieUpSearch(val);
                           if (tieUpProductId) setTieUpProductId(null);
                         }}
                       />
-                      <View className="w-10 border-l border-blue-100 pl-2">
-                        <TextInput
-                          placeholder="Qty"
-                          keyboardType="numeric"
-                          className="font-black text-center text-blue-600 text-xs"
-                          value={tieUpQuantity.toString()}
-                          onChangeText={(val) =>
-                            setTieUpQuantity(
-                              Number(val.replace(/[^0-9]/g, "")) || 1,
-                            )
-                          }
-                        />
-                      </View>
                     </View>
+
+                    {!tieUpProductId && tieUpSearch.length > 0 && (
+                      <View className="bg-white border border-amber-100 rounded-xl mt-1 shadow-md z-10">
+                        {filteredTieUpProducts?.map((p) => (
+                          <TouchableOpacity
+                            key={p.id}
+                            onPress={() => {
+                              setTieUpProductId(p.id);
+                              setTieUpSearch(p.name);
+                              setTieUpQuantity(1); // Set to 1 explicitly for 1-to-1 backend matching
+                            }}
+                            className="p-3 border-b border-slate-50"
+                          >
+                            <Text className="font-bold text-slate-700 text-xs">
+                              {p.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                  {!tieUpProductId && tieUpSearch.length > 0 && (
-                    <View className="w-full mt-1 bg-white border border-blue-100 rounded-xl shadow-md">
-                      {filteredTieUpProducts?.map((p) => (
+
+                  {/* CONNECTIVE FLOW ARROW */}
+                  <View className="align-center items-center py-0.5">
+                    <ArrowRight size={14} color="#d97706" />
+                  </View>
+
+                  {/* TARGET PRODUCT (MAIN PRODUCT) */}
+                  <View>
+                    <Text className="text-xs font-bold text-amber-900 mb-1.5 ml-1">
+                      Tie -Up Product
+                    </Text>
+                    <View className="bg-white flex-row items-center px-3 rounded-xl border border-amber-200/70">
+                      <Search size={14} color="#b45309" />
+                      <TextInput
+                        placeholder="Search product to receive discount..."
+                        className="flex-1 p-3.5 font-medium text-slate-900 text-xs"
+                        value={productSearch}
+                        onChangeText={(val) => {
+                          setProductSearch(val);
+                          if (selectedProductId) setSelectedProductId("");
+                        }}
+                      />
+                    </View>
+                    {!selectedProductId && productSearch.length > 0 && (
+                      <View className="bg-white border border-amber-100 rounded-xl mt-1 shadow-md z-10">
+                        {filteredMainProducts?.map((p) => (
+                          <TouchableOpacity
+                            key={p.id}
+                            onPress={() => {
+                              setSelectedProductId(p.id);
+                              setProductSearch(p.name);
+                            }}
+                            className="p-3 border-b border-slate-50"
+                          >
+                            <Text className="font-bold text-slate-700 text-xs">
+                              {p.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                /* STANDARD SELECT FOR BULK AND DISCOUNT */
+                <View>
+                  <Text className="text-xs font-bold text-slate-900 mb-1.5 ml-1">
+                    Select Product
+                  </Text>
+                  <View className="bg-slate-50 flex-row items-center px-3 rounded-xl border border-slate-100">
+                    <Search size={14} color="#94a3b8" />
+                    <TextInput
+                      placeholder="Search items..."
+                      className="flex-1 p-4 font-medium text-slate-900 text-sm"
+                      value={productSearch}
+                      onChangeText={(val) => {
+                        setProductSearch(val);
+                        if (selectedProductId) setSelectedProductId("");
+                      }}
+                    />
+                  </View>
+                  {!selectedProductId && productSearch.length > 0 && (
+                    <View className="mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-10">
+                      {filteredMainProducts?.map((p) => (
                         <TouchableOpacity
                           key={p.id}
                           onPress={() => {
-                            setTieUpProductId(p.id);
-                            setTieUpSearch(p.name);
+                            setSelectedProductId(p.id);
+                            setProductSearch(p.name);
                           }}
                           className="p-3 border-b border-slate-50"
                         >
@@ -299,21 +328,21 @@ export default function CreatePromotionModal({
                 </View>
               )}
 
-              {/* Pricing Section - Compact */}
-              <View className="mt-2 pb-6">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                    Pricing
+              {/* PRICING TABLE AREA */}
+              <View className="mt-2 pb-8">
+                <View className="flex-row justify-between items-center mb-3 ml-1">
+                  <Text className="text-xs font-bold text-slate-900">
+                    Pricing Settings
                   </Text>
                   {isBulk && (
                     <TouchableOpacity
                       onPress={() =>
                         setTiers([...tiers, { quantity: 1, price: 0 }])
                       }
-                      className="flex-row items-center"
+                      className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"
                     >
                       <Plus size={12} color="#2563eb" />
-                      <Text className="text-blue-600 font-black text-[9px] ml-1 uppercase">
+                      <Text className="text-blue-700 font-bold text-xs ml-1">
                         Add Tier
                       </Text>
                     </TouchableOpacity>
@@ -323,37 +352,37 @@ export default function CreatePromotionModal({
                 {tiers.map((tier, index) => (
                   <View
                     key={index}
-                    className="flex-row items-center gap-2 mb-2"
+                    className="flex-row items-end gap-2 mb-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100"
                   >
-                    {isBulk ? (
-                      <View className="flex-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                        <Text className="text-[7px] font-black text-slate-400 uppercase mb-0.5 text-center">
-                          Min Qty
+                    {(isBulk || isDiscount) && (
+                      <View className="flex-1">
+                        <Text className="text-[9px] font-black text-slate-400 mb-1.5 text-center">
+                          QTY
                         </Text>
                         <TextInput
-                          keyboardType="numeric"
-                          value={tier.quantity.toString()}
-                          className="font-black text-slate-900 text-center text-xs"
+                          keyboardType="number-pad"
+                          value={
+                            tier.quantity === 0 ? "" : tier.quantity.toString()
+                          }
+                          className="bg-white p-3 rounded-xl font-black text-center text-slate-900 border border-slate-200/60 text-sm"
                           onChangeText={(val) =>
                             updateTier(index, "quantity", val)
                           }
                         />
                       </View>
-                    ) : (
-                      <View className="w-8 items-center">
-                        <ArrowRight size={16} color="#cbd5e1" />
-                      </View>
                     )}
 
-                    <View className="flex-[2] bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                      <Text className="text-[7px] font-black text-slate-400 uppercase mb-0.5">
-                        {isBundle ? "Promo Unit Price" : "Unit Price"} (₱)
+                    <View className="flex-[2.5]">
+                      <Text className="text-[9px] font-black text-slate-400 mb-1.5 ml-1">
+                        {isBulk
+                          ? "TOTAL PACK PRICE (₱)"
+                          : "PROMO PRICE EACH (₱)"}
                       </Text>
                       <TextInput
                         placeholder="0.00"
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                         value={tier.price === 0 ? "" : tier.price.toString()}
-                        className="font-black text-slate-900 text-sm"
+                        className="bg-white p-3 rounded-xl font-black text-slate-900 border border-slate-200/60 text-sm"
                         onChangeText={(val) => updateTier(index, "price", val)}
                       />
                     </View>
@@ -363,7 +392,7 @@ export default function CreatePromotionModal({
                         onPress={() =>
                           setTiers(tiers.filter((_, i) => i !== index))
                         }
-                        className="p-1"
+                        className="bg-rose-50 p-3.5 rounded-xl border border-rose-100 items-center justify-center mb-[1px]"
                       >
                         <Trash2 size={16} color="#e11d48" />
                       </TouchableOpacity>
@@ -374,22 +403,23 @@ export default function CreatePromotionModal({
             </View>
           </ScrollView>
 
-          {/* Footer - Professional & Slim */}
-          <View className="p-5 border-t border-slate-50 bg-white">
+          {/* GLOBAL MODAL SAVING TRIGGER */}
+          <View className="p-5 pb-8 border-t border-slate-100 bg-white">
             <TouchableOpacity
               disabled={isProcessing}
               onPress={handleSubmit}
+              activeOpacity={0.8}
               className={cn(
-                "h-14 rounded-2xl flex-row justify-center items-center shadow-lg",
-                isProcessing ? "bg-slate-200" : "bg-slate-900 shadow-slate-300",
+                "h-14 rounded-2xl flex-row justify-center items-center shadow-sm",
+                isProcessing ? "bg-slate-300" : "bg-slate-900",
               )}
             >
               {isProcessing ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Check size={18} color="white" />
-                  <Text className="text-white font-black text-sm ml-2 uppercase tracking-widest">
+                  <Check size={16} color="white" />
+                  <Text className="text-white font-bold text-sm ml-2 uppercase tracking-wide">
                     Save Promotion
                   </Text>
                 </>
