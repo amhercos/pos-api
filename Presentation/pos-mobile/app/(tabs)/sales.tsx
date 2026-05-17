@@ -64,7 +64,9 @@ export default function NewSalePage() {
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
 
   const currentTotal =
-    activePayment === PaymentType.Credit ? totals.credit : totals.cash;
+    activePayment === PaymentType.Credit
+      ? totals.creditTotal
+      : totals.cashTotal;
 
   const handleCheckout = async () => {
     const success = await checkout({
@@ -75,7 +77,7 @@ export default function NewSalePage() {
           ? selectedCreditId
           : undefined,
       newCustomerName: isNewCustomer ? newCustomerName : undefined,
-      newCustomerContact: isNewCustomer ? newCustomerContact : undefined, // Passed to backend
+      newCustomerContact: isNewCustomer ? newCustomerContact : undefined,
     });
 
     if (success) {
@@ -88,7 +90,7 @@ export default function NewSalePage() {
     }
   };
 
-  // Grid Logic
+  // Grid Layout Rules
   const numColumns = useMemo(() => {
     if (!isTablet) return 2;
     return width > 1100 ? 4 : 3;
@@ -142,8 +144,8 @@ export default function NewSalePage() {
     setIsNewCustomer,
     newCustomerName,
     setNewCustomerName,
-    newCustomerContact, // Now passed to sharedProps
-    setNewCustomerContact, // Now passed to sharedProps
+    newCustomerContact,
+    setNewCustomerContact,
     showVoidConfirm,
     setShowVoidConfirm,
     onClose: () => setIsModalOpen(false),
@@ -204,6 +206,7 @@ export default function NewSalePage() {
             />
           </View>
 
+          {/* Product Grid Area */}
           <FlatList
             data={filteredProducts}
             key={`${numColumns}-grid`}
@@ -219,6 +222,7 @@ export default function NewSalePage() {
                     name: p.name,
                     price: p.price,
                     stock: p.stockQuantity,
+                    promotions: p.promotions,
                   } as SaleProduct)
                 }
                 style={{ width: columnWidth }}
@@ -258,6 +262,7 @@ export default function NewSalePage() {
             }
           />
 
+          {/* Mobile Bottom Bar trigger layout overlay */}
           {!isTablet && basket.length > 0 && (
             <View className="absolute bottom-8 left-5 right-5">
               <TouchableOpacity
@@ -284,6 +289,7 @@ export default function NewSalePage() {
           )}
         </View>
 
+        {/* Tablet split workspace layout */}
         {isTablet && (
           <View
             style={{ width: sidebarWidth }}

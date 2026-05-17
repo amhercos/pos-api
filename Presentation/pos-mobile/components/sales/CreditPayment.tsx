@@ -12,8 +12,8 @@ interface CreditPaymentProps {
   setIsNewCustomer: (b: boolean) => void;
   newCustomerName: string;
   setNewCustomerName: (s: string) => void;
-  newCustomerContact: string; // Added property
-  setNewCustomerContact: (s: string) => void; // Added property
+  newCustomerContact: string;
+  setNewCustomerContact: (s: string) => void;
 }
 
 export const CreditPayment = ({
