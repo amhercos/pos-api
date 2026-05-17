@@ -1,23 +1,22 @@
 import {
-    ArrowUpDown,
-    CheckCircle2,
-    History,
-    ReceiptText,
-    RefreshCcw,
-    Search,
-    TrendingUp,
-    UserCog,
-    Wallet,
+  ArrowUpDown,
+  CheckCircle2,
+  History,
+  ReceiptText,
+  Search,
+  TrendingUp,
+  UserCog,
+  Wallet,
 } from "lucide-react-native";
 import { Skeleton } from "moti/skeleton";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -44,7 +43,6 @@ export default function CreditsPage() {
   const [showSettled, setShowSettled] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>("desc");
 
-  // Stats period and stats state
   const PERIODS = React.useMemo(
     () => [
       { label: "Today", value: "today" },
@@ -79,7 +77,6 @@ export default function CreditsPage() {
     return () => clearTimeout(handler);
   }, [search, showSettled, fetchCredits]);
 
-  // Fetch credit stats when selectedPeriod changes
   useEffect(() => {
     let active = true;
     setStatsLoading(true);
@@ -103,7 +100,7 @@ export default function CreditsPage() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="flex-row gap-2 mt-6 mb-2"
+        className="flex-row gap-2 mt-2 mb-2"
       >
         {PERIODS.map((p) => (
           <TouchableOpacity
@@ -150,43 +147,18 @@ export default function CreditsPage() {
     return result;
   }, [credits, sortOrder]);
 
-  // const totalOutstanding = useMemo(
-  //   () => credits.reduce((acc, curr) => acc + curr.creditAmount, 0),
-  //   [credits],
-  // );
-
   const formatPHP = (val: number) =>
     `₱${val.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="px-6 pt-6 pb-4 border-b border-slate-100 flex-row items-center justify-between">
-        <View>
-          <Text className="text-2xl font-bold text-slate-900">
-            Customer Credit
-          </Text>
-          <Text className="text-xs text-slate-400 font-medium">
-            Manage debt and history
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => fetchCredits(search, showSettled, true)}
-          className="p-2 rounded-full bg-slate-50"
-        >
-          <RefreshCcw
-            size={18}
-            color="#64748b"
-            className={refreshing ? "animate-spin" : ""}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Stats Row */}
-      <View className="px-4 mt-4">
+    // edges={[]} prevents double safe-area layout padding with parent header navigators
+    <SafeAreaView className="flex-1 bg-white" edges={[]}>
+      {/* Stats Section Wrapper Area */}
+      <View className="px-4 pt-2">
         {MemoizedPeriodPills}
         <View className="flex-row gap-3 mt-2">
           {/* Collected Card */}
-          <View className="flex-1 bg-white rounded-3xl shadow-sm p-5 flex-row items-center min-h-[90px]">
+          <View className="flex-1 bg-white border border-slate-100 rounded-3xl p-4 flex-row items-center min-h-[90px]">
             <View className="bg-emerald-50 rounded-full p-3 mr-3">
               <TrendingUp size={22} color="#059669" />
             </View>
@@ -195,26 +167,26 @@ export default function CreditsPage() {
                 Collected
               </Text>
               {statsLoading ? (
-                <Skeleton
-                  colorMode="light"
-                  width={80}
-                  height={24}
-                  radius={12}
-                />
+                <View className="mt-1">
+                  <Skeleton
+                    colorMode="light"
+                    width={80}
+                    height={20}
+                    radius={8}
+                  />
+                </View>
               ) : (
                 Boolean(creditStats) && (
                   <Text className="text-xl font-black tracking-tighter text-slate-900 mt-1">
-                    ₱
-                    {creditStats?.totalCollected?.toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}
+                    {formatPHP(creditStats?.totalCollected ?? 0)}
                   </Text>
                 )
               )}
             </View>
           </View>
+
           {/* Debt Left Card */}
-          <View className="flex-1 bg-white rounded-3xl shadow-sm p-5 flex-row items-center min-h-[90px]">
+          <View className="flex-1 bg-white border border-slate-100 rounded-3xl p-4 flex-row items-center min-h-[90px]">
             <View className="bg-slate-50 rounded-full p-3 mr-3">
               <Wallet size={22} color="#334155" />
             </View>
@@ -223,19 +195,18 @@ export default function CreditsPage() {
                 Debt Left
               </Text>
               {statsLoading ? (
-                <Skeleton
-                  colorMode="light"
-                  width={80}
-                  height={24}
-                  radius={12}
-                />
+                <View className="mt-1">
+                  <Skeleton
+                    colorMode="light"
+                    width={80}
+                    height={20}
+                    radius={8}
+                  />
+                </View>
               ) : (
                 Boolean(creditStats) && (
                   <Text className="text-xl font-black tracking-tighter text-slate-900 mt-1">
-                    ₱
-                    {creditStats?.totalActiveDebts?.toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}
+                    {formatPHP(creditStats?.totalActiveDebts ?? 0)}
                   </Text>
                 )
               )}
@@ -245,7 +216,8 @@ export default function CreditsPage() {
       </View>
 
       <ScrollView
-        className="flex-1 px-4"
+        className="flex-1 px-4 mt-2"
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -253,33 +225,12 @@ export default function CreditsPage() {
           />
         }
       >
-        {/* Total Outstanding Card Skeleton
-        {refreshing && credits.length === 0 ? (
-          <View className="mt-4">
-            <Skeleton colorMode="light" width="100%" height={120} radius={24} />
-          </View>
-        ) : (
-          <View className="mt-4 rounded-3xl bg-slate-900 p-6 flex-row items-center justify-between shadow-lg">
-            <View>
-              <Text className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Total Outstanding
-              </Text>
-              <Text className="text-3xl font-bold text-white mt-1">
-                {formatPHP(totalOutstanding)}
-              </Text>
-            </View>
-            <View className="bg-rose-500/20 p-3 rounded-2xl">
-              <Wallet size={24} color="#fb7185" />
-            </View>
-          </View> */}
-        {/* )} */}
-
-        <View className="flex-row gap-2 mt-6">
+        <View className="flex-row gap-2 mt-4">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
             <Search size={18} color="#94a3b8" />
             <TextInput
               placeholder="Search customer..."
-              className="flex-1 ml-2 text-slate-900 h-full"
+              className="flex-1 ml-2 text-slate-900 font-bold h-full"
               value={search}
               onChangeText={setSearch}
             />
@@ -287,7 +238,7 @@ export default function CreditsPage() {
           <TouchableOpacity
             onPress={() => setShowSettled(!showSettled)}
             className={cn(
-              "h-12 px-4 rounded-2xl justify-center border",
+              "h-12 w-12 rounded-2xl justify-center items-center border",
               showSettled
                 ? "bg-slate-900 border-slate-900"
                 : "bg-white border-slate-200",
@@ -298,7 +249,7 @@ export default function CreditsPage() {
         </View>
 
         <View className="flex-row items-center justify-between mt-6 mb-2">
-          <Text className="text-[11px] font-bold uppercase text-slate-400 tracking-wider">
+          <Text className="text-[11px] font-bold uppercase text-slate-400 tracking-wider px-1">
             Customer List
           </Text>
           <TouchableOpacity
@@ -314,15 +265,15 @@ export default function CreditsPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Customer List Skeletons */}
+        {/* Customer Rows Renderer */}
         {refreshing && credits.length === 0 ? (
           <View className="gap-y-3 mt-2">
-            {[1, 2, 3, 4, 5].map((i) => (
+            {[1, 2, 3].map((i) => (
               <Skeleton
                 key={i}
                 colorMode="light"
                 width="100%"
-                height={140}
+                height={130}
                 radius={24}
               />
             ))}
@@ -336,24 +287,24 @@ export default function CreditsPage() {
               <View className="flex-row justify-between items-start">
                 <View className="flex-1">
                   <View className="flex-row items-center">
-                    <Text className="font-bold text-slate-900 text-lg">
+                    <Text className="font-bold text-slate-800 text-base uppercase">
                       {c.customerName}
                     </Text>
                     {c.creditAmount === 0 && (
                       <CheckCircle2
-                        size={16}
+                        size={15}
                         color="#10b981"
                         style={{ marginLeft: 6 }}
                       />
                     )}
                   </View>
-                  <Text className="text-slate-400 text-xs mt-1">
-                    {c.contactInfo || "No contact info"}
+                  <Text className="text-slate-400 text-xs font-semibold mt-1">
+                    {c.contactInfo || "No contact number added"}
                   </Text>
                 </View>
                 <Text
                   className={cn(
-                    "font-black text-lg",
+                    "font-black text-base",
                     c.creditAmount > 0 ? "text-rose-600" : "text-emerald-600",
                   )}
                 >
@@ -361,29 +312,29 @@ export default function CreditsPage() {
                 </Text>
               </View>
 
-              <View className="flex-row mt-4 pt-4 border-t border-slate-50 gap-2">
+              <View className="flex-row mt-4 pt-3 border-t border-slate-50 gap-2">
                 <TouchableOpacity
                   onPress={() => setEditingCredit(c)}
-                  className="bg-slate-100 h-10 px-4 rounded-xl justify-center"
+                  className="bg-slate-50 border border-slate-100 h-10 px-4 rounded-xl justify-center"
                 >
-                  <UserCog size={18} color="#64748b" />
+                  <UserCog size={16} color="#64748b" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleOpenSummary(c.id)}
-                  className="flex-1 bg-slate-100 h-10 px-4 rounded-xl flex-row items-center justify-center"
+                  className="flex-1 bg-slate-50 border border-slate-100 h-10 px-4 rounded-xl flex-row items-center justify-center"
                 >
-                  <ReceiptText size={16} color="#64748b" />
-                  <Text className="ml-2 font-bold text-slate-600 text-xs">
+                  <ReceiptText size={15} color="#64748b" />
+                  <Text className="ml-2 font-bold text-slate-600 text-xs uppercase">
                     Summary
                   </Text>
                 </TouchableOpacity>
                 {c.creditAmount > 0 && (
                   <TouchableOpacity
                     onPress={() => setSelectedCredit(c)}
-                    className="flex-1 bg-emerald-600 h-10 px-4 rounded-xl justify-center items-center"
+                    className="flex-1 bg-emerald-500 h-10 px-4 rounded-xl justify-center items-center"
                   >
-                    <Text className="font-bold text-white text-xs">
-                      Pay Now
+                    <Text className="font-black text-white text-xs uppercase tracking-wider">
+                      Pay Debt
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -393,7 +344,7 @@ export default function CreditsPage() {
         )}
       </ScrollView>
 
-      {/* Sheets and Modals remain unchanged */}
+      {/* Sheet Management Controllers */}
       <CreditSummarySheet
         summary={summaryData}
         isOpen={isSummaryOpen}
