@@ -12,26 +12,42 @@ import {
 import { isAxiosError, type AxiosError } from "axios";
 import { useCallback, useMemo, useState } from "react";
 import { Alert } from "react-native";
-import { calculateBestPromo } from "../utils/promotion-engine";
+import { calculateLineTotal } from "../utils/promotion-engine";
 
 export function useSale() {
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Real-time calculation engine cache memoized
   const totals = useMemo(() => {
-    const cashTotal = basket.reduce((acc, item) => {
-      const { total } = calculateBestPromo(item, basket);
-      return acc + total;
-    }, 0);
+    let originalTotalAmount = 0;
+    let cashDiscountedAmount = 0;
+    const appliedNames: string[] = [];
 
-    const creditTotal = basket.reduce((acc, item) => {
-      // No promotions for Credit payments as per domain rules
-      return acc + item.unitPrice * item.quantity;
-    }, 0);
+    basket.forEach((item) => {
+      const lineCalculations = calculateLineTotal(item, basket);
+      originalTotalAmount += lineCalculations.originalTotal;
+      cashDiscountedAmount += lineCalculations.discountedTotal;
+
+      if (lineCalculations.appliedPromotionName) {
+        appliedNames.push(lineCalculations.appliedPromotionName);
+      }
+    });
+
+    const creditTotalAmount = basket.reduce(
+      (acc, item) => acc + item.unitPrice * item.quantity,
+      0,
+    );
 
     return {
-      cash: roundTo(cashTotal),
-      credit: roundTo(creditTotal),
+      originalTotal: roundTo(originalTotalAmount, 2),
+      cashTotal: roundTo(cashDiscountedAmount, 2),
+      creditTotal: roundTo(creditTotalAmount, 2),
+      savings: roundTo(
+        Math.max(0, originalTotalAmount - cashDiscountedAmount),
+        2,
+      ),
+      promotionsApplied: Array.from(new Set(appliedNames)).join(", ") || null,
     };
   }, [basket]);
 
@@ -75,13 +91,11 @@ export function useSale() {
       setBasket((prev) =>
         prev.map((item) => {
           if (item.productId !== productId) return item;
-
           if (nextQty > item.stock) {
             Alert.alert("Stock Limit", `Cannot exceed ${item.stock} units.`);
             return item;
           }
           if (nextQty <= 0) return item;
-
           return { ...item, quantity: nextQty };
         }),
       );
@@ -94,15 +108,12 @@ export function useSale() {
   const checkout = async (params: CheckoutParams): Promise<boolean> => {
     if (basket.length === 0) return false;
 
-    const capturedTotal =
-      params.paymentType === PaymentType.Credit ? totals.credit : totals.cash;
-
+    // No promotions applied if payment type is Credit
+    const isCredit = params.paymentType === PaymentType.Credit;
+    const capturedTotal = isCredit ? totals.creditTotal : totals.cashTotal;
     const capturedCash = params.cashReceived ?? 0;
 
-    if (
-      params.paymentType === PaymentType.Cash &&
-      capturedCash < capturedTotal
-    ) {
+    if (!isCredit && capturedCash < capturedTotal) {
       Alert.alert(
         "Invalid Payment",
         `Cash received (${formatPHP(capturedCash)}) is less than the total (${formatPHP(capturedTotal)}).`,
@@ -115,8 +126,7 @@ export function useSale() {
     try {
       const command: CreateTransactionCommand = {
         items: basket.map((item) => {
-          // Logic: Apply discounts to unitPrice only if payment is Cash
-          if (params.paymentType === PaymentType.Credit) {
+          if (isCredit) {
             return {
               productId: item.productId,
               quantity: item.quantity,
@@ -124,20 +134,19 @@ export function useSale() {
             };
           }
 
-          const { total } = calculateBestPromo(item, basket);
+          const { discountedTotal } = calculateLineTotal(item, basket);
           return {
             productId: item.productId,
             quantity: item.quantity,
-            unitPrice: roundTo(total / item.quantity, 2),
+            unitPrice: roundTo(discountedTotal / item.quantity, 2),
           };
         }),
         paymentType: params.paymentType,
         totalAmount: capturedTotal,
         cashReceived: roundTo(capturedCash, 2),
-        changeAmount:
-          params.paymentType === PaymentType.Cash
-            ? roundTo(Math.max(0, capturedCash - capturedTotal), 2)
-            : 0,
+        changeAmount: !isCredit
+          ? roundTo(Math.max(0, capturedCash - capturedTotal), 2)
+          : 0,
         customerCreditId: params.customerCreditId,
         newCustomerName: params.newCustomerName,
         newCustomerContact: params.newCustomerContact,
@@ -147,7 +156,6 @@ export function useSale() {
         "/Transactions/checkout",
         command,
       );
-
       Alert.alert("Success", "Transaction finalized successfully.");
       clearBasket();
       return true;
@@ -171,25 +179,16 @@ export function useSale() {
   };
 }
 
+// Global utility formatting helpers
 function formatPHP(amount: number): string {
   return `₱${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 }
 
 function handleApiError(err: unknown): void {
   let message = "An error occurred while processing the sale.";
-
   if (isAxiosError(err)) {
     const axiosError = err as AxiosError<ApiError>;
-    // Checks for various .NET error response formats
     message = axiosError.response?.data?.message || axiosError.message;
-
-    if (__DEV__) {
-      console.error(
-        "[Checkout API Error]:",
-        axiosError.response?.data || axiosError.message,
-      );
-    }
   }
-
   Alert.alert("Checkout Error", message);
 }

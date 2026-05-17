@@ -32,6 +32,13 @@ interface TransactionModalProps {
   setNewCustomerName: (s: string) => void;
   newCustomerContact: string;
   setNewCustomerContact: (s: string) => void;
+  totals: {
+    originalTotal: number;
+    cashTotal: number;
+    creditTotal: number;
+    savings: number;
+    promotionsApplied: string | null;
+  };
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = (props) => {

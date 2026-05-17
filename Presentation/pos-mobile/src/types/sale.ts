@@ -1,5 +1,3 @@
-import type { PromotionType } from "./promotion";
-
 export enum PaymentType {
   Cash = 1,
   Credit = 2,
@@ -25,11 +23,15 @@ export interface ApiError {
 
 export interface AppliedPromotion {
   id: string;
+  name: string;
   isActive: boolean;
-  type: PromotionType;
-  promoQuantity?: number;
-  promoPrice?: number;
+  promotionType: "Discount" | "Bulk" | "Bundle" | string;
+  tiers: {
+    quantity: number;
+    price: number;
+  }[];
   tieUpProductId?: string | null;
+  tieUpProductName?: string | null;
   tieUpQuantity?: number | null;
 }
 
