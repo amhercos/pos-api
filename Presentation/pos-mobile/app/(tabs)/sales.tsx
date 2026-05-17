@@ -11,17 +11,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Custom Hooks
 import { useCredits } from "@/src/hooks/use-credits";
 import { useInventory } from "@/src/hooks/use-inventory";
 import { useSale } from "@/src/hooks/use-sale";
 import { formatPHP } from "@/src/lib/math";
 import { cn } from "@/src/lib/utils";
 
-// Types
 import { PaymentType, type Product as SaleProduct } from "@/src/types/sale";
 
-// Components
 import { TransactionContent } from "@/components/sales/TransactionContent";
 import { TransactionModal } from "@/components/sales/TransactionModal";
 
@@ -46,12 +43,10 @@ export default function NewSalePage() {
     isSubmitting,
   } = useSale();
 
-  // Search & Filter State
   const [search, setSearch] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Transaction UI State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activePayment, setActivePayment] = useState<PaymentType>(
     PaymentType.Cash,
@@ -90,7 +85,6 @@ export default function NewSalePage() {
     }
   };
 
-  // Grid Layout Rules
   const numColumns = useMemo(() => {
     if (!isTablet) return 2;
     return width > 1100 ? 4 : 3;
@@ -155,7 +149,6 @@ export default function NewSalePage() {
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-1 flex-row">
         <View className="flex-1">
-          {/* Header & Search */}
           <View className="px-5 py-4 border-b border-slate-50">
             <View className="flex-row items-center gap-2 mb-4">
               <View className="flex-1 flex-row items-center bg-slate-100 rounded-2xl px-4 h-12">
@@ -206,7 +199,6 @@ export default function NewSalePage() {
             />
           </View>
 
-          {/* Product Grid Area */}
           <FlatList
             data={filteredProducts}
             key={`${numColumns}-grid`}
@@ -262,7 +254,6 @@ export default function NewSalePage() {
             }
           />
 
-          {/* Mobile Bottom Bar trigger layout overlay */}
           {!isTablet && basket.length > 0 && (
             <View className="absolute bottom-8 left-5 right-5">
               <TouchableOpacity
@@ -289,11 +280,10 @@ export default function NewSalePage() {
           )}
         </View>
 
-        {/* Tablet split workspace layout */}
         {isTablet && (
           <View
             style={{ width: sidebarWidth }}
-            className="border-l border-slate-100 bg-slate-50"
+            className="border-l border-slate-100 bg-white flex-col h-full"
           >
             <TransactionContent {...sharedProps} isTablet={true} />
           </View>

@@ -89,7 +89,6 @@ export const TransactionContent = memo<TransactionContentProps>(
       [cashReceived, currentTargetTotal],
     );
 
-    // Directly pipe active selections into BillDetails properties
     const dynamicCalcResult = useMemo(
       () => ({
         originalTotal: totals.originalTotal,
@@ -140,43 +139,39 @@ export const TransactionContent = memo<TransactionContentProps>(
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        {/* HEADER BAR */}
-        <View className="h-20 flex-row items-center px-6 border-b border-slate-100">
-          <TouchableOpacity
-            onPress={onClose}
-            className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
-          >
-            <X size={20} color="#64748b" />
-          </TouchableOpacity>
+        {!isTablet && (
+          <View className="h-20 flex-row items-center px-6 border-b border-slate-100">
+            <TouchableOpacity
+              onPress={onClose}
+              className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+            >
+              <X size={20} color="#64748b" />
+            </TouchableOpacity>
 
-          <View className="flex-1 ml-4">
-            <Text className="text-lg font-black text-slate-900 uppercase tracking-tighter">
-              Checkout
-            </Text>
-            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {basket.length} {basket.length === 1 ? "Item" : "Items"} inside
-              Cart
-            </Text>
+            <View className="flex-1 ml-4">
+              <Text className="text-lg font-black text-slate-900 uppercase tracking-tighter">
+                Checkout
+              </Text>
+              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {basket.length} {basket.length === 1 ? "Item" : "Items"} inside
+                Cart
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleVoidBasket}
+              className="flex-row items-center bg-rose-50 px-4 py-2 rounded-xl"
+            >
+              <RotateCcw size={13} color="#ef4444" />
+              <Text className="text-rose-600 font-black text-[11px] uppercase ml-1.5 tracking-tight">
+                Void Order
+              </Text>
+            </TouchableOpacity>
           </View>
+        )}
 
-          <TouchableOpacity
-            onPress={handleVoidBasket}
-            className="flex-row items-center bg-rose-50 px-4 py-2 rounded-xl"
-          >
-            <RotateCcw size={13} color="#ef4444" />
-            <Text className="text-rose-600 font-black text-[11px] uppercase ml-1.5 tracking-tight">
-              Void Order
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className={cn("flex-1", isTablet ? "flex-row" : "flex-column")}>
-          <View
-            className={cn(
-              "bg-slate-50/50",
-              isTablet ? "flex-[0.55]" : "flex-1",
-            )}
-          >
+        <View className="flex-1 flex-col">
+          <View className="flex-1 bg-slate-50/50">
             <OrderSummary
               basket={basket}
               updateQuantity={updateQuantity}
@@ -184,12 +179,7 @@ export const TransactionContent = memo<TransactionContentProps>(
             />
           </View>
 
-          <View
-            className={cn(
-              "bg-white border-slate-100",
-              isTablet ? "flex-[0.45] border-l" : "flex-[1.2]",
-            )}
-          >
+          <View className="flex-[1.2] bg-white border-t border-slate-100">
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="always"
@@ -210,7 +200,6 @@ export const TransactionContent = memo<TransactionContentProps>(
                 setNewCustomerContact={setNewCustomerContact}
               />
 
-              {/* QUICK DENOMINATIONS BAR */}
               {!isCredit && (
                 <View className="px-5 mt-2">
                   <View className="bg-slate-50/80 p-4 rounded-3xl border border-dashed border-slate-200">
@@ -254,7 +243,6 @@ export const TransactionContent = memo<TransactionContentProps>(
           </View>
         </View>
 
-        {/* FOOTER TRIGGER BUTTON AREA */}
         <View className="p-6 border-t border-slate-100 bg-white">
           <TouchableOpacity
             onPress={handleCheckout}
@@ -268,7 +256,7 @@ export const TransactionContent = memo<TransactionContentProps>(
             <Text className="text-white font-black text-base uppercase tracking-widest ml-2">
               {isSubmitting
                 ? "Processing..."
-                : `Finalize Sale • ${formatPHP(currentTargetTotal)}`}
+                : `Checkout • ${formatPHP(currentTargetTotal)}`}
             </Text>
           </TouchableOpacity>
         </View>
